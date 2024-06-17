@@ -31,3 +31,5 @@ dyncall/.hg/
 *.dll
 Makefile
 
+.vscode/*
+eg/debug.pl

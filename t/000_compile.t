@@ -4,5 +4,6 @@ use Affix;
 #
 diag $Affix::VERSION;
 is Affix::greet('World'), 'Hello, World', 'proper greeting';
+is Affix::greet("fdsafda");
 #
 done_testing;

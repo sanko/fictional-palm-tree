@@ -1,8 +1,8 @@
 #ifndef AFFIX_H_SEEN
 #define AFFIX_H_SEEN
 
-// Settings
-#define TIE_MAGIC 0 // If true, aggregate values are tied and magical
+#include <string>
+#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
@@ -423,17 +423,18 @@ class Affix
 {
   public: // for now
     Affix() {};
-    ~Affix() {};
+    ~Affix() {
+        if (lib) safefree(lib);
+        if (entry_point) safefree(entry_point);
+    };
 
     DLLib *lib;            // safefree
     DCpointer entry_point; // not malloc'd
-    const char *symbol;
-    const char *signature;
-    AV *argtypes;
+    std::string symbol;
+    std::vector<Affix_Type *> argtypes;
     Affix_Type *restype;
-    SV *res;
-    char restype_c; // TODO: Remember to safefree() this on destruction!!!!!!!!!!!!!!!!!!!!!!!!!!
-    bool aggr_restype;
+    SV *res;                   // time over ram
+    bool context_args = false; // use context to figure out arg types
 };
 
 void _pin(pTHX_ SV *sv, SV *type, DCpointer ptr); // pin.cxx
@@ -444,6 +445,7 @@ void boot_Affix_Pointer(pTHX_ CV *);
 void boot_Affix_Lib(pTHX_ CV *);
 void boot_Affix_Aggregate(pTHX_ CV *);
 void boot_Affix_Platform(pTHX_ CV *);
+void boot_Affix_Type(pTHX_ CV *);
 
 //
 DLLib *load_library(const char *lib);
@@ -456,6 +458,15 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv);
 } /* extern "C" */
 #endif
 
-#include <string>
+#define EX(symbol, name, prototype) (void)newXSproto_portable(name, symbol, __FILE__, prototype)
+
+#define EXP(symbol, name, prototype, export)                                                       \
+    (void)newXSproto_portable(name, symbol, __FILE__, prototype);                                  \
+    export_function("Affix", name, export)
+
+#define EXPI(symbol, name, prototype, export, ix)                                                  \
+    cv = newXSproto_portable(name, symbol, __FILE__, prototype);                                   \
+    XSANY.any_i32 = ix;                                                                            \
+    export_function("Affix", name, export)
 
 #endif // AFFIX_H_SEEN
