@@ -35,17 +35,21 @@ XS_INTERNAL(Affix_affix) {
     // ix == 1 if Affix::wrap
     dXSARGS;
     dXSI32;
+    warn("PING from %s at line %d", __FILE__, __LINE__);
     Affix *affix = new Affix();
     std::string prototype;
     switch (items) {
     case 4:
         // ..., ..., ..., ret
+        warn("PING from %s at line %d", __FILE__, __LINE__);
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type")))
             affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
         else
             croak("Unknown return type");
         // fallthrough
     case 3:
+        warn("PING from %s at line %d", __FILE__, __LINE__);
+
         // ..., ..., args
         // Default ret type is Void (for now)
         if (items == 3) affix->restype = new Affix_Type("Void", VOID_FLAG, 0, 0);
@@ -91,6 +95,8 @@ XS_INTERNAL(Affix_affix) {
             croak("Malformed argument list");
     // fallthrough
     case 2:
+        warn("PING from %s at line %d", __FILE__, __LINE__);
+
         // lib, symbol
         if (items == 2) { // Use context to figure out arg types
             affix->context_args = true;
@@ -99,6 +105,7 @@ XS_INTERNAL(Affix_affix) {
         { // load library
             SV *const lib_sv = ST(0);
             SvGETMAGIC(lib_sv);
+            warn("PING from %s at line %d", __FILE__, __LINE__);
 
             // explicit undef
             if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv)))
@@ -110,9 +117,13 @@ XS_INTERNAL(Affix_affix) {
 
             // try treating it as a filename and then search for it as a last resort
             else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv)))) {
+                warn("PING from %s at line %d", __FILE__, __LINE__);
+
                 Stat_t statbuf;
                 Zero(&statbuf, 1, Stat_t);
                 if (PerlLIO_stat(SvPV_nolen(lib_sv), &statbuf) < 0) {
+                    warn("PING from %s at line %d", __FILE__, __LINE__);
+
                     ENTER;
                     SAVETMPS;
                     PUSHMARK(SP);
@@ -128,14 +139,22 @@ XS_INTERNAL(Affix_affix) {
             }
 
             if (!affix->lib) { // bail out if we fail to load library
+                warn("PING from %s at line %d", __FILE__, __LINE__);
+
                 delete affix;
                 XSRETURN_EMPTY;
             }
         }
+        warn("PING from %s at line %d", __FILE__, __LINE__);
+
         {
             std::string rename;
             if (ix == 0) { // affix(...) allows you to change the name of the perlsub
+                warn("PING from %s at line %d", __FILE__, __LINE__);
+
                 if (SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
+                    warn("PING from %s at line %d", __FILE__, __LINE__);
+
                     SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
                     SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
                     if (symbol_sv == NULL || !SvPOK(*symbol_sv))
@@ -147,13 +166,20 @@ XS_INTERNAL(Affix_affix) {
             }
             else
                 affix->symbol = SvPV_nolen(ST(1));
+            warn("PING from %s at line %d", __FILE__, __LINE__);
+
             affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
             if (!affix->entry_point) {
+                warn("PING from %s at line %d", __FILE__, __LINE__);
+
                 croak("Failed to locate symbol named %s", affix->symbol.c_str());
                 delete affix;
             }
+            warn("PING from %s at line %d", __FILE__, __LINE__);
 
             STMT_START {
+                warn("PING from %s at line %d", __FILE__, __LINE__);
+
                 cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__,
                                          prototype.c_str());
                 if (affix->symbol.empty()) affix->symbol = "anonymous subroutine";
@@ -171,9 +197,13 @@ XS_INTERNAL(Affix_affix) {
         croak_xs_usage(cv, "$lib, $symbol, $arguments // [], $return // Void");
     }
 
+    warn("PING from %s at line %d", __FILE__, __LINE__);
+
     ST(0) = sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
                      gv_stashpv("Affix", GV_ADD));
-    //if (ix == 0) sv_2mortal(ST(0));
+    warn("PING from %s at line %d", __FILE__, __LINE__);
+
+    // if (ix == 0) sv_2mortal(ST(0));
     XSRETURN(1);
 }
 

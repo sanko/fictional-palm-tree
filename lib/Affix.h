@@ -426,12 +426,9 @@ class Affix
     Affix() {};
 
     ~Affix() {
-        warn("AAA");
         if (lib != NULL) dlFreeLibrary(lib);
-        warn("BBB");
 
         // if (entry_point != NULL) safefree(entry_point);
-        warn("CCC");
 
         std::for_each(argtypes.begin(), argtypes.end(),
                       [](Affix_Type *argtype) { delete argtype; });
