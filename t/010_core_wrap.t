@@ -6,6 +6,7 @@ use t::lib::helper;
 #
 diag $Affix::VERSION;
 #
-isa_ok wrap( 'm', 'pow', [ Float, Float ] => Float ), ['Affix'];
+isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ] => Double ), ['Affix'];
+is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
 #
 done_testing;

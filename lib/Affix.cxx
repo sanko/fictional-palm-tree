@@ -21,20 +21,67 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv) {
 
     dMY_CXT;
     DCCallVM *cvm = MY_CXT.cvm;
+    dcMode(cvm, DC_CALL_C_DEFAULT);
     dcReset(cvm);
-warn("A");
+    warn("A");
     // TODO: Generate aggregate in type constructor
-warn("C");
+    warn("C");
 
-    if (affix->context_args) { 
-            if (
-                
-                affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
-
-        warn("items: %d, expected: %ld", items, affix->argtypes.size()); 
+    if (affix->context_args) {
+        for (size_t i = 0; i < items; ++i) {
+            if (SvNOK(ST(i)))
+                dcArgFloat(cvm, SvNV(ST(i)));
+            else if (SvIOK(ST(i)))
+                dcArgInt(cvm, SvIV(ST(i)));
+            else
+                croak("Please provide context for parameters");
         }
-    else {}
-warn("Z");
+    }
+    else {
+        if (affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
+        if (items != affix->argtypes.size())
+            croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(),
+                  affix->argtypes.size());
+
+        size_t st_pos = 0;
+        for (const auto &type : affix->argtypes) {
+            // warn("[%d] %s", st_pos, type->stringify());
+            switch (type->numeric) {
+            case VOID_FLAG:
+            case BOOL_FLAG:
+            case CHAR_FLAG:
+            case UCHAR_FLAG:
+            case SHORT_FLAG:
+            case USHORT_FLAG:
+            case INT_FLAG:
+            case UINT_FLAG:
+            case LONG_FLAG:
+            case ULONG_FLAG:
+            case LONGLONG_FLAG:
+            case ULONGLONG_FLAG:
+                croak("TODO: %s", type->stringify());
+                break;
+            case FLOAT_FLAG:
+                dcArgFloat(cvm, (float)SvNV(ST(st_pos)));
+                break;
+            case DOUBLE_FLAG:
+                dcArgDouble(cvm, (double)SvNV(ST(st_pos)));
+                break;
+            default:
+                croak("No idea yet.");
+            }
+
+            ++st_pos;
+        }
+    }
+
+    switch (affix->restype->numeric) {
+    case DOUBLE_FLAG:
+        ST(0) = newSVnv(dcCallDouble(cvm, affix->entry_point));
+        break;
+    default:
+        croak("Ofdsafdasfdsa");
+    }
 
     XSRETURN(1);
 }
@@ -46,18 +93,79 @@ XS_INTERNAL(Affix_affix) {
     dXSI32;
     Affix *affix = new Affix();
     std::string prototype;
-    switch (items) {
-    case 4:
-        // ..., ..., ..., ret
-        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type")))
-            affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
+
+    if (items != 4) croak_xs_usage(cv, "$lib, $symbol, \\@arguments, $return");
+
+    { // lib, ..., ..., ...
+        SV *const lib_sv = ST(0);
+        SvGETMAGIC(lib_sv);
+        // explicit undef
+        if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv))) affix->lib = _affix_load_library(NULL);
+
+        // object - not sure why someone would do this...
+        else if (UNLIKELY(sv_isobject(lib_sv) && sv_derived_from(lib_sv, "Affix::Lib")))
+            affix->lib = INT2PTR(DLLib *, SvIV((SV *)SvRV(lib_sv)));
+
+        // try treating it as a filename and then search for it as a last resort
+        else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv)))) {
+            Stat_t statbuf;
+            Zero(&statbuf, 1, Stat_t);
+            if (PerlLIO_stat(SvPV_nolen(lib_sv), &statbuf) < 0) {
+                ENTER;
+                SAVETMPS;
+                PUSHMARK(SP);
+                XPUSHs(lib_sv);
+                PUTBACK;
+                int count = call_pv("Affix::find_library", G_SCALAR);
+                SPAGAIN;
+                char *_name = POPp;
+                affix->lib = _affix_load_library(_name);
+                PUTBACK;
+                FREETMPS;
+                LEAVE;
+            }
+        }
+
+        if (affix->lib == NULL) { // bail out if we fail to load library
+            delete affix;
+            XSRETURN_EMPTY;
+        }
+    }
+
+    { // ..., symbol, ..., ...
+        std::string rename;
+        if (ix == 0) { // affix(...) allows you to change the name of the perlsub
+            if (SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
+                SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
+                SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
+                if (symbol_sv == NULL || !SvPOK(*symbol_sv))
+                    croak("Unknown or malformed symbol name");
+                affix->symbol = SvPV_nolen(*symbol_sv);
+                if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
+                affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
+            }
+        }
         else
-            croak("Unknown return type");
-        // fallthrough
-    case 3:
-        // ..., ..., args
-        // Default ret type is Void (for now)
-        if (items == 3) affix->restype = new Affix_Type("Void", VOID_FLAG, 0, 0);
+            affix->symbol = SvPV_nolen(ST(1));
+
+        affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
+        if (!affix->entry_point) {
+            croak("Failed to locate symbol named %s", affix->symbol.c_str());
+            delete affix;
+        }
+
+        STMT_START {
+            cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__,
+                                     prototype.c_str());
+            if (affix->symbol.empty()) affix->symbol = "anonymous subroutine";
+            if (UNLIKELY(cv == NULL))
+                croak("ARG! Something went really wrong while installing a new XSUB!");
+            XSANY.any_ptr = (DCpointer)affix;
+        }
+        STMT_END;
+    }
+
+    { // ..., ..., args, ...
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
             AV *av_args = MUTABLE_AV(SvRV(ST(2)));
             size_t num_args = av_count(av_args);
@@ -98,87 +206,13 @@ XS_INTERNAL(Affix_affix) {
         }
         else
             croak("Malformed argument list");
-    // fallthrough
-    case 2:
-        // lib, symbol
-        if (items == 2) { // Use context to figure out arg types
-            affix->context_args = true;
-            prototype = "@";
-            affix->restype = new Affix_Type("Void", VOID_FLAG, 0, 0);
-        }
-        { // load library
-            SV *const lib_sv = ST(0);
-            SvGETMAGIC(lib_sv);
-            // explicit undef
-            if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv)))
-                affix->lib = _affix_load_library(NULL);
-
-            // object - not sure why someone would do this...
-            else if (UNLIKELY(sv_isobject(lib_sv) && sv_derived_from(lib_sv, "Affix::Lib")))
-                affix->lib = INT2PTR(DLLib *, SvIV((SV *)SvRV(lib_sv)));
-
-            // try treating it as a filename and then search for it as a last resort
-            else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv)))) {
-                Stat_t statbuf;
-                Zero(&statbuf, 1, Stat_t);
-                if (PerlLIO_stat(SvPV_nolen(lib_sv), &statbuf) < 0) {
-                    ENTER;
-                    SAVETMPS;
-                    PUSHMARK(SP);
-                    XPUSHs(lib_sv);
-                    PUTBACK;
-                    int count = call_pv("Affix::find_library", G_SCALAR);
-                    SPAGAIN;
-                    char *_name = POPp;
-                    affix->lib = _affix_load_library(_name);
-                    PUTBACK;
-                    FREETMPS;
-                    LEAVE;
-                }
-            }
-
-            if (affix->lib == NULL) { // bail out if we fail to load library
-                delete affix;
-                XSRETURN_EMPTY;
-            }
-        }
-        {
-            std::string rename;
-            if (ix == 0) { // affix(...) allows you to change the name of the perlsub
-                if (SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
-                    SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
-                    SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
-                    if (symbol_sv == NULL || !SvPOK(*symbol_sv))
-                        croak("Unknown or malformed symbol name");
-                    affix->symbol = SvPV_nolen(*symbol_sv);
-                    if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
-                    affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
-                }
-            }
-            else
-                affix->symbol = SvPV_nolen(ST(1));
-
-            affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
-            if (!affix->entry_point) {
-                croak("Failed to locate symbol named %s", affix->symbol.c_str());
-                delete affix;
-            }
-
-            STMT_START {
-                cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__,
-                                         prototype.c_str());
-                if (affix->symbol.empty()) affix->symbol = "anonymous subroutine";
-                if (UNLIKELY(cv == NULL))
-                    croak("ARG! Something went really wrong while installing a new XSUB!");
-                XSANY.any_ptr = (DCpointer)affix;
-            }
-            STMT_END;
-        }
-
-        break;
-    default:
-        delete affix;
-        croak_xs_usage(cv, "$lib, $symbol, $arguments // [], $return // Void");
+    }
+    {
+        // ..., ..., ..., ret
+        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type")))
+            affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
+        else
+            croak("Unknown return type");
     }
 
     ST(0) = sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
@@ -249,6 +283,7 @@ XS_EXTERNAL(boot_Affix) {
     // Allow user defined value in a BEGIN{ } block
     SV *vmsize = get_sv("Affix::VMSize", 0);
     MY_CXT.cvm = dcNewCallVM(vmsize == NULL ? 8192 : SvIV(vmsize));
+    dcMode(MY_CXT.cvm, DC_CALL_C_DEFAULT);
 
     // Start exposing API
     // Affix::affix( lib, symbol, [args], return )
