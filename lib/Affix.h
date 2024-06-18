@@ -294,53 +294,6 @@ following address will be aligned to `alignment`. */
 #define AXT_POINTER_COUNT(t) SvIV(*av_fetch(MUTABLE_AV(SvRV(t)), SLOT_POINTER_COUNT, 0))
 #define AXT_POINTER_POSITION(t) SvIV(*av_fetch(MUTABLE_AV(SvRV(t)), SLOT_POINTER_POSITION, 0))
 
-class Affix_Type
-{
-  public:
-    Affix_Type(const char *stringify, char numeric, size_t size, size_t alignment)
-        : _stringify(stringify), numeric(numeric), size(size), _alignment(alignment) {};
-    const char *stringify() {
-        char *ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify,
-                                        (const_flag ? " ]" : ""));
-        for (size_t i = 0; i < pointer_depth; ++i)
-            ret = Perl_form_nocontext("Pointer[ %s ]", ret);
-        if (_typedef != NULL) ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
-        return ret;
-    };
-    size_t alignment(size_t depth = 0) {
-        return pointer_depth > depth ? ALIGNOF_INTPTR_T : _alignment;
-    }
-
-  public: // for now...
-    char numeric;
-    bool const_flag = false;
-    bool volitile_flag = false;
-    bool restrict_flag = false;
-
-    size_t pointer_depth = 0;
-    size_t size;
-    size_t _alignment;
-    size_t offset;
-    size_t arraylen;
-    const char *_stringify;
-
-    //
-    void *subtype = NULL; // Affix_Type
-
-    const char *_typedef = NULL;
-    DCaggr *aggregate = NULL;
-    void **args = NULL; // list of Affix_Type
-    const char *sig = NULL;
-    const char *field = NULL; // If part of a struct
-};
-
-typedef struct {
-    intptr_t address;
-    Affix_Type *subtype;
-    size_t count;
-    size_t position;
-} Affix_Pointer;
-
 // marshal.cxx
 size_t padding_needed_for(size_t offset, size_t alignment);
 SV *ptr2obj(pTHX_ SV *type_sv, DCpointer ptr);
@@ -419,6 +372,56 @@ typedef struct {
 
 char cbHandler(DCCallback *cb, DCArgs *args, DCValue *result, DCpointer userdata);
 DCsigchar cbHandlerXXXXX(DCCallback *cb, DCArgs *args, DCValue *result, DCpointer userdata);
+
+class Affix_Type
+{
+  public:
+    Affix_Type(const char *stringify, char numeric, size_t size, size_t alignment)
+        : _stringify(stringify), numeric(numeric), size(size), _alignment(alignment) {};
+    const char *stringify() {
+        char *ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify,
+                                        (const_flag ? " ]" : ""));
+        for (size_t i = 0; i < pointer_depth; ++i)
+            ret = Perl_form_nocontext("Pointer[ %s ]", ret);
+        if (_typedef != NULL) ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
+        return ret;
+    };
+    size_t alignment(size_t depth = 0) {
+        return pointer_depth > depth ? ALIGNOF_INTPTR_T : _alignment;
+    }
+
+  public: // for now...
+    char numeric;
+    bool const_flag = false;
+    bool volitile_flag = false;
+    bool restrict_flag = false;
+
+    size_t pointer_depth = 0;
+    size_t size;
+    size_t _alignment;
+    size_t offset;
+    size_t arraylen;
+    const char *_stringify;
+
+    //
+    void *subtype = NULL; // Affix_Type
+
+    const char *_typedef = NULL;
+    DCaggr *aggregate = NULL;
+    void **args = NULL; // list of Affix_Type
+    const char *sig = NULL;
+    const char *field = NULL; // If part of a struct
+};
+class Affix_Pointer
+{
+  public:
+    Affix_Pointer(intptr_t address) : address(address) {};
+    ~Affix_Pointer() {};
+    intptr_t address;
+    Affix_Type *subtype;
+    size_t count;
+    size_t position;
+};
 
 class Affix
 {

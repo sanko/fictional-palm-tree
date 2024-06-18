@@ -15,6 +15,7 @@ $|++;
     my $leaks = leaks {
         use Affix;
         isa_ok my $sub = wrap( 'm', 'pow' ), ['Affix'];
+        diag $sub->(2, 3);
     };
     use Data::Dump;
     diag Data::Dump::dump($leaks);

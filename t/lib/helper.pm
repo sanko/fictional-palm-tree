@@ -153,6 +153,7 @@ package t::lib::helper {
                     }
                 );
                 my ( $known, $dups ) = parse_suppression($out);
+
                 #~ diag $out;
                 #~ diag $err;
                 diag scalar( keys %$known ) . ' suppressions found';

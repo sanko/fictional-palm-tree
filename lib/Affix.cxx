@@ -15,19 +15,28 @@ typedef struct {
 START_MY_CXT
 
 extern "C" void Fiction_trigger(pTHX_ CV *cv) {
-    dSP;
-    dAXMARK;
+    dXSARGS;
 
     Affix *affix = (Affix *)XSANY.any_ptr;
-    size_t items = (SP - MARK);
 
     dMY_CXT;
     DCCallVM *cvm = MY_CXT.cvm;
     dcReset(cvm);
+warn("A");
+    // TODO: Generate aggregate in type constructor
+warn("C");
 
-    warn("DO IT!");
+    if (affix->context_args) { 
+            if (
+                
+                affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
 
-    return;
+        warn("items: %d, expected: %ld", items, affix->argtypes.size()); 
+        }
+    else {}
+warn("Z");
+
+    XSRETURN(1);
 }
 
 XS_INTERNAL(Affix_affix) {
@@ -95,6 +104,7 @@ XS_INTERNAL(Affix_affix) {
         if (items == 2) { // Use context to figure out arg types
             affix->context_args = true;
             prototype = "@";
+            affix->restype = new Affix_Type("Void", VOID_FLAG, 0, 0);
         }
         { // load library
             SV *const lib_sv = ST(0);
@@ -119,7 +129,7 @@ XS_INTERNAL(Affix_affix) {
                     PUTBACK;
                     int count = call_pv("Affix::find_library", G_SCALAR);
                     SPAGAIN;
-                    char * _name = POPp;
+                    char *_name = POPp;
                     affix->lib = _affix_load_library(_name);
                     PUTBACK;
                     FREETMPS;
@@ -203,7 +213,6 @@ XS_INTERNAL(Affix_END) {
 }
 
 XS_INTERNAL(Affix_pin) {
-    dVAR;
     dXSARGS;
     if (items != 1) croak_xs_usage(cv, "lib");
 }
