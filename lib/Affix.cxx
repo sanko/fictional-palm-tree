@@ -173,7 +173,7 @@ XS_INTERNAL(Affix_affix) {
 
     ST(0) = sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
                      gv_stashpv("Affix", GV_ADD));
-    if (ix == 0) sv_2mortal(ST(0));
+    //if (ix == 0) sv_2mortal(ST(0));
     XSRETURN(1);
 }
 
