@@ -129,15 +129,21 @@ package t::lib::helper {
                     }
                 );
                 plan skip_all 'Valgrind is not installed' if $exit_code;
-                diag 'Valgrind v', ( $stdout =~ m[valgrind-(.+)$] ), ' found';
+                diag 'Valgrind v', ( $stdout =~ m/valgrind-(.+)$/ ), ' found';
                 diag 'Generating suppressions...';
                 my @cmd = (
                     qw[valgrind --leak-check=full --show-reachable=yes --error-limit=no
                         --gen-suppressions=all --log-fd=1], $^X, '-e',
-                    sprintf
-                        'use strict;use warnings;use lib %s;use Affix;no Test2::Plugin::ExitSummary;use Test2::V0;pass "generate valgrind suppressions";done_testing;',
-                    ( join ', ', map {"'$_'"} sort { length $a <=> length $b } map { path($_)->absolute->canonpath } @INC )
-                );
+                    sprintf <<'', ( join ', ', map {"'$_'"} sort { length $a <=> length $b } map { path($_)->absolute->canonpath } @INC ) );
+    use strict;
+    use warnings;
+    use lib %s;
+    use Affix;
+    no Test2::Plugin::ExitSummary;    
+    use Test2::V0;
+    pass "generate valgrind suppressions";
+    done_testing;                   
+
 
                 #~ use Data::Dump;
                 #~ ddx \@cmd;
@@ -147,11 +153,48 @@ package t::lib::helper {
                     }
                 );
                 my ( $known, $dups ) = parse_suppression($out);
-
                 #~ diag $out;
                 #~ diag $err;
                 diag scalar( keys %$known ) . ' suppressions found';
                 diag $dups . ' duplicates have been filtered out';
+
+                # https://bugs.kde.org/show_bug.cgi?id=453084
+                # https://github.com/Perl/perl5/issues/19949
+                # https://github.com/Perl/perl5/issues/20970
+                $known->{'https://github.com/Perl/perl5/issues/19949'} = <<'';
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Overlap
+   fun:__memcpy_chk
+   fun:XS_Cwd_abs_path
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:S_docatch
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:_ZL11Affix_affixP2cv
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:perl_run
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Overlap
+   fun:__memcpy_chk
+   fun:XS_Cwd_abs_path
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:S_docatch
+   fun:Perl_runops_standard
+   fun:Perl_call_sv
+   fun:_ZL11Affix_affixP11interpreterP2cv
+   fun:Perl_pp_entersub
+   fun:Perl_runops_standard
+   fun:perl_run
+   fun:main
+}
+
                 $supp = Path::Tiny::tempfile( { realpath => 1 }, 'valgrind_suppression_XXXXXXXXXX' );
                 diag 'spewing to ' . $supp;
                 diag $supp->spew( join "\n\n", values %$known );
@@ -301,10 +344,10 @@ exit !$exit;
             my $report = Path::Tiny->tempfile( { realpath => 1 }, 'valgrind_report_XXXXXXXXXX' );
             push @cleanup, $report;
             my @cmd = (
-                'valgrind', '-q', '--suppressions=' . $supp->canonpath,
-                '--leak-check=full', '--show-leak-kinds=all', '--show-reachable=yes', '--demangle=yes', '--error-limit=no', '--xml=yes',
-                '--xml-file=' . $report->stringify,
-                $^X, '-e', $source
+                'valgrind',               '-q', '--suppressions=' . $supp->canonpath,
+                '--leak-check=full',      '--show-leak-kinds=all', '--show-reachable=yes', '--demangle=yes', '--error-limit=no', '--xml=yes',
+                '--gen-suppressions=all', '--xml-file=' . $report->stringify,
+                $^X,                      '-e', $source
             );
 
             #~ my ( $out, $err, $exit ) = Capture::Tiny::capture( sub {
