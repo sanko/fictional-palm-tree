@@ -222,9 +222,8 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
                     $source->dirname, $pre->child( $opt{meta}->name, 'include' )->stringify
                 ],
                 extra_compiler_flags => (
-                    '-fPIC -std=c++17 ' .
-                        ( $opt{config}->get('osname') =~ /bsd/ ? ''                                   : $CFLAGS ) .
-                        ( $DEBUG                               ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
+                    '-fPIC -std=c++17 ' .    # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
+                        ( $opt{config}->get('osname') =~ /bsd/ ? '' : $CFLAGS ) . ( $DEBUG ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
                 )
                 ) :
                 $obj;

@@ -3,6 +3,7 @@ on build => sub { };
 on test  => sub {
     requires 'Test2::V0';
     requires 'Capture::Tiny';    # For valgrind tests
+    requires 'Data::Dump';
 };
 on configure => sub {
     requires 'JSON::Tiny';
@@ -15,6 +16,6 @@ on configure => sub {
     requires 'JSON::Tiny';
     requires 'Path::Tiny';
     requires 'Config';
-    requires 'Devel::CheckBin'; # For locating compiler on Windows
+    requires 'Devel::CheckBin';    # For locating compiler on Windows
 };
 on runtime => sub { };

@@ -120,7 +120,7 @@ DLLib *_affix_load_library(const char *lib) {
 #endif
 }
 
-SV *call_sub(pTHX_ std::string sub, SV *arg) {
+SV *call_sub(pTHX_ const char *sub, SV *arg) {
     dSP;
     SV *retval = sv_newmortal();
 
@@ -128,16 +128,14 @@ SV *call_sub(pTHX_ std::string sub, SV *arg) {
     SAVETMPS;
 
     PUSHMARK(SP);
-    mXPUSHs(newSVsv(arg));
+    XPUSHs(arg);
     PUTBACK;
 
-    int count = call_pv(sub.c_str(), G_SCALAR);
+    int count = call_pv(sub, G_SCALAR);
     SPAGAIN;
-    if (count == 1)
-        sv_setsv(retval, POPs);
-    else
-        croak("NOERENFKFJSDLKFOJENFKEL");
-    DD(retval);
+
+    if (count == 1) sv_setsv(retval, POPs);
+
     PUTBACK;
 
     FREETMPS;

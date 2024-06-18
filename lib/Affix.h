@@ -1,6 +1,7 @@
 #ifndef AFFIX_H_SEEN
 #define AFFIX_H_SEEN
 
+#include <algorithm> // for_each
 #include <string>
 #include <vector>
 
@@ -429,14 +430,19 @@ class Affix
         if (lib != NULL) dlFreeLibrary(lib);
         warn("BBB");
 
-        if (entry_point != NULL) safefree(entry_point);
+        // if (entry_point != NULL) safefree(entry_point);
         warn("CCC");
+
+        std::for_each(argtypes.begin(), argtypes.end(),
+                      [](Affix_Type *argtype) { delete argtype; });
+        argtypes.empty();
+        if (restype != NULL) delete restype;
     };
     DLLib *lib = NULL;            // safefree
     DCpointer entry_point = NULL; // not malloc'd
     std::string symbol;
     std::vector<Affix_Type *> argtypes;
-    Affix_Type *restype;
+    Affix_Type *restype = NULL;
     SV *res;                   // time over ram
     bool context_args = false; // use context to figure out arg types
 };
@@ -464,6 +470,6 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv);
 
 // utils.cxx
 DLLib *_affix_load_library(const char *lib);
-SV *call_sub(pTHX_ std::string sub, SV *arg);
+SV *call_sub(pTHX_ const char *sub, SV *arg);
 
 #endif // AFFIX_H_SEEN

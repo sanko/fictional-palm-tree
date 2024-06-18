@@ -11,6 +11,33 @@ $|++;
     };
     is $leaks->{error}, U(), 'no leaks when just loading Affix';
 }
+{
+    my $leaks = leaks {
+        use Affix;
+        isa_ok my $sub = wrap( 'm', 'pow' ), ['Affix'];
+    };
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
+    is $leaks->{error}, U(), 'no leaks when using wrap($$)';
+}
+{
+    my $leaks = leaks {
+        use Affix;
+        isa_ok my $sub = wrap( 'm', 'pow', [ Float, Float ] ), ['Affix'];
+    };
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
+    is $leaks->{error}, U(), 'no leaks when using wrap($$$)';
+}
+{
+    my $leaks = leaks {
+        use Affix;
+        isa_ok my $sub = wrap( 'm', 'pow', [ Float, Float ], Float ), ['Affix'];
+    };
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
+    is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
+}
 done_testing;
 __END__
 {

@@ -45,6 +45,7 @@ XS_INTERNAL(Affix_Type_DESTROY) {
     Affix_Type *type;
     type = INT2PTR(Affix_Type *, SvIV(SvRV(ST(0))));
     if (type) delete type;
+    type = NULL;
     XSRETURN_EMPTY;
 }
 

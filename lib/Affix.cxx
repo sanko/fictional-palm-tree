@@ -109,9 +109,23 @@ XS_INTERNAL(Affix_affix) {
                 affix->lib = INT2PTR(DLLib *, SvIV((SV *)SvRV(lib_sv)));
 
             // try treating it as a filename and then search for it as a last resort
-            else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv))))
-                affix->lib =
-                    _affix_load_library(SvPV_nolen(call_sub(aTHX_ "Affix::find_library", lib_sv)));
+            else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv)))) {
+                Stat_t statbuf;
+                Zero(&statbuf, 1, Stat_t);
+                if (PerlLIO_stat(SvPV_nolen(lib_sv), &statbuf) < 0) {
+                    ENTER;
+                    SAVETMPS;
+                    PUSHMARK(SP);
+                    XPUSHs(lib_sv);
+                    PUTBACK;
+                    int count = call_pv("Affix::find_library", G_SCALAR);
+                    SPAGAIN;
+                    affix->lib = _affix_load_library(SvPV_nolen(POPs));
+                    PUTBACK;
+                    FREETMPS;
+                    LEAVE;
+                }
+            }
 
             if (!affix->lib) { // bail out if we fail to load library
                 delete affix;
@@ -164,12 +178,20 @@ XS_INTERNAL(Affix_affix) {
 }
 
 XS_INTERNAL(Affix_DESTROY) {
-    dVAR;
     dXSARGS;
-    if (items != 1) croak_xs_usage(cv, "$affix");
+    PERL_UNUSED_VAR(items);
     Affix *affix;
-    affix = INT2PTR(Affix *, SvIV(SvRV(ST(0))));
-    if (affix) delete affix;
+    STMT_START { // peel this grape
+        HV *st;
+        GV *gvp;
+        SV *const xsub_tmp_sv = ST(0);
+        SvGETMAGIC(xsub_tmp_sv);
+        CV *cv = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
+        affix = (Affix *)XSANY.any_ptr;
+    }
+    STMT_END;
+    if (affix != NULL) delete affix;
+    affix = NULL;
     XSRETURN_EMPTY;
 }
 
@@ -187,21 +209,18 @@ XS_INTERNAL(Affix_pin) {
 }
 
 XS_INTERNAL(Affix_unpin) {
-    dVAR;
     dXSARGS;
     if (items != 1) croak_xs_usage(cv, "lib");
 }
 
 // Utils
 XS_INTERNAL(Affix_sv_dump) {
-    dVAR;
     dXSARGS;
     if (items != 1) croak_xs_usage(cv, "lib");
 }
 
 // Cribbed from Perl::Destruct::Level so leak testing works without yet another prereq
 XS_INTERNAL(Affix_set_destruct_level) {
-    dVAR;
     dXSARGS;
     // TODO: report this with a warn(...)
     if (items != 1) croak_xs_usage(cv, "level");
@@ -210,7 +229,6 @@ XS_INTERNAL(Affix_set_destruct_level) {
 }
 
 XS_EXTERNAL(boot_Affix) {
-    dVAR;
     dXSBOOTARGSXSAPIVERCHK;
     // PERL_UNUSED_VAR(items);
 #ifdef USE_ITHREADS // Windows...
