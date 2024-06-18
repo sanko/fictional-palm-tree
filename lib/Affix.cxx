@@ -14,11 +14,27 @@ typedef struct {
 
 START_MY_CXT
 
-XS_INTERNAL(Affix_affix) { // and Affix::wrap
+extern "C" void Fiction_trigger(pTHX_ CV *cv) {
+    dSP;
+    dAXMARK;
+
+    Affix *affix = (Affix *)XSANY.any_ptr;
+    size_t items = (SP - MARK);
+
+    dMY_CXT;
+    DCCallVM *cvm = MY_CXT.cvm;
+    dcReset(cvm);
+
+    warn("DO IT!");
+
+    return;
+}
+
+XS_INTERNAL(Affix_affix) {
+    // ix == 0 if Affix::affix
+    // ix == 1 if Affix::wrap
     dXSARGS;
     dXSI32;
-    // ix == 0 if affix
-    // ix == 1 if wrap
     Affix *affix = new Affix();
     std::string prototype;
     switch (items) {
@@ -31,9 +47,8 @@ XS_INTERNAL(Affix_affix) { // and Affix::wrap
         // fallthrough
     case 3:
         // ..., ..., args
-        if (items == 3)
-            affix->restype =
-                new Affix_Type("Void", VOID_FLAG, 0, 0); // Default ret type is Void (for now)
+        // Default ret type is Void (for now)
+        if (items == 3) affix->restype = new Affix_Type("Void", VOID_FLAG, 0, 0);
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
             AV *av_args = MUTABLE_AV(SvRV(ST(2)));
             size_t num_args = av_count(av_args);
@@ -77,30 +92,75 @@ XS_INTERNAL(Affix_affix) { // and Affix::wrap
     // fallthrough
     case 2:
         // lib, symbol
-        if (items == 2) {
+        if (items == 2) { // Use context to figure out arg types
             affix->context_args = true;
             prototype = "@";
-        } // Use context to figure out arg types
-        { // lib might be...
-            if (LIKELY(SvROK(ST(0)) && sv_derived_from(ST(0), "Affix::Lib"))) {
-                //  ... Affix::Lib object
+        }
+        { // load library
+            SV *const lib_sv = ST(0);
+            SvGETMAGIC(lib_sv);
+
+            // explicit undef
+            if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv)))
+                affix->lib = _affix_load_library(NULL);
+
+            // object - not sure why someone would do this...
+            else if (UNLIKELY(sv_isobject(lib_sv) && sv_derived_from(lib_sv, "Affix::Lib")))
+                affix->lib = INT2PTR(DLLib *, SvIV((SV *)SvRV(lib_sv)));
+
+            // try treating it as a filename and then search for it as a last resort
+            else if (NULL == (affix->lib = _affix_load_library(SvPV_nolen(lib_sv))))
+                affix->lib =
+                    _affix_load_library(SvPV_nolen(call_sub(aTHX_ "Affix::find_library", lib_sv)));
+
+            if (!affix->lib) { // bail out if we fail to load library
+                delete affix;
+                XSRETURN_EMPTY;
             }
-            // ... filename (might even be an object that stringifies)
-            // ... a libname (which we'll need to figure out)
-            // ... a libname and version (which we'll need to figure out)
-            // ... explicit undef (current process)
+        }
+        {
+            std::string rename;
+            if (ix == 0) { // affix(...) allows you to change the name of the perlsub
+                if (SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
+                    SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
+                    SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
+                    if (symbol_sv == NULL || !SvPOK(*symbol_sv))
+                        croak("Unknown or malformed symbol name");
+                    affix->symbol = SvPV_nolen(*symbol_sv);
+                    if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
+                    affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
+                }
+            }
+            else
+                affix->symbol = SvPV_nolen(ST(1));
+            affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
+            if (!affix->entry_point) {
+                croak("Failed to locate symbol named %s", affix->symbol.c_str());
+                delete affix;
+            }
+
+            STMT_START {
+                cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__,
+                                         prototype.c_str());
+                if (affix->symbol.empty()) affix->symbol = "anonymous subroutine";
+                if (UNLIKELY(cv == NULL))
+                    croak("ARG! Something went really wrong while installing a new XSUB!");
+                XSANY.any_ptr = (DCpointer)affix;
+            }
+            STMT_END;
         }
 
-        warn("two");
         break;
     default:
+        warn("Here at line %d", __LINE__);
         delete affix;
         croak_xs_usage(cv, "$lib, $symbol, $arguments // [], $return // Void");
     }
 
-    warn("prototype: %s", prototype.c_str());
-
-    XSRETURN_EMPTY;
+    ST(0) = sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
+                     gv_stashpv("Affix", GV_ADD));
+    if (ix == 0) sv_2mortal(ST(0));
+    XSRETURN(1);
 }
 
 XS_INTERNAL(Affix_DESTROY) {
@@ -169,18 +229,23 @@ XS_EXTERNAL(boot_Affix) {
     //             ( [lib, version], [symbol, name], [args], return )
     //             ( lib, symbol, [args] ) // default return type is Void
     //             ( lib, symbol ) // use context for parameters, return type is Void
-    EXPI(Affix_affix, "Affix::affix", "$$;$$", "default", 0);
+    cv = newXSproto_portable("Affix::affix", Affix_affix, __FILE__, "$$;$$");
+    XSANY.any_i32 = 0;
+    export_function("Affix", "affix", "core");
     // Affix::wrap(  lib, symbol, [args], return )
     //             ( [lib, version], symbol, [args], return )
     //             ( lib, symbol, [args] ) // default return type is Void
     //             ( lib, symbol ) // use context for parameters, return type is Void
-    EXPI(Affix_affix, "Affix::wrap", "$$;$$", "default", 1);
+    cv = newXSproto_portable("Affix::wrap", Affix_affix, __FILE__, "$$;$$");
+    XSANY.any_i32 = 1;
+    export_function("Affix", "wrap", "core");
     // Affix::DESTROY( affix )
-    EX(Affix_DESTROY, "Affix::DESTROY", "$;$");
+    (void)newXSproto_portable("Affix::DESTROY", Affix_DESTROY, __FILE__, "$;$");
     // Affix::END( )
-    EX(Affix_END, "Affix::END", "");
+    (void)newXSproto_portable("Affix::END", Affix_END, __FILE__, "");
 
-    // EXP_I(Affix_affix, "wrap", "$$;$$", "default", 1);
+    // Affix::set_destruct_level
+    (void)newXSproto_portable("Affix::set_destruct_level", Affix_set_destruct_level, __FILE__, "$");
 
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);

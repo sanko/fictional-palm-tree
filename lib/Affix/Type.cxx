@@ -2,7 +2,8 @@
 
 #define TYPE(name)                                                                                 \
     (void)newXSproto_portable("Affix::" #name, Affix_Type_##name, __FILE__, "");                   \
-    set_isa("Affix::Type::" #name, "Affix::Type")
+    set_isa("Affix::Type::" #name, "Affix::Type");                                                 \
+    export_function("Affix", #name, "types")
 
 // Simple type
 #define STYPE(name, flag, size, align)                                                             \
@@ -55,7 +56,6 @@ XS_EXTERNAL(boot_Affix_Type) {
     my_perl = (PerlInterpreter *)PERL_GET_CONTEXT;
 #endif
 
-    //
     TYPE(Void);
     TYPE(Bool);
     TYPE(Char);

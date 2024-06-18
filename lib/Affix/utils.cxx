@@ -110,3 +110,37 @@ void _DD(pTHX_ SV *scalar, const char *file, int line) {
     FREETMPS;
     LEAVE;
 }
+
+DLLib *_affix_load_library(const char *lib) {
+    return
+#if defined(DC__OS_Win64) || defined(DC__OS_MacOSX)
+        dlLoadLibrary(lib);
+#else
+        (DLLib *)dlopen(lib, RTLD_LAZY /* RTLD_NOW|RTLD_GLOBAL */);
+#endif
+}
+
+SV *call_sub(pTHX_ std::string sub, SV *arg) {
+    dSP;
+    SV *retval = sv_newmortal();
+
+    ENTER;
+    SAVETMPS;
+
+    PUSHMARK(SP);
+    mXPUSHs(newSVsv(arg));
+    PUTBACK;
+
+    int count = call_pv(sub.c_str(), G_SCALAR);
+    SPAGAIN;
+    if (count == 1)
+        sv_setsv(retval, POPs);
+    else
+        croak("NOERENFKFJSDLKFOJENFKEL");
+    DD(retval);
+    PUTBACK;
+
+    FREETMPS;
+    LEAVE;
+    return retval;
+}

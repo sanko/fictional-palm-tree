@@ -1,1 +1,114 @@
-{"abstract":"A Foreign Function Interface eXtension","author":"Sanko Robinson <sanko@cpan.org>","description":"Affix is a foreign function interface for perl 5 backed by dyncall","dynamic_config":1,"generated_by":"App::mii v0.0.1","keywords":["ffi","dll","library","wrapper","dyncall","win32","xs"],"license":["artistic_2"],"meta-spec":{"url":"https:\/\/metacpan.org\/pod\/CPAN::Meta::Spec","version":2},"name":"Affix","no_index":{"directory":[],"file":[],"namespace":[],"package":[]},"optional_features":{"DD":{"description":"Dump structures","prereqs":{"runtime":{"requires":{"Data::Dump":0}}}}},"prereqs":{"runtime":{"requires":{"perl":"v5.38.0"}},"test":{"requires":{"Test2::V0":"0"}}},"provides":{"Affix":{"file":"lib\/Affix.pm","version":"v0.0.1"}},"release_status":"stable","resources":{"bugtracker":{"web":"https:\/\/github.com\/sanko\/Affix.pm\/issues"},"homepage":"https:\/\/github.com\/sanko\/Affix.pm","license":["http:\/\/www.perlfoundation.org\/artistic_license_2_0"],"repository":{"type":"git","url":"git:\/\/github.com\/sanko\/Affix.pm.git","web":"https:\/\/github.com\/sanko\/Affix.pm"}},"version":"v0.0.1"}
+{
+   "abstract" : "A Foreign Function Interface eXtension",
+   "author" : "Sanko Robinson <sanko@cpan.org>",
+   "description" : "Affix is a foreign function interface for perl 5 backed by dyncall",
+   "dynamic_config" : 1,
+   "generated_by" : "App::mii v0.0.1",
+   "keywords" : [
+      "ffi",
+      "dll",
+      "library",
+      "wrapper",
+      "dyncall",
+      "win32",
+      "xs"
+   ],
+   "license" : [
+      "artistic_2"
+   ],
+   "meta-spec" : {
+      "url" : "https://metacpan.org/pod/CPAN::Meta::Spec",
+      "version" : 2
+   },
+   "name" : "Affix",
+   "no_index" : {
+      "directory" : [],
+      "file" : [],
+      "namespace" : [],
+      "package" : []
+   },
+   "optional_features" : {
+      "DD" : {
+         "description" : "Dump structures",
+         "prereqs" : {
+            "runtime" : {
+               "requires" : {
+                  "Data::Dump" : 0
+               }
+            }
+         }
+      }
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "Config" : "0",
+            "Devel::CheckBin" : "0",
+            "ExtUtils::Helpers" : "0.02",
+            "ExtUtils::Install" : "0",
+            "ExtUtils::InstallPaths" : "0.002",
+            "File::Spec::Functions" : "0",
+            "Getopt::Long" : "2.36",
+            "JSON::Tiny" : "0",
+            "Path::Tiny" : "0"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "perl" : "v5.32.0"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Capture::Tiny" : "0",
+            "Test2::V0" : "0"
+         }
+      }
+   },
+   "provides" : {
+      "Affix" : {
+         "file" : "lib/Affix.pm",
+         "version" : "v0.0.1"
+      },
+      "Affix::Platform" : {
+         "file" : "lib/Affix/Platform.pm",
+         "version" : "0.5"
+      },
+      "Affix::Platform::BSD" : {
+         "file" : "lib/Affix/Platform/BSD.pm",
+         "version" : "0.5"
+      },
+      "Affix::Platform::MacOS" : {
+         "file" : "lib/Affix/Platform/MacOS.pm",
+         "version" : "0.5"
+      },
+      "Affix::Platform::Solaris" : {
+         "file" : "lib/Affix/Platform/Solaris.pm",
+         "version" : "0.5"
+      },
+      "Affix::Platform::Unix" : {
+         "file" : "lib/Affix/Platform/Unix.pm",
+         "version" : "0.5"
+      },
+      "Affix::Platform::Windows" : {
+         "file" : "lib/Affix/Platform/Windows.pm",
+         "version" : "0.5"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/sanko/Affix.pm/issues"
+      },
+      "homepage" : "https://github.com/sanko/Affix.pm",
+      "license" : [
+         "http://www.perlfoundation.org/artistic_license_2_0"
+      ],
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/sanko/Affix.pm.git",
+         "web" : "https://github.com/sanko/Affix.pm"
+      }
+   },
+   "version" : "v0.0.1"
+}

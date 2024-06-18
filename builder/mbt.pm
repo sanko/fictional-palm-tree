@@ -1,7 +1,6 @@
 package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use v5.26;
     use CPAN::Meta;
-    use ExtUtils::Config 0.003;
     use ExtUtils::Helpers 0.020 qw/make_executable split_like_shell detildefy/;
     use ExtUtils::Install qw/pm_to_blib install/;
     use ExtUtils::InstallPaths 0.002;
@@ -12,7 +11,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
-    my $DEBUG = 0;
+    my $DEBUG = 1;
     my $CFLAGS
         = $DEBUG                     ? '-DDEBUG=' . $DEBUG :
         $Config{osname} eq 'MSWin32' ? '' :

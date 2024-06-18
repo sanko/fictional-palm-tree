@@ -1,7 +1,7 @@
 use Test2::V0 '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix          qw[:all];
+use Affix;
 use t::lib::helper qw[leaktest compile_test_lib leaks];
 $|++;
 {
@@ -11,6 +11,8 @@ $|++;
     };
     is $leaks->{error}, U(), 'no leaks when just loading Affix';
 }
+done_testing;
+__END__
 {
     my $leaks = leaks {
         use Affix;

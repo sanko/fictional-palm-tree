@@ -423,13 +423,17 @@ class Affix
 {
   public: // for now
     Affix() {};
-    ~Affix() {
-        if (lib) safefree(lib);
-        if (entry_point) safefree(entry_point);
-    };
 
-    DLLib *lib;            // safefree
-    DCpointer entry_point; // not malloc'd
+    ~Affix() {
+        warn("AAA");
+        if (lib != NULL) dlFreeLibrary(lib);
+        warn("BBB");
+
+        if (entry_point != NULL) safefree(entry_point);
+        warn("CCC");
+    };
+    DLLib *lib = NULL;            // safefree
+    DCpointer entry_point = NULL; // not malloc'd
     std::string symbol;
     std::vector<Affix_Type *> argtypes;
     Affix_Type *restype;
@@ -458,15 +462,8 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv);
 } /* extern "C" */
 #endif
 
-#define EX(symbol, name, prototype) (void)newXSproto_portable(name, symbol, __FILE__, prototype)
-
-#define EXP(symbol, name, prototype, export)                                                       \
-    (void)newXSproto_portable(name, symbol, __FILE__, prototype);                                  \
-    export_function("Affix", name, export)
-
-#define EXPI(symbol, name, prototype, export, ix)                                                  \
-    cv = newXSproto_portable(name, symbol, __FILE__, prototype);                                   \
-    XSANY.any_i32 = ix;                                                                            \
-    export_function("Affix", name, export)
+// utils.cxx
+DLLib *_affix_load_library(const char *lib);
+SV *call_sub(pTHX_ std::string sub, SV *arg);
 
 #endif // AFFIX_H_SEEN
