@@ -432,7 +432,6 @@ class Affix
 
         std::for_each(argtypes.begin(), argtypes.end(),
                       [](Affix_Type *argtype) { delete argtype; });
-        argtypes.empty();
         if (restype != NULL) delete restype;
     };
     DLLib *lib = NULL;            // safefree
