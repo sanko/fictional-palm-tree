@@ -200,8 +200,9 @@ XS_INTERNAL(Affix_affix) {
             croak("Unknown return type");
     }
 
-    ST(0) = sv_2mortal(sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
-                     gv_stashpv("Affix", GV_ADD)));
+    ST(0) = sv_2mortal(
+        sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
+                 gv_stashpv("Affix", GV_ADD)));
     XSRETURN(1);
 }
 

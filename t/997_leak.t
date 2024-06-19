@@ -8,6 +8,7 @@ $|++;
     my $leaks = leaks {
         use Affix;
         pass 1, 'loaded';
+        done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when just loading Affix';
 }
@@ -18,8 +19,6 @@ $|++;
         is pow( 5, 2 ), 25, 'pow(5, 2)';
         done_testing;
     };
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
     is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
 }
 {
@@ -27,9 +26,8 @@ $|++;
         use Affix;
         isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ), ['Affix'];
         is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
+        done_testing;
     };
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
     is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
 }
 done_testing;
