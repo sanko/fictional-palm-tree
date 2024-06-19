@@ -27,52 +27,40 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv) {
     // TODO: Generate aggregate in type constructor
     warn("C");
 
-    if (affix->context_args) {
-        for (size_t i = 0; i < items; ++i) {
-            if (SvNOK(ST(i)))
-                dcArgFloat(cvm, SvNV(ST(i)));
-            else if (SvIOK(ST(i)))
-                dcArgInt(cvm, SvIV(ST(i)));
-            else
-                croak("Please provide context for parameters");
-        }
-    }
-    else {
-        if (affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
-        if (items != affix->argtypes.size())
-            croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(),
-                  affix->argtypes.size());
+    if (affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
+    if (items != affix->argtypes.size())
+        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(),
+              affix->argtypes.size());
 
-        size_t st_pos = 0;
-        for (const auto &type : affix->argtypes) {
-            // warn("[%d] %s", st_pos, type->stringify());
-            switch (type->numeric) {
-            case VOID_FLAG:
-            case BOOL_FLAG:
-            case CHAR_FLAG:
-            case UCHAR_FLAG:
-            case SHORT_FLAG:
-            case USHORT_FLAG:
-            case INT_FLAG:
-            case UINT_FLAG:
-            case LONG_FLAG:
-            case ULONG_FLAG:
-            case LONGLONG_FLAG:
-            case ULONGLONG_FLAG:
-                croak("TODO: %s", type->stringify());
-                break;
-            case FLOAT_FLAG:
-                dcArgFloat(cvm, (float)SvNV(ST(st_pos)));
-                break;
-            case DOUBLE_FLAG:
-                dcArgDouble(cvm, (double)SvNV(ST(st_pos)));
-                break;
-            default:
-                croak("No idea yet.");
-            }
-
-            ++st_pos;
+    size_t st_pos = 0;
+    for (const auto &type : affix->argtypes) {
+        // warn("[%d] %s", st_pos, type->stringify());
+        switch (type->numeric) {
+        case VOID_FLAG:
+        case BOOL_FLAG:
+        case CHAR_FLAG:
+        case UCHAR_FLAG:
+        case SHORT_FLAG:
+        case USHORT_FLAG:
+        case INT_FLAG:
+        case UINT_FLAG:
+        case LONG_FLAG:
+        case ULONG_FLAG:
+        case LONGLONG_FLAG:
+        case ULONGLONG_FLAG:
+            croak("TODO: %s", type->stringify());
+            break;
+        case FLOAT_FLAG:
+            dcArgFloat(cvm, (float)SvNV(ST(st_pos)));
+            break;
+        case DOUBLE_FLAG:
+            dcArgDouble(cvm, (double)SvNV(ST(st_pos)));
+            break;
+        default:
+            croak("No idea yet.");
         }
+
+        ++st_pos;
     }
 
     switch (affix->restype->numeric) {
@@ -132,21 +120,18 @@ XS_INTERNAL(Affix_affix) {
         }
     }
 
-    { // ..., symbol, ..., ...
-        std::string rename;
-        if (ix == 0) { // affix(...) allows you to change the name of the perlsub
-            if (SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
-                SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
-                SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
-                if (symbol_sv == NULL || !SvPOK(*symbol_sv))
-                    croak("Unknown or malformed symbol name");
-                affix->symbol = SvPV_nolen(*symbol_sv);
-                if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
-                affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
-            }
+    {                       // ..., symbol, ..., ...
+        std::string rename; // affix(...) allows you to change the name of the perlsub
+        if (ix == 0 && SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
+            SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
+            SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
+            if (symbol_sv == NULL || !SvPOK(*symbol_sv)) croak("Unknown or malformed symbol name");
+            affix->symbol = SvPV_nolen(*symbol_sv);
+            if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
+            affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
         }
         else
-            affix->symbol = SvPV_nolen(ST(1));
+            affix->symbol = rename = SvPV_nolen(ST(1));
 
         affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
         if (!affix->entry_point) {
@@ -215,9 +200,8 @@ XS_INTERNAL(Affix_affix) {
             croak("Unknown return type");
     }
 
-    ST(0) = sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
-                     gv_stashpv("Affix", GV_ADD));
-    // if (ix == 0) sv_2mortal(ST(0));
+    ST(0) = sv_2mortal(sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
+                     gv_stashpv("Affix", GV_ADD)));
     XSRETURN(1);
 }
 

@@ -442,8 +442,7 @@ class Affix
     std::string symbol;
     std::vector<Affix_Type *> argtypes;
     Affix_Type *restype = NULL;
-    SV *res;                   // time over ram
-    bool context_args = false; // use context to figure out arg types
+    SV *res; // time over ram
 };
 
 void _pin(pTHX_ SV *sv, SV *type, DCpointer ptr); // pin.cxx
