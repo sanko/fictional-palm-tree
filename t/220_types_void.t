@@ -4,7 +4,8 @@ use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
 use Affix;    # :default
 use t::lib::helper;
 #
-isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ] => Double ), ['Affix'];
-is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
+isa_ok Void, ['Affix::Type'];
+
+#isa_ok Pointer[Void], ['Affix::Type'];
 #
 done_testing;

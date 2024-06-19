@@ -408,8 +408,7 @@ class Affix_Type
 
     const char *_typedef = NULL;
     DCaggr *aggregate = NULL;
-    void **args = NULL; // list of Affix_Type
-    const char *sig = NULL;
+    void **args = NULL;       // list of Affix_Type
     const char *field = NULL; // If part of a struct
 };
 class Affix_Pointer

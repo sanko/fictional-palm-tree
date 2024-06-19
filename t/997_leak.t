@@ -15,11 +15,23 @@ $|++;
 {
     my $leaks = leaks {
         use Affix;
+        isa_ok $_, ['Affix::Type'], for Void, Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong, LongLong, ULongLong, Float, Double;
+        done_testing;
+    };
+    is $leaks->{error}, U(), 'no leaks in types';
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
+}
+{
+    my $leaks = leaks {
+        use Affix;
         isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'];
         is pow( 5, 2 ), 25, 'pow(5, 2)';
         done_testing;
     };
-    is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
+    is $leaks->{error}, U(), 'no leaks when using affix($$$$)';
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -29,6 +41,8 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
 }
 done_testing;
 __END__

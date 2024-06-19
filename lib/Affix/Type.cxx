@@ -44,7 +44,8 @@ XS_INTERNAL(Affix_Type_DESTROY) {
     if (items != 1) croak_xs_usage(cv, "$type");
     Affix_Type *type;
     type = INT2PTR(Affix_Type *, SvIV(SvRV(ST(0))));
-    if (type) delete type;
+    warn("Type destructor: %p", (DCpointer)type);
+    if (type != NULL) delete type;
     type = NULL;
     XSRETURN_EMPTY;
 }
@@ -76,4 +77,6 @@ XS_EXTERNAL(boot_Affix_Type) {
     // TODO: Parameterized
     // TYPE(Pointer);
     // TYPE(Struct);
+
+    (void)newXSproto_portable("Affix::Type::DESTROY", Affix_Type_DESTROY, __FILE__, "");
 }

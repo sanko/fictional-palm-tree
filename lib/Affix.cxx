@@ -65,11 +65,15 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv) {
 
     switch (affix->restype->numeric) {
     case DOUBLE_FLAG:
-        ST(0) = newSVnv(dcCallDouble(cvm, affix->entry_point));
+        sv_setnv(affix->res, dcCallDouble(cvm, affix->entry_point));
         break;
     default:
         croak("Ofdsafdasfdsa");
     }
+
+    if (affix->res == NULL) XSRETURN_EMPTY;
+
+    ST(0) = newSVsv(affix->res);
 
     XSRETURN(1);
 }
@@ -194,8 +198,12 @@ XS_INTERNAL(Affix_affix) {
     }
     {
         // ..., ..., ..., ret
-        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type")))
+        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
             affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
+            if (!(sv_derived_from(ST(3), "Affix::Type::Void") &&
+                  affix->restype->pointer_depth == 0))
+                affix->res = newSV(0);
+        }
         else
             croak("Unknown return type");
     }
