@@ -284,6 +284,7 @@ XS_EXTERNAL(boot_Affix) {
     SV *vmsize = get_sv("Affix::VMSize", 0);
     MY_CXT.cvm = dcNewCallVM(vmsize == NULL ? 8192 : SvIV(vmsize));
     dcMode(MY_CXT.cvm, DC_CALL_C_DEFAULT);
+    dcReset(MY_CXT.cvm);
 
     // Start exposing API
     // Affix::affix( lib, symbol, [args], return )
