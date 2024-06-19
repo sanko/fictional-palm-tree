@@ -395,6 +395,7 @@ class Affix_Type
     bool const_flag = false;
     bool volitile_flag = false;
     bool restrict_flag = false;
+    bool saints = false; // preserve us
 
     size_t pointer_depth = 0;
     size_t size;

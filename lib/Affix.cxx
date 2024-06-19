@@ -23,9 +23,8 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv) {
     DCCallVM *cvm = MY_CXT.cvm;
     dcMode(cvm, DC_CALL_C_DEFAULT);
     dcReset(cvm);
-    warn("A");
+
     // TODO: Generate aggregate in type constructor
-    warn("C");
 
     if (affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
     if (items != affix->argtypes.size())
@@ -173,6 +172,7 @@ XS_INTERNAL(Affix_affix) {
                                    sv_derived_from(*sv_arg_type_ptr, "Affix::Type"))) {
                             prototype += '$';
                             afx_type = INT2PTR(Affix_Type *, SvIV(SvRV(*sv_arg_type_ptr)));
+                            afx_type->saints = true;
                             affix->argtypes.push_back(afx_type);
                         }
                     }
@@ -187,6 +187,7 @@ XS_INTERNAL(Affix_affix) {
                             prototype += '$';
                             afx_type = INT2PTR(Affix_Type *, SvIV(SvRV(*sv_arg_type_ptr)));
                             afx_type->field = SvPV_nolen(*sv_arg_name_ptr);
+                            afx_type->saints = true;
                             affix->argtypes.push_back(afx_type);
                         }
                     }
@@ -200,6 +201,7 @@ XS_INTERNAL(Affix_affix) {
         // ..., ..., ..., ret
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
             affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
+            affix->restype->saints = true;
             if (!(sv_derived_from(ST(3), "Affix::Type::Void") &&
                   affix->restype->pointer_depth == 0))
                 affix->res = newSV(0);

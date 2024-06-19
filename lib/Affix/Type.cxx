@@ -44,8 +44,7 @@ XS_INTERNAL(Affix_Type_DESTROY) {
     if (items != 1) croak_xs_usage(cv, "$type");
     Affix_Type *type;
     type = INT2PTR(Affix_Type *, SvIV(SvRV(ST(0))));
-    warn("Type destructor: %p", (DCpointer)type);
-    if (type != NULL) delete type;
+    if (type != NULL && !type->saints) delete type;
     type = NULL;
     XSRETURN_EMPTY;
 }
