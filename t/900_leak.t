@@ -44,6 +44,20 @@ $|++;
     use Data::Dump;
     diag Data::Dump::dump($leaks);
 }
+{
+    my $leaks = leaks {
+        use Affix;
+        my $type = Double;
+        {
+            isa_ok affix( 'm', 'pow', [ $type, $type ], $type ), ['Affix'];
+            is pow( 5, 2 ), 25, 'pow(5, 2)';
+        }
+        done_testing;
+    };
+    is $leaks->{error}, U(), 'type defined in higher scope';
+    use Data::Dump;
+    diag Data::Dump::dump($leaks);
+}
 done_testing;
 __END__
 {

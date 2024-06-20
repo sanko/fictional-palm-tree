@@ -8,7 +8,6 @@ diag $Affix::VERSION;
 #
 imported_ok qw[affix wrap];
 imported_ok qw[Void Bool Char UChar Short UShort Int UInt Long ULong LongLong ULongLong Size_t Float Double];
-
-#not_imported_ok qw/dumper/;
+not_imported_ok qw[set_destruct_level];
 #
 done_testing;
