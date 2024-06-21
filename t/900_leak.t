@@ -30,8 +30,9 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when using affix($$$$)';
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
+
+    # use Data::Dump;
+    # diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -41,8 +42,9 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
+
+    # use Data::Dump;
+    # diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -55,8 +57,9 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'type defined in higher scope';
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
+
+    # use Data::Dump;
+    # diag Data::Dump::dump($leaks);
 }
 done_testing;
 __END__

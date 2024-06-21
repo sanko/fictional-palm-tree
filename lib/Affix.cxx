@@ -158,36 +158,32 @@ XS_INTERNAL(Affix_affix) {
             AV *av_args = MUTABLE_AV(SvRV(ST(2)));
             size_t num_args = av_count(av_args);
             if (num_args) {
-                if (num_args % 2) croak("Expected an even sized list in argument list");
-                SV **sv_arg_name_ptr, **sv_arg_type_ptr = av_fetch(av_args, 0, 0);
+                SV **sv_type = av_fetch(av_args, 0, 0);
                 Affix_Type *afx_type;
-                if (sv_arg_type_ptr &&
-                    LIKELY(
-                        SvROK(*sv_arg_type_ptr) &&
-                        sv_derived_from(*sv_arg_type_ptr, "Affix::Type"))) { // Expect simple list
+                if (sv_type &&
+                    LIKELY(SvROK(*sv_type) &&
+                           sv_derived_from(*sv_type, "Affix::Type"))) { // Expect simple list
                     for (size_t i = 0; i < num_args; i++) {
-                        sv_arg_type_ptr = av_fetch(av_args, i, 0);
-                        if (sv_arg_type_ptr &&
-                            LIKELY(SvROK(*sv_arg_type_ptr) &&
-                                   sv_derived_from(*sv_arg_type_ptr, "Affix::Type"))) {
+                        sv_type = av_fetch(av_args, i, 0);
+                        if (sv_type &&
+                            LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
                             prototype += '$';
-                            afx_type = INT2PTR(Affix_Type *, SvIV(SvRV(*sv_arg_type_ptr)));
-                            afx_type->saints = true;
+                            afx_type = sv2type(aTHX_ * sv_type);
                             affix->argtypes.push_back(afx_type);
                         }
                     }
                 }
                 else { // Expect named pairs
+                    if (num_args % 2) croak("Expected an even sized list in argument list");
+                    SV **sv_name, **sv_type;
                     for (size_t i = 0; i < num_args; i += 2) {
-                        sv_arg_name_ptr = av_fetch(av_args, i, 0);
-                        sv_arg_type_ptr = av_fetch(av_args, i + 1, 0);
-                        if (sv_arg_type_ptr &&
-                            LIKELY(SvROK(*sv_arg_type_ptr) &&
-                                   sv_derived_from(*sv_arg_type_ptr, "Affix::Type"))) {
+                        sv_name = av_fetch(av_args, i, 0);
+                        sv_type = av_fetch(av_args, i + 1, 0);
+                        if (sv_type &&
+                            LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
                             prototype += '$';
-                            afx_type = INT2PTR(Affix_Type *, SvIV(SvRV(*sv_arg_type_ptr)));
-                            afx_type->field = SvPV_nolen(*sv_arg_name_ptr);
-                            afx_type->saints = true;
+                            afx_type = sv2type(aTHX_ * sv_type);
+                            afx_type->field = SvPV_nolen(*sv_name);
                             affix->argtypes.push_back(afx_type);
                         }
                     }
@@ -200,8 +196,7 @@ XS_INTERNAL(Affix_affix) {
     {
         // ..., ..., ..., ret
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
-            affix->restype = INT2PTR(Affix_Type *, SvIV(SvRV(ST(3))));
-            affix->restype->saints = true;
+            affix->restype = sv2type(aTHX_ ST(3));
             if (!(sv_derived_from(ST(3), "Affix::Type::Void") &&
                   affix->restype->pointer_depth == 0))
                 affix->res = newSV(0);
@@ -305,10 +300,37 @@ XS_EXTERNAL(boot_Affix) {
     // Affix::set_destruct_level
     (void)newXSproto_portable("Affix::set_destruct_level", Affix_set_destruct_level, __FILE__, "$");
 
+    // general purpose flags
+    export_constant("Affix", "VOID_FLAG", "flags", VOID_FLAG);
+    export_constant("Affix", "BOOL_FLAG", "flags", BOOL_FLAG);
+    export_constant("Affix", "SCHAR_FLAG", "flags", SCHAR_FLAG);
+    export_constant("Affix", "CHAR_FLAG", "flags", CHAR_FLAG);
+    export_constant("Affix", "UCHAR_FLAG", "flags", UCHAR_FLAG);
+    export_constant("Affix", "WCHAR_FLAG", "flags", WCHAR_FLAG);
+    export_constant("Affix", "SHORT_FLAG", "flags", SHORT_FLAG);
+    export_constant("Affix", "USHORT_FLAG", "flags", USHORT_FLAG);
+    export_constant("Affix", "INT_FLAG", "flags", INT_FLAG);
+    export_constant("Affix", "UINT_FLAG", "flags", UINT_FLAG);
+    export_constant("Affix", "LONG_FLAG", "flags", LONG_FLAG);
+    export_constant("Affix", "ULONG_FLAG", "flags", ULONG_FLAG);
+    export_constant("Affix", "LONGLONG_FLAG", "flags", LONGLONG_FLAG);
+    export_constant("Affix", "ULONGLONG_FLAG", "flags", ULONGLONG_FLAG);
+    export_constant("Affix", "SIZE_T_FLAG", "flags", SIZE_T_FLAG);
+    export_constant("Affix", "FLOAT_FLAG", "flags", FLOAT_FLAG);
+    export_constant("Affix", "DOUBLE_FLAG", "flags", DOUBLE_FLAG);
+    export_constant("Affix", "WSTRING_FLAG", "flags", WSTRING_FLAG);
+    export_constant("Affix", "STDSTRING_FLAG", "flags", STDSTRING_FLAG);
+    export_constant("Affix", "STRUCT_FLAG", "flags", STRUCT_FLAG);
+    export_constant("Affix", "AFFIX_FLAG", "flags", AFFIX_FLAG);
+    export_constant("Affix", "CPPSTRUCT_FLAG", "flags", CPPSTRUCT_FLAG);
+    export_constant("Affix", "UNION_FLAG", "flags", UNION_FLAG);
+    export_constant("Affix", "CODEREF_FLAG", "flags", CODEREF_FLAG);
+    export_constant("Affix", "POINTER_FLAG", "flags", POINTER_FLAG);
+    export_constant("Affix", "SV_FLAG", "flags", SV_FLAG);
+
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);
     boot_Affix_Platform(aTHX_ cv);
-    boot_Affix_Type(aTHX_ cv);
     //
     Perl_xs_boot_epilog(aTHX_ ax);
 }

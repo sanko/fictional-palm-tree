@@ -10,6 +10,7 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
     use experimental 'signatures';
     use Carp qw[];
     use vars qw[@EXPORT_OK @EXPORT %EXPORT_TAGS];
+    use Affix::Type;
     my $okay = 0;
 
     BEGIN {
@@ -28,16 +29,16 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
         $@ && die $@;
         our @ISA = ($platform);
 
-        #~ require ($platform); $platform->import(':all');
+        # require ($platform); $platform->import(':all');
     }
     #
     #~ use lib '../lib';
-    #~ use Affix::Type       qw[:all];
-    #~ use Affix::Type::Enum qw[:all];
-    #use Affix::Platform;
-    use parent 'Exporter';
+    use Affix::Type qw[:all];
 
-    #$EXPORT_TAGS{types}  = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK ];
+    #~ use Affix::Type::Enum qw[:all];
+    use Affix::Platform;
+    use parent 'Exporter';
+    $EXPORT_TAGS{types}  = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK ];
     $EXPORT_TAGS{pin}    = [qw[pin unpin]];
     $EXPORT_TAGS{memory} = [
         qw[

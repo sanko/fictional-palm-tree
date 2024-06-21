@@ -395,7 +395,6 @@ class Affix_Type
     bool const_flag = false;
     bool volitile_flag = false;
     bool restrict_flag = false;
-    bool saints = false; // preserve us
 
     size_t pointer_depth = 0;
     size_t size;
@@ -446,6 +445,9 @@ class Affix
 };
 
 void _pin(pTHX_ SV *sv, SV *type, DCpointer ptr); // pin.cxx
+
+// Type system
+Affix_Type *sv2type(pTHX_ SV *perl_type);
 
 // XS Boot
 void boot_Affix_pin(pTHX_ CV *);
