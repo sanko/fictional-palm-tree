@@ -33,3 +33,4 @@ Makefile
 
 .vscode/*
 eg/debug.pl
+eg/_Inline/*

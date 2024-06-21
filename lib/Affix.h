@@ -425,21 +425,21 @@ public:  // for now
     Affix() {};
 
     ~Affix() {
-        if (lib != NULL)
+        if (lib != nullptr)
             dlFreeLibrary(lib);
 
-        // if (entry_point != NULL) safefree(entry_point);
+        // if (entry_point != nullptr) safefree(entry_point);
 
         std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
-        if (restype != NULL)
+        if (restype != nullptr)
             delete restype;
     };
-    DLLib * lib = NULL;            // safefree
-    DCpointer entry_point = NULL;  // not malloc'd
+    DLLib * lib = nullptr;            // safefree
+    DCpointer entry_point = nullptr;  // not malloc'd
     std::string symbol;
     std::vector<Affix_Type *> argtypes;
-    Affix_Type * restype = NULL;
-    SV * res;  // time over ram
+    Affix_Type * restype = nullptr;
+    SV * res = nullptr;  // time over ram
 };
 
 void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx

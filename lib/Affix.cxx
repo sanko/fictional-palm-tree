@@ -21,7 +21,7 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
     dMY_CXT;
     DCCallVM * cvm = MY_CXT.cvm;
-    dcMode(cvm, DC_CALL_C_DEFAULT);
+    // dcMode(cvm, DC_CALL_C_DEFAULT);
     dcReset(cvm);
 
     // TODO: Generate aggregate in type constructor
@@ -307,7 +307,7 @@ dcArgPointer(cvm, ptr);*/
     if (affix->res == NULL)
         XSRETURN_EMPTY;
 
-    ST(0) = newSVsv(affix->res);
+    ST(0) = affix->res;
 
     XSRETURN(1);
 }
