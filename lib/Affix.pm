@@ -33,9 +33,8 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
     }
     #
     #~ use lib '../lib';
-    use Affix::Type qw[:all];
-
-    #~ use Affix::Type::Enum qw[:all];
+    use Affix::Type       qw[:all];
+    use Affix::Type::Enum qw[:all];
     use Affix::Platform;
     use parent 'Exporter';
     $EXPORT_TAGS{types}  = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK ];

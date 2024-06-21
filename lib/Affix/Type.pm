@@ -17,13 +17,18 @@ package Affix::Type 0.5 {
             typedef
         ]
     ];
+    #
     @Affix::Type::Void::ISA = @Affix::Type::Bool::ISA = @Affix::Type::Char::ISA = @Affix::Type::UChar::ISA = @Affix::Type::Short::ISA
         = @Affix::Type::UShort::ISA   = @Affix::Type::Int::ISA       = @Affix::Type::UInt::ISA   = @Affix::Type::Long::ISA = @Affix::Type::ULong::ISA
         = @Affix::Type::LongLong::ISA = @Affix::Type::ULongLong::ISA = @Affix::Type::Size_t::ISA = @Affix::Type::Float::ISA
         = @Affix::Type::Double::ISA   = __PACKAGE__;
-
+    #
+    use overload
+        '""' => sub { my $ret = $_[0]->{stringify}; return $ret unless $_[0]->{const}; return 'Const[ ' . $ret . ' ]'; },
+        '0+' => sub { shift->{numeric} };
+    #
     sub Void() {
-        bless { stringify => 'Void', numeric => Affix::VOID_FLAG(), sizeof => 0, alignment => 0, }, 'Affix::Type::Void';
+        bless { stringify => 'Void', numeric => Affix::VOID_FLAG(), sizeof => 0, alignment => 0, typedef => undef, const => !1 }, 'Affix::Type::Void';
     }
 
     sub Bool() {
@@ -32,6 +37,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::BOOL_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_BOOL(),
             alignment => Affix::Platform::ALIGNOF_BOOL(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Bool';
     }
@@ -42,6 +49,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::CHAR_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_CHAR(),
             alignment => Affix::Platform::ALIGNOF_CHAR(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Char';
     }
@@ -52,6 +61,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::UCHAR_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_UCHAR(),
             alignment => Affix::Platform::ALIGNOF_UCHAR(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::UChar';
     }
@@ -61,7 +72,9 @@ package Affix::Type 0.5 {
             stringify => 'Short',
             numeric   => Affix::SHORT_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_SHORT(),
-            alignment => Affix::Platform::ALIGNOF_SHORT()
+            alignment => Affix::Platform::ALIGNOF_SHORT(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Short';
     }
@@ -71,7 +84,9 @@ package Affix::Type 0.5 {
             stringify => 'Bool',
             numeric   => Affix::USHORT_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_USHORT(),
-            alignment => Affix::Platform::ALIGNOF_USHORT()
+            alignment => Affix::Platform::ALIGNOF_USHORT(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::UShort';
     }
@@ -82,6 +97,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::INT_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_INT(),
             alignment => Affix::Platform::ALIGNOF_INT(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Int';
     }
@@ -92,6 +109,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::UINT_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_UINT(),
             alignment => Affix::Platform::ALIGNOF_UINT(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::UInt';
     }
@@ -102,6 +121,8 @@ package Affix::Type 0.5 {
             numeric   => Affix::LONG_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_LONG(),
             alignment => Affix::Platform::ALIGNOF_LONG(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Long';
     }
@@ -111,7 +132,9 @@ package Affix::Type 0.5 {
             stringify => 'ULong',
             numeric   => Affix::ULONG_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_ULONG(),
-            alignment => Affix::Platform::ALIGNOF_ULONG()
+            alignment => Affix::Platform::ALIGNOF_ULONG(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::ULong';
     }
@@ -121,7 +144,9 @@ package Affix::Type 0.5 {
             stringify => 'LongLong',
             numeric   => Affix::LONGLONG_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_LONGLONG(),
-            alignment => Affix::Platform::ALIGNOF_LONGLONG()
+            alignment => Affix::Platform::ALIGNOF_LONGLONG(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::LongLong';
     }
@@ -131,7 +156,9 @@ package Affix::Type 0.5 {
             stringify => 'ULongLong',
             numeric   => Affix::ULONGLONG_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_ULONGLONG(),
-            alignment => Affix::Platform::ALIGNOF_ULONGLONG()
+            alignment => Affix::Platform::ALIGNOF_ULONGLONG(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::ULongLong';
     }
@@ -141,7 +168,9 @@ package Affix::Type 0.5 {
             stringify => 'Size_t',
             numeric   => Affix::SIZE_T_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_SIZE_T(),
-            alignment => Affix::Platform::ALIGNOF_SIZE_T()
+            alignment => Affix::Platform::ALIGNOF_SIZE_T(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Size_t';
     }
@@ -151,7 +180,9 @@ package Affix::Type 0.5 {
             stringify => 'Float',
             numeric   => Affix::FLOAT_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_FLOAT(),
-            alignment => Affix::Platform::ALIGNOF_FLOAT()
+            alignment => Affix::Platform::ALIGNOF_FLOAT(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Float';
     }
@@ -161,7 +192,9 @@ package Affix::Type 0.5 {
             stringify => 'Double',
             numeric   => Affix::DOUBLE_FLAG(),
             sizeof    => Affix::Platform::SIZEOF_DOUBLE(),
-            alignment => Affix::Platform::ALIGNOF_DOUBLE()
+            alignment => Affix::Platform::ALIGNOF_DOUBLE(),
+            typedef   => undef,
+            const     => !1
             },
             'Affix::Type::Double';
     }
@@ -183,5 +216,25 @@ package Affix::Type 0.5 {
     #     DCaggr *aggregate = NULL;
     #     void **args = NULL;       // list of Affix_Type
     #     const char *field = NULL; // If part of a struct
+    sub typedef {
+        my ( $name, $type ) = @_;
+        if ( !$type->isa('Affix::Type') ) {
+            require Carp;
+            Carp::croak( 'Unknown type: ' . $type );
+        }
+        my $fqn = $name =~ /::/ ? $name : [caller]->[0] . '::' . $name;
+        {
+            no strict 'refs';
+            no warnings 'redefine';
+            *{$fqn} = sub { CORE::state $s //= $type };
+            @{ $fqn . '::ISA' } = ref $type;
+        }
+        bless $type, $fqn;
+        $type->{typedef}   = $name;
+        $type->{stringify} = sprintf q[typedef %s => %s], $name =~ /::/ ? "'$name'" : $name, $type->{stringify};
+        push @{ $EXPORT_TAGS{types} }, $name if $fqn eq 'Affix::' . $name;    # only great when triggered by/before import
+        $type->typedef($fqn) if $type->can('typedef');
+        $type;
+    }
 };
 1;

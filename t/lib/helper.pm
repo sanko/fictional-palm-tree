@@ -37,6 +37,7 @@ package t::lib::helper {
             my ( $package, $filename, $line ) = caller;
             $filename = path($filename)->canonpath;
             $line++;
+            $filename =~ s[\\][\\\\]g;    # Windows...
             $opt->spew_utf8(qq[#line $line "$filename"\r\n$name]);
         }
         if ( !$opt ) {
