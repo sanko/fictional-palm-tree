@@ -1,26 +1,28 @@
 #include "../Affix.h"
 
-#define _eval(x) #x // extra round of macroexpansion
+#define _eval(x) #x  // extra round of macroexpansion
 #define _is_defined(x, y) strcmp(x, y)
 #define is_defined(x) _is_defined(#x, _eval(x))
 
-void boot_Affix_Platform(pTHX_ CV *cv) {
+void boot_Affix_Platform(pTHX_ CV * cv) {
     PERL_UNUSED_VAR(cv);
 
     // dyncall/dyncall_version.h
-    register_constant("Affix::Platform", "DC_Version",
-                      Perl_newSVpvf(aTHX_ "%d.%d-%7s", (DYNCALL_VERSION >> 12),
+    register_constant("Affix::Platform",
+                      "DC_Version",
+                      Perl_newSVpvf(aTHX_ "%d.%d-%7s",
+                                    (DYNCALL_VERSION >> 12),
                                     (DYNCALL_VERSION >> 8) & 0xf,
                                     (((DYNCALL_VERSION & 0xf) == 0xf) ? "release" : "current")));
     register_constant("Affix::Platform", "DC_Major", newSViv(DYNCALL_VERSION >> 12));
     register_constant("Affix::Platform", "DC_Minor", newSViv((DYNCALL_VERSION >> 8) & 0xf));
     register_constant("Affix::Platform", "DC_Patch", newSViv((DYNCALL_VERSION >> 4) & 0xf));
-    register_constant("Affix::Platform", "DC_Stage",
-                      newSVpv((((DYNCALL_VERSION & 0xf) == 0xf) ? "release" : "current"), 7));
+    register_constant(
+        "Affix::Platform", "DC_Stage", newSVpv((((DYNCALL_VERSION & 0xf) == 0xf) ? "release" : "current"), 7));
     register_constant("Affix::Platform", "DC_RawVersion", newSViv(DYNCALL_VERSION));
 
     // https://dyncall.org/pub/dyncall/dyncall/file/tip/dyncall/dyncall_macros.h
-    const char *os =
+    const char * os =
 #if defined DC__OS_Win64
         "Win64"
 #elif defined DC__OS_Win32
@@ -56,7 +58,7 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
 #endif
         ;
 
-    const char *compiler =
+    const char * compiler =
 #if defined DC__C_Intel
         "Intel"
 #elif defined DC__C_MSVC
@@ -75,7 +77,7 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
         "Unknown"
 #endif
         ;
-    const char *architecture =
+    const char * architecture =
 #if (defined(__arm64__) || defined(__arm64e__) || defined(__aarch64__)) && defined(DC__OS_MacOSX)
         "Apple Silicon"
 #elif defined DC__Arch_AMD64
@@ -97,7 +99,7 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
 #elif defined DC__Arch_ARM64
         "ARM64"
 #elif defined DC__Arch_SuperH
-        "SuperH" // https://en.wikipedia.org/wiki/SuperH
+        "SuperH"  // https://en.wikipedia.org/wiki/SuperH
 #elif defined DC__Arch_Sparc64
         "SPARC64"
 #elif defined DC__Arch_Sparc
@@ -107,7 +109,7 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
 #endif
         ;
 
-    const char *obj =
+    const char * obj =
 #ifdef DC__Obj_PE
         "PE"
 #elif defined DC__Obj_Mach
@@ -131,10 +133,10 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
     register_constant("Affix::Platform", "Architecture", newSVpv(architecture, 0));
 
     // Architecture types - undocumented
-    register_constant(
-        "Affix::Platform", "ARCH_Apple_Silicon",
-        boolSV((is_defined(__arm64__) || is_defined(__arm64e__) || is_defined(__aarch64__)) &&
-               is_defined(DC__OS_MacOSX)));
+    register_constant("Affix::Platform",
+                      "ARCH_Apple_Silicon",
+                      boolSV((is_defined(__arm64__) || is_defined(__arm64e__) || is_defined(__aarch64__)) &&
+                             is_defined(DC__OS_MacOSX)));
     register_constant("Affix::Platform", "ARCH_x86_64", boolSV(is_defined(DC__Arch_AMD64)));
     register_constant("Affix::Platform", "ARCH_x86", boolSV(is_defined(DC__Arch_Intel_x86)));
     register_constant("Affix::Platform", "ARCH_Itanium", boolSV(is_defined(DC__Arch_Itanium)));
@@ -158,8 +160,8 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
     register_constant("Affix::Platform", "MIPS_EABI", boolSV(is_defined(DC__ABI_MIPS_EABI)));
 
     //
-    register_constant("Affix::Platform", "HardFloat",
-                      boolSV(is_defined(DC__ABI_ARM_HF) || is_defined(DC__ABI_HARDFLOAT)));
+    register_constant(
+        "Affix::Platform", "HardFloat", boolSV(is_defined(DC__ABI_ARM_HF) || is_defined(DC__ABI_HARDFLOAT)));
     register_constant("Affix::Platform", "BigEndian", boolSV(is_defined(DC__Endian_BIG)));
 
     // Features
@@ -194,7 +196,7 @@ void boot_Affix_Platform(pTHX_ CV *cv) {
     export_constant("Affix::Platform", "SIZEOF_INTPTR_T", "sizeof", SIZEOF_INTPTR_T);
 
     // to calculate offsetof and padding inside structs
-    export_constant("Affix::Platform", "BYTE_ALIGN", "all", AFFIX_ALIGNBYTES); // platform
+    export_constant("Affix::Platform", "BYTE_ALIGN", "all", AFFIX_ALIGNBYTES);  // platform
     export_constant("Affix::Platform", "ALIGNOF_BOOL", "all", ALIGNOF_BOOL);
     export_constant("Affix::Platform", "ALIGNOF_CHAR", "all", ALIGNOF_CHAR);
     export_constant("Affix::Platform", "ALIGNOF_UCHAR", "all", ALIGNOF_UCHAR);

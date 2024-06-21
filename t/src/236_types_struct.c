@@ -4,8 +4,8 @@
 
 typedef struct {
     struct {
-        char *first;
-        char *last;
+        char * first;
+        char * last;
         char middle;
     } name;
     struct {
@@ -14,7 +14,7 @@ typedef struct {
         int d;
     } dob;
     double rate;
-    int term; // months
+    int term;  // months
 } TinyExample;
 
 size_t offsetof_name() {
@@ -62,24 +62,22 @@ typedef struct {
     unsigned long long LL;
     float f;
     double d;
-    void *ptr;
-    char *str;
+    void * ptr;
+    char * str;
     struct {
         int i;
         char c;
     } nested;
     struct {
-        char *str2;
+        char * str2;
     } nested2;
-    union
-    {
+    union {
         int i;
         float f;
     } u;
-    union
-    {
+    union {
         int i;
-        char *str;
+        char * str;
     } u2;
     wchar_t w;
     // TODO:
@@ -133,10 +131,10 @@ float get_float(Example ex) {
 double get_double(Example ex) {
     return ex.d;
 }
-void *get_ptr(Example ex) {
+void * get_ptr(Example ex) {
     return ex.ptr;
 }
-const char *get_str(Example ex) {
+const char * get_str(Example ex) {
     return ex.str;
 }
 
@@ -152,7 +150,7 @@ int get_nested_int(Example ex) {
 size_t get_nested2_offset() {
     return offsetof(Example, nested2);
 }
-char *get_nested_str(Example ex) {
+char * get_nested_str(Example ex) {
     return ex.nested2.str2;
 }
 
@@ -182,7 +180,7 @@ Example get_struct() {
                    .LL = 9988776655,
                    .f = 2.3,
                    .d = 9.7,
-                   .ptr = NULL, // TODO
+                   .ptr = NULL,  // TODO
                    .str = "Hello!",
                    .nested = {.i = 1111, .c = 'Q'},
                    .nested2 = {.str2 = "Alpha"},

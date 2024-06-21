@@ -9,30 +9,30 @@ E|---3--------------------------------|------------------3----------------||
 #define MY_CXT_KEY "Affix::_cxt" XS_VERSION
 
 typedef struct {
-    DCCallVM *cvm;
+    DCCallVM * cvm;
 } my_cxt_t;
 
 START_MY_CXT
 
-extern "C" void Fiction_trigger(pTHX_ CV *cv) {
+extern "C" void Fiction_trigger(pTHX_ CV * cv) {
     dXSARGS;
 
-    Affix *affix = (Affix *)XSANY.any_ptr;
+    Affix * affix = (Affix *)XSANY.any_ptr;
 
     dMY_CXT;
-    DCCallVM *cvm = MY_CXT.cvm;
+    DCCallVM * cvm = MY_CXT.cvm;
     dcMode(cvm, DC_CALL_C_DEFAULT);
     dcReset(cvm);
 
     // TODO: Generate aggregate in type constructor
 
-    if (affix->restype->aggregate != NULL) dcBeginCallAggr(cvm, affix->restype->aggregate);
+    if (affix->restype->aggregate != NULL)
+        dcBeginCallAggr(cvm, affix->restype->aggregate);
     if (items != affix->argtypes.size())
-        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(),
-              affix->argtypes.size());
+        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
-    for (const auto &type : affix->argtypes) {
+    for (const auto & type : affix->argtypes) {
         // warn("[%d] %s", st_pos, type->stringify());
         switch (type->numeric) {
         case VOID_FLAG:
@@ -70,7 +70,8 @@ extern "C" void Fiction_trigger(pTHX_ CV *cv) {
         croak("Ofdsafdasfdsa");
     }
 
-    if (affix->res == NULL) XSRETURN_EMPTY;
+    if (affix->res == NULL)
+        XSRETURN_EMPTY;
 
     ST(0) = newSVsv(affix->res);
 
@@ -82,16 +83,18 @@ XS_INTERNAL(Affix_affix) {
     // ix == 1 if Affix::wrap
     dXSARGS;
     dXSI32;
-    Affix *affix = new Affix();
+    Affix * affix = new Affix();
     std::string prototype;
 
-    if (items != 4) croak_xs_usage(cv, "$lib, $symbol, \\@arguments, $return");
+    if (items != 4)
+        croak_xs_usage(cv, "$lib, $symbol, \\@arguments, $return");
 
-    { // lib, ..., ..., ...
-        SV *const lib_sv = ST(0);
+    {  // lib, ..., ..., ...
+        SV * const lib_sv = ST(0);
         SvGETMAGIC(lib_sv);
         // explicit undef
-        if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv))) affix->lib = _affix_load_library(NULL);
+        if (UNLIKELY(!SvOK(lib_sv) && SvREADONLY(lib_sv)))
+            affix->lib = _affix_load_library(NULL);
 
         // object - not sure why someone would do this...
         else if (UNLIKELY(sv_isobject(lib_sv) && sv_derived_from(lib_sv, "Affix::Lib")))
@@ -109,7 +112,7 @@ XS_INTERNAL(Affix_affix) {
                 PUTBACK;
                 int count = call_pv("Affix::find_library", G_SCALAR);
                 SPAGAIN;
-                char *_name = POPp;
+                char * _name = POPp;
                 affix->lib = _affix_load_library(_name);
                 PUTBACK;
                 FREETMPS;
@@ -117,23 +120,24 @@ XS_INTERNAL(Affix_affix) {
             }
         }
 
-        if (affix->lib == NULL) { // bail out if we fail to load library
+        if (affix->lib == NULL) {  // bail out if we fail to load library
             delete affix;
             XSRETURN_EMPTY;
         }
     }
 
-    {                       // ..., symbol, ..., ...
-        std::string rename; // affix(...) allows you to change the name of the perlsub
+    {                        // ..., symbol, ..., ...
+        std::string rename;  // affix(...) allows you to change the name of the perlsub
         if (ix == 0 && SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
-            SV **symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
-            SV **rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
-            if (symbol_sv == NULL || !SvPOK(*symbol_sv)) croak("Unknown or malformed symbol name");
+            SV ** symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
+            SV ** rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
+            if (symbol_sv == NULL || !SvPOK(*symbol_sv))
+                croak("Unknown or malformed symbol name");
             affix->symbol = SvPV_nolen(*symbol_sv);
-            if (rename_sv && SvPOK(*rename_sv)) rename = SvPV_nolen(*rename_sv);
+            if (rename_sv && SvPOK(*rename_sv))
+                rename = SvPV_nolen(*rename_sv);
             affix->entry_point = dlFindSymbol(affix->lib, SvPV_nolen(*symbol_sv));
-        }
-        else
+        } else
             affix->symbol = rename = SvPV_nolen(ST(1));
 
         affix->entry_point = dlFindSymbol(affix->lib, affix->symbol.c_str());
@@ -143,9 +147,9 @@ XS_INTERNAL(Affix_affix) {
         }
 
         STMT_START {
-            cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__,
-                                     prototype.c_str());
-            if (affix->symbol.empty()) affix->symbol = "anonymous subroutine";
+            cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Fiction_trigger, __FILE__, prototype.c_str());
+            if (affix->symbol.empty())
+                affix->symbol = "anonymous subroutine";
             if (UNLIKELY(cv == NULL))
                 croak("ARG! Something went really wrong while installing a new XSUB!");
             XSANY.any_ptr = (DCpointer)affix;
@@ -153,34 +157,31 @@ XS_INTERNAL(Affix_affix) {
         STMT_END;
     }
 
-    { // ..., ..., args, ...
+    {  // ..., ..., args, ...
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
-            AV *av_args = MUTABLE_AV(SvRV(ST(2)));
+            AV * av_args = MUTABLE_AV(SvRV(ST(2)));
             size_t num_args = av_count(av_args);
             if (num_args) {
-                SV **sv_type = av_fetch(av_args, 0, 0);
-                Affix_Type *afx_type;
+                SV ** sv_type = av_fetch(av_args, 0, 0);
+                Affix_Type * afx_type;
                 if (sv_type &&
-                    LIKELY(SvROK(*sv_type) &&
-                           sv_derived_from(*sv_type, "Affix::Type"))) { // Expect simple list
+                    LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {  // Expect simple list
                     for (size_t i = 0; i < num_args; i++) {
                         sv_type = av_fetch(av_args, i, 0);
-                        if (sv_type &&
-                            LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
+                        if (sv_type && LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
                             prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             affix->argtypes.push_back(afx_type);
                         }
                     }
-                }
-                else { // Expect named pairs
-                    if (num_args % 2) croak("Expected an even sized list in argument list");
+                } else {  // Expect named pairs
+                    if (num_args % 2)
+                        croak("Expected an even sized list in argument list");
                     SV **sv_name, **sv_type;
                     for (size_t i = 0; i < num_args; i += 2) {
                         sv_name = av_fetch(av_args, i, 0);
                         sv_type = av_fetch(av_args, i + 1, 0);
-                        if (sv_type &&
-                            LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
+                        if (sv_type && LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
                             prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             afx_type->field = SvPV_nolen(*sv_name);
@@ -189,42 +190,39 @@ XS_INTERNAL(Affix_affix) {
                     }
                 }
             }
-        }
-        else
+        } else
             croak("Malformed argument list");
     }
     {
         // ..., ..., ..., ret
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
             affix->restype = sv2type(aTHX_ ST(3));
-            if (!(sv_derived_from(ST(3), "Affix::Type::Void") &&
-                  affix->restype->pointer_depth == 0))
+            if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->pointer_depth == 0))
                 affix->res = newSV(0);
-        }
-        else
+        } else
             croak("Unknown return type");
     }
 
-    ST(0) = sv_2mortal(
-        sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
-                 gv_stashpv("Affix", GV_ADD)));
+    ST(0) = sv_2mortal(sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
+                                gv_stashpv("Affix", GV_ADD)));
     XSRETURN(1);
 }
 
 XS_INTERNAL(Affix_DESTROY) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
-    Affix *affix;
-    STMT_START { // peel this grape
-        HV *st;
-        GV *gvp;
-        SV *const xsub_tmp_sv = ST(0);
+    Affix * affix;
+    STMT_START {  // peel this grape
+        HV * st;
+        GV * gvp;
+        SV * const xsub_tmp_sv = ST(0);
         SvGETMAGIC(xsub_tmp_sv);
-        CV *cv = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
+        CV * cv = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
         affix = (Affix *)XSANY.any_ptr;
     }
     STMT_END;
-    if (affix != NULL) delete affix;
+    if (affix != NULL)
+        delete affix;
     affix = NULL;
     XSRETURN_EMPTY;
 }
@@ -232,31 +230,36 @@ XS_INTERNAL(Affix_DESTROY) {
 XS_INTERNAL(Affix_END) {
     dXSARGS;
     dMY_CXT;
-    if (MY_CXT.cvm) dcFree(MY_CXT.cvm);
+    if (MY_CXT.cvm)
+        dcFree(MY_CXT.cvm);
     XSRETURN_EMPTY;
 }
 
 XS_INTERNAL(Affix_pin) {
     dXSARGS;
-    if (items != 1) croak_xs_usage(cv, "lib");
+    if (items != 1)
+        croak_xs_usage(cv, "lib");
 }
 
 XS_INTERNAL(Affix_unpin) {
     dXSARGS;
-    if (items != 1) croak_xs_usage(cv, "lib");
+    if (items != 1)
+        croak_xs_usage(cv, "lib");
 }
 
 // Utils
 XS_INTERNAL(Affix_sv_dump) {
     dXSARGS;
-    if (items != 1) croak_xs_usage(cv, "lib");
+    if (items != 1)
+        croak_xs_usage(cv, "lib");
 }
 
 // Cribbed from Perl::Destruct::Level so leak testing works without yet another prereq
 XS_INTERNAL(Affix_set_destruct_level) {
     dXSARGS;
     // TODO: report this with a warn(...)
-    if (items != 1) croak_xs_usage(cv, "level");
+    if (items != 1)
+        croak_xs_usage(cv, "level");
     PL_perl_destruct_level = SvIV(ST(0));
     XSRETURN_EMPTY;
 }
@@ -264,14 +267,14 @@ XS_INTERNAL(Affix_set_destruct_level) {
 XS_EXTERNAL(boot_Affix) {
     dXSBOOTARGSXSAPIVERCHK;
     // PERL_UNUSED_VAR(items);
-#ifdef USE_ITHREADS // Windows...
+#ifdef USE_ITHREADS  // Windows...
     my_perl = (PerlInterpreter *)PERL_GET_CONTEXT;
 #endif
 
     MY_CXT_INIT;
 
     // Allow user defined value in a BEGIN{ } block
-    SV *vmsize = get_sv("Affix::VMSize", 0);
+    SV * vmsize = get_sv("Affix::VMSize", 0);
     MY_CXT.cvm = dcNewCallVM(vmsize == NULL ? 8192 : SvIV(vmsize));
     dcMode(MY_CXT.cvm, DC_CALL_C_DEFAULT);
     dcReset(MY_CXT.cvm);

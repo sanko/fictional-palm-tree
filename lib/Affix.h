@@ -1,7 +1,7 @@
 #ifndef AFFIX_H_SEEN
 #define AFFIX_H_SEEN
 
-#include <algorithm> // for_each
+#include <algorithm>  // for_each
 #include <string>
 #include <vector>
 
@@ -44,7 +44,7 @@ extern "C" {
 #ifdef newXS_flags
 #define newXSproto_portable(name, c_impl, file, proto) newXS_flags(name, c_impl, file, proto, 0)
 #else
-#define newXSproto_portable(name, c_impl, file, proto)                                             \
+#define newXSproto_portable(name, c_impl, file, proto) \
     (PL_Sv = (SV *)newXS(name, c_impl, file), sv_setpv(PL_Sv, proto), (CV *)PL_Sv)
 #endif /* !defined(newXS_flags) */
 
@@ -90,10 +90,11 @@ extern "C" {
 
 #ifdef DC__OS_Win64
 #include <cinttypes>
-static const char *dlerror(void) {
+static const char * dlerror(void) {
     static char buf[1024];
     DWORD dw = GetLastError();
-    if (dw == 0) return NULL;
+    if (dw == 0)
+        return NULL;
     snprintf(buf, 32, "error 0x%" PRIx32 "", dw);
     return buf;
 }
@@ -126,7 +127,7 @@ static const char *dlerror(void) {
 #define SIZE_T_FLAG ULONG_FLAG
 #elif SIZEOF_SIZE_T == LONGLONGSIZE
 #define SIZE_T_FLAG ULONGLONG_FLAG
-#else // quadmath is broken
+#else  // quadmath is broken
 #define SIZE_T_FLAG ULONGLONG_FLAG
 #endif
 #define FLOAT_FLAG 'f'
@@ -143,7 +144,7 @@ static const char *dlerror(void) {
 #define SV_FLAG '?'
 
 // Calling conventions
-#define RESET_FLAG '>' // DC_SIGCHAR_CC_DEFAULT
+#define RESET_FLAG '>'  // DC_SIGCHAR_CC_DEFAULT
 #define THIS_FLAG '*'
 #define ELLIPSIS_FLAG 'e'
 #define VARARGS_FLAG '.'
@@ -188,12 +189,12 @@ following address will be aligned to `alignment`. */
 #define ALIGNOF(t) __alignof(t)
 #else
 /* Alignment by measuring structure padding. */
-#define ALIGNOF(t)                                                                                 \
-    ((char *)(&((struct {                                                                          \
-                   char c;                                                                         \
-                   t _h;                                                                           \
-               } *)0)                                                                              \
-                   ->_h) -                                                                         \
+#define ALIGNOF(t)         \
+    ((char *)(&((struct {  \
+                   char c; \
+                   t _h;   \
+               } *)0)      \
+                   ->_h) - \
      (char *)0)
 #endif
 
@@ -201,7 +202,7 @@ following address will be aligned to `alignment`. */
 #define AFFIX_ALIGNBYTES 8
 
 /* Some are undefined in perlapi */
-#define SIZEOF_BOOL sizeof(bool) // ha!
+#define SIZEOF_BOOL sizeof(bool)  // ha!
 #define SIZEOF_CHAR sizeof(char)
 #define SIZEOF_SCHAR sizeof(signed char)
 #define SIZEOF_UCHAR sizeof(unsigned char)
@@ -215,7 +216,7 @@ following address will be aligned to `alignment`. */
 #define SIZEOF_LONGLONG sizeof(long long)
 #define SIZEOF_ULONGLONG sizeof(unsigned long long)
 #define SIZEOF_FLOAT sizeof(float)
-#define SIZEOF_DOUBLE sizeof(double) // ugh...
+#define SIZEOF_DOUBLE sizeof(double)  // ugh...
 #if SIZEOF_SIZE_T == INTSIZE
 #define SIZEOF_SIZE_T SIZEOF_INT
 #define SIZEOF_SSIZE_T SIZEOF_UINT
@@ -225,11 +226,11 @@ following address will be aligned to `alignment`. */
 #elif SIZEOF_SIZE_T == LONGLONGSIZE
 #define SIZEOF_SIZE_T SIZEOF_ULONGLONG
 #define SIZEOF_SSIZE_T SIZEOF_LONGLONG
-#else // quadmath is broken
+#else  // quadmath is broken
 #define SIZEOF_SIZE_T SIZEOF_ULONGLONG
 #define SIZEOF_SSIZE_T SIZEOF_LONGLONG
 #endif
-#define SIZEOF_INTPTR_T sizeof(intptr_t) // ugh...
+#define SIZEOF_INTPTR_T sizeof(intptr_t)  // ugh...
 
 #define ALIGNOF_BOOL ALIGNOF(bool)
 #define ALIGNOF_CHAR ALIGNOF(char)
@@ -261,8 +262,8 @@ following address will be aligned to `alignment`. */
 #define SLOT_TYPE_RESTRICT 9
 #define SLOT_TYPE_TYPEDEF 10
 #define SLOT_TYPE_AGGREGATE 11
-#define SLOT_TYPE_FIELD 12   // Field name if in a Struct or Union
-#define SLOT_TYPE_POINTER 13 //
+#define SLOT_TYPE_FIELD 12    // Field name if in a Struct or Union
+#define SLOT_TYPE_POINTER 13  //
 
 #define SLOT_CODEREF_RET SLOT_TYPE_SUBTYPE
 #define SLOT_CODEREF_ARGS 12
@@ -296,101 +297,99 @@ following address will be aligned to `alignment`. */
 
 // marshal.cxx
 size_t padding_needed_for(size_t offset, size_t alignment);
-SV *ptr2obj(pTHX_ SV *type_sv, DCpointer ptr);
-SV *ptr2sv(pTHX_ SV *type_sv, DCpointer ptr);
-DCpointer sv2ptr(pTHX_ SV *type_sv, SV *data, DCpointer ptr = NULL);
-size_t _alignof(pTHX_ SV *type);
-size_t _sizeof(pTHX_ SV *type);
-size_t _offsetof(pTHX_ SV *type);
+SV * ptr2obj(pTHX_ SV * type_sv, DCpointer ptr);
+SV * ptr2sv(pTHX_ SV * type_sv, DCpointer ptr);
+DCpointer sv2ptr(pTHX_ SV * type_sv, SV * data, DCpointer ptr = NULL);
+size_t _alignof(pTHX_ SV * type);
+size_t _sizeof(pTHX_ SV * type);
+size_t _offsetof(pTHX_ SV * type);
 
 // wchar_t.cxx
-SV *wchar2utf(pTHX_ wchar_t *src, size_t len);
-wchar_t *utf2wchar(pTHX_ SV *src, size_t len);
+SV * wchar2utf(pTHX_ wchar_t * src, size_t len);
+wchar_t * utf2wchar(pTHX_ SV * src, size_t len);
 
 // Affix/Aggregate.cxx
-DCaggr *_aggregate(pTHX_ SV *type);
+DCaggr * _aggregate(pTHX_ SV * type);
 
 // Affix/Utils.cxx
-#define export_function(package, what, tag)                                                        \
+#define export_function(package, what, tag) \
     _export_function(aTHX_ get_hv(form("%s::EXPORT_TAGS", package), GV_ADD), what, tag)
-void register_constant(const char *package, const char *name, SV *value);
-void _export_function(pTHX_ HV *_export, const char *what, const char *_tag);
-void export_constant_char(const char *package, const char *name, const char *_tag, char val);
-void export_constant(const char *package, const char *name, const char *_tag, double val);
-void set_isa(const char *klass, const char *parent);
+void register_constant(const char * package, const char * name, SV * value);
+void _export_function(pTHX_ HV * _export, const char * what, const char * _tag);
+void export_constant_char(const char * package, const char * name, const char * _tag, char val);
+void export_constant(const char * package, const char * name, const char * _tag, double val);
+void set_isa(const char * klass, const char * parent);
 
 #define DumpHex(addr, len) _DumpHex(aTHX_ addr, len, __FILE__, __LINE__)
-void _DumpHex(pTHX_ const void *addr, size_t len, const char *file, int line);
+void _DumpHex(pTHX_ const void * addr, size_t len, const char * file, int line);
 #define DD(scalar) _DD(aTHX_ scalar, __FILE__, __LINE__)
-void _DD(pTHX_ SV *scalar, const char *file, int line);
+void _DD(pTHX_ SV * scalar, const char * file, int line);
 
-int type_as_dc(int type); // TODO: Find a better place for this
+int type_as_dc(int type);  // TODO: Find a better place for this
 
 // Affix/Lib.cxx
-char *locate_lib(pTHX_ SV *_lib, SV *_ver);
-char *mangle(pTHX_ const char *abi, SV *affix, const char *symbol, SV *args);
+char * locate_lib(pTHX_ SV * _lib, SV * _ver);
+char * mangle(pTHX_ const char * abi, SV * affix, const char * symbol, SV * args);
 
 // Affix::affix(...) and Affix::wrap(...) System
-class Affix_old
-{
-  public:
+class Affix_old {
+public:
     int16_t call_conv;
     size_t num_args;
-    int16_t *arg_types;
+    int16_t * arg_types;
     int16_t ret_type;
-    char *lib_name;
-    DLLib *lib_handle;
-    void *entry_point;
-    void **arg_info;
-    DCaggr **aggregates;
-    SV *ret_info;
-    DCaggr *ret_aggregate;
-    bool ellipsis; // varargs or ellipsis
+    char * lib_name;
+    DLLib * lib_handle;
+    void * entry_point;
+    void ** arg_info;
+    DCaggr ** aggregates;
+    SV * ret_info;
+    DCaggr * ret_aggregate;
+    bool ellipsis;  // varargs or ellipsis
     bool _cpp_constructor;
-    bool _cpp_const;    // const member function in CPPStruct[]
-    bool _cpp_struct;   // CPPStruct[] as this
-    SV *_cpp_this_info; // typedef
-    void **temp_ptrs;
-    void *ret_ptr; // in case we need it
+    bool _cpp_const;      // const member function in CPPStruct[]
+    bool _cpp_struct;     // CPPStruct[] as this
+    SV * _cpp_this_info;  // typedef
+    void ** temp_ptrs;
+    void * ret_ptr;  // in case we need it
 };
 
 // Callback system
 struct CodeRefWrapper {
-    DCCallback *cb;
+    DCCallback * cb;
 };
 
 typedef struct {
-    const char *signature;
+    const char * signature;
     char restype_c;
-    char *perl_sig;
-    SV *cv;
-    AV *argtypes;
-    SV *retval;
-    SV *restype;
+    char * perl_sig;
+    SV * cv;
+    AV * argtypes;
+    SV * retval;
+    SV * restype;
     dTHXfield(perl)
 } CodeRef;
 
-char cbHandler(DCCallback *cb, DCArgs *args, DCValue *result, DCpointer userdata);
-DCsigchar cbHandlerXXXXX(DCCallback *cb, DCArgs *args, DCValue *result, DCpointer userdata);
+char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata);
+DCsigchar cbHandlerXXXXX(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata);
 
-class Affix_Type
-{
-  public:
-    Affix_Type(const char *stringify, char numeric, size_t size, size_t alignment)
+class Affix_Type {
+public:
+    Affix_Type(const char * stringify, char numeric, size_t size, size_t alignment)
         : _stringify(stringify), numeric(numeric), size(size), _alignment(alignment) {};
-    const char *stringify() {
-        char *ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify,
-                                        (const_flag ? " ]" : ""));
+    const char * stringify() {
+        char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" : ""));
         for (size_t i = 0; i < pointer_depth; ++i)
             ret = Perl_form_nocontext("Pointer[ %s ]", ret);
-        if (_typedef != NULL) ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
+        if (_typedef != NULL)
+            ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
         return ret;
     };
     size_t alignment(size_t depth = 0) {
         return pointer_depth > depth ? ALIGNOF_INTPTR_T : _alignment;
     }
 
-  public: // for now...
+public:  // for now...
     char numeric;
     bool const_flag = false;
     bool volitile_flag = false;
@@ -401,53 +400,52 @@ class Affix_Type
     size_t _alignment;
     size_t offset;
     size_t arraylen;
-    const char *_stringify;
+    const char * _stringify;
 
     //
-    void *subtype = NULL; // Affix_Type
+    void * subtype = NULL;  // Affix_Type
 
-    const char *_typedef = NULL;
-    DCaggr *aggregate = NULL;
-    void **args = NULL;       // list of Affix_Type
-    const char *field = NULL; // If part of a struct
+    const char * _typedef = NULL;
+    DCaggr * aggregate = NULL;
+    void ** args = NULL;        // list of Affix_Type
+    const char * field = NULL;  // If part of a struct
 };
-class Affix_Pointer
-{
-  public:
+class Affix_Pointer {
+public:
     Affix_Pointer(intptr_t address) : address(address) {};
     ~Affix_Pointer() {};
     intptr_t address;
-    Affix_Type *subtype;
+    Affix_Type * subtype;
     size_t count;
     size_t position;
 };
 
-class Affix
-{
-  public: // for now
+class Affix {
+public:  // for now
     Affix() {};
 
     ~Affix() {
-        if (lib != NULL) dlFreeLibrary(lib);
+        if (lib != NULL)
+            dlFreeLibrary(lib);
 
         // if (entry_point != NULL) safefree(entry_point);
 
-        std::for_each(argtypes.begin(), argtypes.end(),
-                      [](Affix_Type *argtype) { delete argtype; });
-        if (restype != NULL) delete restype;
+        std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
+        if (restype != NULL)
+            delete restype;
     };
-    DLLib *lib = NULL;            // safefree
-    DCpointer entry_point = NULL; // not malloc'd
+    DLLib * lib = NULL;            // safefree
+    DCpointer entry_point = NULL;  // not malloc'd
     std::string symbol;
     std::vector<Affix_Type *> argtypes;
-    Affix_Type *restype = NULL;
-    SV *res; // time over ram
+    Affix_Type * restype = NULL;
+    SV * res;  // time over ram
 };
 
-void _pin(pTHX_ SV *sv, SV *type, DCpointer ptr); // pin.cxx
+void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx
 
 // Type system
-Affix_Type *sv2type(pTHX_ SV *perl_type);
+Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // XS Boot
 void boot_Affix_pin(pTHX_ CV *);
@@ -458,18 +456,18 @@ void boot_Affix_Platform(pTHX_ CV *);
 void boot_Affix_Type(pTHX_ CV *);
 
 //
-DLLib *load_library(const char *lib);
-void free_library(DLLib *plib);
-DCpointer find_symbol(DLLib *lib, const char *name);
+DLLib * load_library(const char * lib);
+void free_library(DLLib * plib);
+DCpointer find_symbol(DLLib * lib, const char * name);
 
-extern "C" void Fiction_trigger(pTHX_ CV *cv);
+extern "C" void Fiction_trigger(pTHX_ CV * cv);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
 // utils.cxx
-DLLib *_affix_load_library(const char *lib);
-SV *call_sub(pTHX_ const char *sub, SV *arg);
+DLLib * _affix_load_library(const char * lib);
+SV * call_sub(pTHX_ const char * sub, SV * arg);
 
-#endif // AFFIX_H_SEEN
+#endif  // AFFIX_H_SEEN
