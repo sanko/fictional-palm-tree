@@ -2,6 +2,16 @@ package Affix::Type 0.5 {
     use strict;
     use warnings;
     use Carp qw[];
+    {
+        package    #hide
+            Affix::Type::Parameterized 0.00 {
+            use parent -norequire, 'Affix::Type';
+            sub parameterized          {1}
+            sub subtype : prototype($) { return shift->[ Affix::SLOT_SUBTYPE() ]; }
+        }
+    }
+    use Affix::Type::Struct qw[:all];
+    use Affix::Type::Union  qw[:all];
     $Carp::Internal{ (__PACKAGE__) }++;
     use parent 'Exporter';
     our ( @EXPORT_OK, %EXPORT_TAGS );
@@ -17,205 +27,42 @@ package Affix::Type 0.5 {
             typedef
         ]
     ];
-    #
-    @Affix::Type::Void::ISA = @Affix::Type::Bool::ISA = @Affix::Type::Char::ISA = @Affix::Type::UChar::ISA = @Affix::Type::Short::ISA
-        = @Affix::Type::UShort::ISA   = @Affix::Type::Int::ISA       = @Affix::Type::UInt::ISA   = @Affix::Type::Long::ISA = @Affix::Type::ULong::ISA
-        = @Affix::Type::LongLong::ISA = @Affix::Type::ULongLong::ISA = @Affix::Type::Size_t::ISA = @Affix::Type::Float::ISA
-        = @Affix::Type::Double::ISA   = __PACKAGE__;
-    #
-    use overload
-        '""' => sub { my $ret = $_[0]->{stringify}; return $ret unless $_[0]->{const}; return 'Const[ ' . $ret . ' ]'; },
+    use overload '""' => sub {
+        my $ret = $_[0]->{stringify};
+        return $ret unless $_[0]->{const};
+        return 'Const[ ' . $ret . ' ]';
+        },
         '0+' => sub { shift->{numeric} };
-    #
-    sub Void() {
-        bless { stringify => 'Void', numeric => Affix::VOID_FLAG(), sizeof => 0, alignment => 0, typedef => undef, const => !1 }, 'Affix::Type::Void';
+    sub parameterized($) {0}
+
+    sub sizeof ($) {
+        use Data::Dump;
+        ddx \@_;
+        shift->{sizeof};
     }
 
-    sub Bool() {
+    sub align ($) {
+        shift->{alignment};
+    }
+
+    sub new($$$$$$;$$) {
+        my ( $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len ) = @_;
+        die 'Please subclass Affix::Type' if $pkg eq __PACKAGE__;
         bless {
-            stringify => 'Bool',
-            numeric   => Affix::BOOL_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_BOOL(),
-            alignment => Affix::Platform::ALIGNOF_BOOL(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Bool';
+            stringify => $str,
+            numeric   => $flag,
+            sizeof    => $sizeof,
+            alignment => $align,
+            offset    => $offset,           # TODO
+            subtype   => $subtype,
+            length    => $array_len // 1,
+            typedef   => undef,             # TODO
+            const     => !1,
+            volitile  => !1,
+            restrict  => !1
+        }, $pkg;
     }
 
-    sub Char() {
-        bless {
-            stringify => 'Char',
-            numeric   => Affix::CHAR_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_CHAR(),
-            alignment => Affix::Platform::ALIGNOF_CHAR(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Char';
-    }
-
-    sub UChar() {
-        bless {
-            stringify => 'UChar',
-            numeric   => Affix::UCHAR_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_UCHAR(),
-            alignment => Affix::Platform::ALIGNOF_UCHAR(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::UChar';
-    }
-
-    sub Short() {
-        bless {
-            stringify => 'Short',
-            numeric   => Affix::SHORT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_SHORT(),
-            alignment => Affix::Platform::ALIGNOF_SHORT(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Short';
-    }
-
-    sub UShort() {
-        bless {
-            stringify => 'Bool',
-            numeric   => Affix::USHORT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_USHORT(),
-            alignment => Affix::Platform::ALIGNOF_USHORT(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::UShort';
-    }
-
-    sub Int() {
-        bless {
-            stringify => 'Int',
-            numeric   => Affix::INT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_INT(),
-            alignment => Affix::Platform::ALIGNOF_INT(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Int';
-    }
-
-    sub UInt() {
-        bless {
-            stringify => 'UInt',
-            numeric   => Affix::UINT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_UINT(),
-            alignment => Affix::Platform::ALIGNOF_UINT(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::UInt';
-    }
-
-    sub Long() {
-        bless {
-            stringify => 'Long',
-            numeric   => Affix::LONG_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_LONG(),
-            alignment => Affix::Platform::ALIGNOF_LONG(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Long';
-    }
-
-    sub ULong() {
-        bless {
-            stringify => 'ULong',
-            numeric   => Affix::ULONG_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_ULONG(),
-            alignment => Affix::Platform::ALIGNOF_ULONG(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::ULong';
-    }
-
-    sub LongLong() {
-        bless {
-            stringify => 'LongLong',
-            numeric   => Affix::LONGLONG_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_LONGLONG(),
-            alignment => Affix::Platform::ALIGNOF_LONGLONG(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::LongLong';
-    }
-
-    sub ULongLong() {
-        bless {
-            stringify => 'ULongLong',
-            numeric   => Affix::ULONGLONG_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_ULONGLONG(),
-            alignment => Affix::Platform::ALIGNOF_ULONGLONG(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::ULongLong';
-    }
-
-    sub Size_t() {
-        bless {
-            stringify => 'Size_t',
-            numeric   => Affix::SIZE_T_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_SIZE_T(),
-            alignment => Affix::Platform::ALIGNOF_SIZE_T(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Size_t';
-    }
-
-    sub Float() {
-        bless {
-            stringify => 'Float',
-            numeric   => Affix::FLOAT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_FLOAT(),
-            alignment => Affix::Platform::ALIGNOF_FLOAT(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Float';
-    }
-
-    sub Double() {
-        bless {
-            stringify => 'Double',
-            numeric   => Affix::DOUBLE_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_DOUBLE(),
-            alignment => Affix::Platform::ALIGNOF_DOUBLE(),
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Double';
-    }
-
-    #  char numeric;
-    #     bool const_flag = false;
-    #     bool volitile_flag = false;
-    #     bool restrict_flag = false;
-    #     bool saints = false; // preserve us
-    #     size_t pointer_depth = 0;
-    #     size_t size;
-    #     size_t _alignment;
-    #     size_t offset;
-    #     size_t arraylen;
-    #     const char *_stringify;
-    #     //
-    #     void *subtype = NULL; // Affix_Type
-    #     const char *_typedef = NULL;
-    #     DCaggr *aggregate = NULL;
-    #     void **args = NULL;       // list of Affix_Type
-    #     const char *field = NULL; // If part of a struct
     sub typedef {
         my ( $name, $type ) = @_;
         if ( !$type->isa('Affix::Type') ) {
@@ -236,5 +83,312 @@ package Affix::Type 0.5 {
         $type->typedef($fqn) if $type->can('typedef');
         $type;
     }
-};
+
+    # Types
+    sub Void() { Affix::Type::Void->new( 'Void', Affix::VOID_FLAG(), 0, 0 ); }
+
+    sub Bool() {
+        Affix::Type::Bool->new( 'Bool', Affix::BOOL_FLAG(), Affix::Platform::SIZEOF_BOOL(), Affix::Platform::ALIGNOF_BOOL(), );
+    }
+
+    sub Char() {
+        Affix::Type::Char->new( 'Char', Affix::CHAR_FLAG(), Affix::Platform::SIZEOF_CHAR(), Affix::Platform::ALIGNOF_CHAR() );
+    }
+
+    sub SChar() {
+        Affix::Type::SChar->new( 'SChar', Affix::SCHAR_FLAG(), Affix::Platform::SIZEOF_SCHAR(), Affix::Platform::ALIGNOF_SCHAR() );
+    }
+
+    sub UChar() {
+        Affix::Type::UChar->new( 'UChar', Affix::UCHAR_FLAG(), Affix::Platform::SIZEOF_UCHAR(), Affix::Platform::ALIGNOF_UCHAR() );
+    }
+
+    sub WChar() {
+        Affix::Type::WChar->new( 'WChar', Affix::WCHAR_FLAG(), Affix::Platform::SIZEOF_WCHAR(), Affix::Platform::ALIGNOF_WCHAR() );
+    }
+
+    sub Short() {
+        Affix::Type::Short->new( 'Short', Affix::SHORT_FLAG(), Affix::Platform::SIZEOF_SHORT(), Affix::Platform::ALIGNOF_SHORT() );
+    }
+
+    sub UShort() {
+        Affix::Type::UShort->new( 'UShort', Affix::USHORT_FLAG(), Affix::Platform::SIZEOF_USHORT(), Affix::Platform::ALIGNOF_USHORT() );
+    }
+
+    sub Int () {
+        Affix::Type::Int->new( 'Int', Affix::INT_FLAG(), Affix::Platform::SIZEOF_INT(), Affix::Platform::ALIGNOF_INT() );
+    }
+
+    sub UInt () {
+        Affix::Type::UInt->new( 'UInt', Affix::UINT_FLAG(), Affix::Platform::SIZEOF_UINT(), Affix::Platform::ALIGNOF_UINT() );
+    }
+
+    sub Long () {
+        Affix::Type::Long->new( 'Long', Affix::LONG_FLAG(), Affix::Platform::SIZEOF_LONG(), Affix::Platform::ALIGNOF_LONG() );
+    }
+
+    sub ULong () {
+        Affix::Type::ULong->new( 'ULong', Affix::ULONG_FLAG(), Affix::Platform::SIZEOF_ULONG(), Affix::Platform::ALIGNOF_ULONG() );
+    }
+
+    sub LongLong () {
+        Affix::Type::LongLong->new( 'LongLong', Affix::LONGLONG_FLAG(), Affix::Platform::SIZEOF_LONGLONG(), Affix::Platform::ALIGNOF_LONGLONG() );
+    }
+
+    sub ULongLong () {
+        Affix::Type::ULongLong->new( 'ULongLong', Affix::ULONGLONG_FLAG(), Affix::Platform::SIZEOF_ULONGLONG(),
+            Affix::Platform::ALIGNOF_ULONGLONG() );
+    }
+
+    sub Float () {
+        Affix::Type::Float->new( 'Float', Affix::FLOAT_FLAG(), Affix::Platform::SIZEOF_FLOAT(), Affix::Platform::ALIGNOF_FLOAT() );
+    }
+
+    sub Double () {
+        Affix::Type::Double->new( 'Double', Affix::DOUBLE_FLAG(), Affix::Platform::SIZEOF_DOUBLE(), Affix::Platform::ALIGNOF_DOUBLE() );
+    }
+
+    sub Size_t () {
+        Affix::Type::Size_t->new( 'Size_t', Affix::SIZE_T_FLAG(), Affix::Platform::SIZEOF_SIZE_T(), Affix::Platform::ALIGNOF_SIZE_T() );
+    }
+
+    sub String() {
+        CORE::state $type //= Pointer( [ Const( [ Char() ] ) ] );
+        $type;
+    }
+
+    sub WString() {
+        CORE::state $type //= Pointer( [ Const( [ WChar() ] ) ] );
+        $type;
+    }
+
+    sub StdString () {
+        Affix::Type::StdString->new( 'StdString', Affix::STD_STRING_FLAG(), Affix::Platform::SIZEOF_INTPTR_T(), Affix::Platform::ALIGNOF_INTPTR_T() );
+    }
+
+    # TODO: CPPStruct
+    #~ $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len
+    sub CodeRef : prototype($) {
+        my (@elements) = @{ +shift };
+        my ( $args, $ret ) = @elements;
+        $ret //= Void;
+        my $s = Affix::Type::CodeRef->new(
+            sprintf( 'CodeRef[ [ %s ] => %s ]', join( ', ', @$args ), $ret ),    # SLOT_CODEREF_STRINGIFY
+            Affix::CODEREF_FLAG(),                                               # SLOT_CODEREF_NUMERIC
+            Affix::Platform::SIZEOF_INTPTR_T(),                                  # SLOT_CODEREF_SIZEOF
+            Affix::Platform::ALIGNOF_INTPTR_T(),                                 # SLOT_CODEREF_ALIGNMENT
+            undef,                                                               # SLOT_CODEREF_OFFSET
+            $ret                                                                 # SLOT_CODEREF_RET
+        );
+
+        # TODO:
+        # $s->[ Affix::SLOT_CODEREF_ARGS() ] = $args;
+        # $s->[ Affix::SLOT_CODEREF_SIG() ]  = join( '', map { chr $_ } @$args );
+        $s;
+    }
+
+    sub Function : prototype($) {
+        my (@elements) = @{ +shift };
+        my ( $args, $ret ) = @elements;
+        $ret //= Void;
+        Affix::Type::Function->new(
+            sprintf( 'Function[ [ %s ] => %s ]', join( ', ', @$args ), $ret ),    # SLOT_STRINGIFY
+            Affix::AFFIX_FLAG(),                                                  # SLOT_NUMERIC
+            Affix::Platform::SIZEOF_INTPTR_T(),                                   # SLOT_SIZEOF
+            Affix::Platform::ALIGNOF_INTPTR_T(),                                  # SLOT_ALIGNMENT
+            undef,                                                                # SLOT_OFFSET
+            $ret,                                                                 # SLOT_CODEREF_RET (result type)
+            $args,                                                                # SLOT_CODEREF_ARGS
+            join '', map { chr $_ } @$args                                        # SLOT_CODEREF_SIG
+        );
+    }
+
+    #~ // [ text, id, size, align, offset, subtype, length, aggregate, typedef ]
+    #define SLOT_STRINGIFY 0
+    #define SLOT_NUMERIC 1
+    #define SLOT_SIZEOF 2
+    #define SLOT_ALIGNMENT 3
+    #define SLOT_OFFSET 4
+    #define SLOT_SUBTYPE 5
+    #define SLOT_ARRAYLEN 6
+    #define SLOT_AGGREGATE 7
+    #define SLOT_TYPEDEF 8
+    #define SLOT_CAST 9
+    #define SLOT_CODEREF_RET 5
+    #define SLOT_CODEREF_ARGS 6
+    #define SLOT_CODEREF_SIG 7
+    #define SLOT_POINTER_SUBTYPE SLOT_SUBTYPE
+    #define SLOT_POINTER_COUNT SLOT_ARRAYLEN
+    #define SLOT_POINTER_ADDR 7
+    sub Pointer : prototype(;$) {
+        my ( $subtype, @etc ) = @_ ? @{ +shift } : Void();    # Defaults to Pointer[Void]
+        Carp::croak sprintf( 'Too may arguments in Pointer[ %s, %s ]', $subtype, join ', ', @etc ) if @etc;
+        Affix::Type::Pointer->new(
+            'Pointer[ ' . $subtype . ' ]',          # SLOT_STRINGIFY
+            Affix::POINTER_FLAG(),                  # SLOT_NUMERIC
+            Affix::Platform::SIZEOF_INTPTR_T(),     # SLOT_SIZEOF
+            Affix::Platform::ALIGNOF_INTPTR_T(),    # SLOT_ALIGNMENT
+            undef,                                  # SLOT_OFFSET
+            $subtype,                               # SLOT_SUBTYPE
+            1                                       # SLOT_ARRAYLEN
+
+            #  my ( $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len ) = @_;
+        );
+    }
+
+    sub Array : prototype($) {
+        my ( $subtype, $length ) = @{ +shift };    # No defaults
+        bless(
+            [   'Array[ ' . $subtype . ', ' . $length . ' ]',    # SLOT_STRINGIFY
+                Affix::POINTER_FLAG(),                           # SLOT_NUMERIC
+                Affix::Platform::SIZEOF_INTPTR_T(),              # SLOT_SIZEOF
+                Affix::Platform::ALIGNOF_INTPTR_T(),             # SLOT_ALIGNMENT
+                undef,                                           # SLOT_OFFSET
+                $subtype,                                        # SLOT_SUBTYPE
+                $length                                          # SLOT_ARRAYLEN
+            ],
+            'Affix::Type::Pointer'
+        );
+    }
+
+    # Should only be used inside of a Pointer[]
+    sub SV : prototype() { Affix::Type::SV->new( 'SV', Affix::SV_FLAG(), 0, 0 ); }
+
+    #~ typedef ShortInt     => Short;
+    #~ typedef SShort       => Short;
+    #~ typedef SShortInt    => Short;
+    #~ typedef UShortInt    => UShort;
+    #~ typedef Signed       => Int;
+    #~ typedef SInt         => Int;
+    #~ typedef Unsigned     => UInt;
+    #~ typedef LongInt      => Long;
+    #~ typedef SLongInt     => Long;
+    #~ typedef LongLongInt  => LongLong;
+    #~ typedef SLongLong    => LongLong;
+    #~ typedef SLongLongInt => LongLong;
+    #~ typedef ULongLongInt => ULongLong;
+    #~ typedef Str          => String;
+    #~ typedef WStr         => WString;
+    #~ typedef wchar_t => WChar;
+    # Qualifier flags
+    sub Const : prototype($) {
+        $_[0][0]->{const} = 1;
+        $_[0][0];
+    }
+
+    sub Volatile : prototype($) {
+        $_[0][0]->{volitile} = 1;
+        $_[0][0];
+    }
+
+    sub Restrict : prototype($) {
+        $_[0][0]->{restrict} = 1;
+        $_[0][0];
+    }
+    package    # hide
+        Affix::Type::CodeRef {
+        sub parameterized           {1}
+        sub rettype : prototype($)  { return shift->[ Affix::SLOT_SUBTYPE() ]; }
+        sub argtypes : prototype($) { return shift->[ Affix::SLOT_CODEREF_ARGS() ]; }
+    }
+    @Affix::Type::Void::ISA = @Affix::Type::SV::ISA
+
+        # Numerics
+        = @Affix::Type::Bool::ISA  = @Affix::Type::Char::ISA     = @Affix::Type::SChar::ISA     = @Affix::Type::UChar::ISA = @Affix::Type::WChar::ISA
+        = @Affix::Type::Short::ISA = @Affix::Type::UShort::ISA   = @Affix::Type::Int::ISA       = @Affix::Type::UInt::ISA = @Affix::Type::Long::ISA
+        = @Affix::Type::ULong::ISA = @Affix::Type::LongLong::ISA = @Affix::Type::ULongLong::ISA = @Affix::Type::Float::ISA
+        = @Affix::Type::Double::ISA
+        = @Affix::Type::Size_t::ISA
+
+        # Enumerations (subclasses handled in Affix::Type::Enum)
+        = @Affix::Type::Enum::ISA
+
+        # Pointers
+        = @Affix::Type::String::ISA = @Affix::Type::WString::ISA = @Affix::Type::StdString::ISA
+
+        # Typedef'd aliases
+        = @Affix::Type::Str::ISA
+
+        # Calling conventions
+        = @Affix::CC::ISA
+        #
+        = @Affix::Type::Parameterized::ISA = 'Affix::Type';
+
+    # Pointers
+    @Affix::Type::Pointer::Unmanaged::ISA = 'Affix::Pointer';
+
+    # Aggregates
+    @Affix::Type::Union::ISA
+        #
+        = @Affix::Type::Pointer::ISA = @Affix::Type::CodeRef::ISA = @Affix::Type::Function::ISA = 'Affix::Type::Parameterized';
+    @Affix::CC::Reset::ISA = @Affix::CC::This::ISA = @Affix::CC::Ellipsis::ISA = @Affix::CC::Varargs::ISA = @Affix::CC::CDecl::ISA
+        = @Affix::CC::STDcall::ISA = @Affix::CC::MSFastcall::ISA = @Affix::CC::GNUFastcall::ISA = @Affix::CC::MSThis::ISA = @Affix::CC::GNUThis::ISA
+        = @Affix::CC::Arm::ISA     = @Affix::CC::Thumb::ISA      = @Affix::CC::Syscall::ISA     = 'Affix::CC';
+
+    sub Reference : prototype(;$) {    # [ text, id, size, align, offset, subtype, sizeof, package ]
+
+        #~ use Data::Dump;
+        #~ ddx \@_;
+        my $sizeof  = 0;
+        my $packed  = 0;
+        my $subtype = undef;
+        if (@_) {
+            ($subtype) = @{ +shift };
+
+            #~ ddx $subtype;
+            my $__sizeof = $subtype->sizeof;
+            my $__align  = $subtype->align;
+            $sizeof += $packed ? 0 : padding_needed_for( $sizeof, $__align > $__sizeof ? $__sizeof : $__align );
+            $sizeof += $__sizeof;
+        }
+        else {
+            warn scalar caller;
+            Carp::croak 'Reference requires a type' unless scalar caller =~ /^Affix(::.+)?$/;
+            $subtype = Void();    # Defaults to Pointer[Void]
+        }
+        bless( [ 'Reference [ ' . $subtype . ' ]', REFERENCE_FLAG(), $subtype->sizeof(), $subtype->align(), undef, $subtype, $sizeof, undef ],
+            'Affix::Flag::Reference' );
+    }
+
+    # Calling Conventions
+    sub Reset() { bless( [ 'This', RESET_FLAG(), undef, undef, undef ], 'Affix::CC::Reset' ); }
+    sub This()  { bless( [ 'This', THIS_FLAG(),  undef, undef, undef ], 'Affix::CC::This' ); }
+
+    sub Ellipsis() {
+        bless( [ 'Ellipsis', ELLIPSIS_FLAG(), undef, undef, undef ], 'Affix::CC::Ellipsis' );
+    }
+
+    sub Varargs() {
+        bless( [ 'Varargs', VARARGS_FLAG(), undef, undef, undef ], 'Affix::CC::Varargs' );
+    }
+    sub CDecl() { bless( [ 'CDecl', CDECL_FLAG(), undef, undef, undef ], 'Affix::CC::CDecl' ); }
+
+    sub STDcall() {
+        bless( [ 'STDcall', STDCALL_FLAG(), undef, undef, undef ], 'Affix::CC::STDcall' );
+    }
+
+    sub MSFastcall() {
+        bless( [ 'MSFastcall', MSFASTCALL_FLAG(), undef, undef, undef ], 'Affix::CC::MSFastcall' );
+    }
+
+    sub GNUFastcall() {
+        bless( [ 'GNUFastcall', GNUFASTCALL_FLAG(), undef, undef, undef ], 'Affix::CC::GNUFastcall' );
+    }
+
+    sub MSThis() {
+        bless( [ 'MSThis', MSTHIS_FLAG(), undef, undef, undef ], 'Affix::CC::MSThis' );
+    }
+
+    sub GNUThis() {
+        bless( [ 'GNUThis', GNUTHIS_FLAG(), undef, undef, undef ], 'Affix::CC::GNUThis' );
+    }
+    sub Arm()   { bless( [ 'Arm',   ARM_FLAG(),   undef, undef, undef ], 'Affix::CC::Arm' ); }
+    sub Thumb() { bless( [ 'Thumb', THUMB_FLAG(), undef, undef, undef ], 'Affix::CC::Thumb' ); }
+
+    sub Syscall() {
+        bless( [ 'Syscall', SYSCALL_FLAG(), undef, undef, undef ], 'Affix::CC::Syscall' );
+    }
+    #
+    sub _Void_Pointer { Pointer [Void] }
+}
 1;

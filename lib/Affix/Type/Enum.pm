@@ -36,6 +36,8 @@ package Affix::Type::Enum 0.5 {
 
     sub Enum : prototype($) {
         my ( $text, $enum ) = &_Enum;
+
+        # TODO: user SUPER->new(...)
         bless {
             stringify => sprintf( 'Enum[ %s ]', join ', ', @$text ),
             numeric   => Affix::INT_FLAG(),
@@ -51,6 +53,8 @@ package Affix::Type::Enum 0.5 {
 
     sub IntEnum : prototype($) {
         my ( $text, $enum ) = &_Enum;
+
+        # TODO: user SUPER->new(...)
         bless {
             stringify => sprintf( 'IntEnum[ %s ]', join ', ', @$text ),
             numeric   => Affix::INT_FLAG(),
@@ -66,6 +70,8 @@ package Affix::Type::Enum 0.5 {
 
     sub UIntEnum : prototype($) {
         my ( $text, $enum ) = &_Enum;
+
+        # TODO: user SUPER->new(...)
         bless {
             stringify => sprintf( 'UIntEnum[ %s ]', join ', ', @$text ),
             numeric   => Affix::UINT_FLAG(),
@@ -80,6 +86,8 @@ package Affix::Type::Enum 0.5 {
     }
 
     sub CharEnum : prototype($) {
+
+        # TODO: user SUPER->new(...)
         my (@elements) = @{ +shift };
         my $text;
         my $index = 0;
@@ -111,8 +119,6 @@ package Affix::Type::Enum 0.5 {
     sub typedef : prototype($$) {
         my ( $self, $name ) = @_;
         no strict 'refs';
-        use Data::Dump;
-        ddx $self;
         for my $key ( keys %{ $self->{enum} } ) {
             my $val = $self->{enum}{$key};
             *{ $name . '::' . $key } = sub () { dualvar $val, $key; };
