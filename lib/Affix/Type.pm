@@ -35,9 +35,7 @@ package Affix::Type 0.5 {
         '0+' => sub { shift->{numeric} };
     sub parameterized($) {0}
 
-    sub sizeof ($) {
-        use Data::Dump;
-        ddx \@_;
+    sub sizeof ($) {       
         shift->{sizeof};
     }
 
