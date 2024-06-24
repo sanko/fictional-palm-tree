@@ -485,7 +485,9 @@ XS_INTERNAL(Affix_unpin) {
 XS_INTERNAL(Affix_sv_dump) {
     dXSARGS;
     if (items != 1)
-        croak_xs_usage(cv, "lib");
+        croak_xs_usage(cv, "sv");
+    sv_dump(ST(0));
+    XSRETURN_EMPTY;
 }
 
 // Cribbed from Perl::Destruct::Level so leak testing works without yet another prereq
@@ -497,6 +499,29 @@ XS_INTERNAL(Affix_set_destruct_level) {
     PL_perl_destruct_level = SvIV(ST(0));
     XSRETURN_EMPTY;
 }
+
+
+
+// Utils
+XS_INTERNAL(Affix_demo_class) {
+    dXSARGS;
+    if (items != 1 || SvTYPE(SvRV(ST(0)))!= SVt_PVOBJ)
+        croak_xs_usage(cv, "$class");
+        sv_dump(SvRV(ST(0)));
+    
+    SV* object = SvRV(ST(0));
+    SV ** fields = ObjectFIELDS(object);
+    SV * field;
+    warn("ObjectMAXFIELD(object) == %d", ObjectMAXFIELD(object));
+    for (size_t i = 0; i <= ObjectMAXFIELD(object); ++i){
+        field = fields[i];
+        sv_dump(field);
+    }
+
+    XSRETURN_EMPTY;
+}
+
+
 
 XS_EXTERNAL(boot_Affix) {
     dXSBOOTARGSXSAPIVERCHK;
@@ -564,6 +589,9 @@ XS_EXTERNAL(boot_Affix) {
     export_constant("Affix", "CODEREF_FLAG", "flags", CODEREF_FLAG);
     export_constant("Affix", "POINTER_FLAG", "flags", POINTER_FLAG);
     export_constant("Affix", "SV_FLAG", "flags", SV_FLAG);
+
+    // Demo 
+    (void)newXSproto_portable("Affix::Demo::class", Affix_demo_class, __FILE__, "$");
 
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);
