@@ -22,7 +22,7 @@ package Affix::Type::Struct 0.5 {
 
     sub Struct : prototype($) {
         my (@types) = @{ +shift };
-        warnings::warnif( 'Affix', 'Odd number of elements in pairs' ) if @types % 2;
+        warnings::warnif( 'Affix::Type', 'Odd number of elements in struct fields' ) if @types % 2;
         my @fields;
         my $sizeof = 0;
         my $packed = 0;

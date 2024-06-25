@@ -7,9 +7,9 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
     #~ E|-----------------------------------|-----------------------------------||
     #~   1 . + . 2 . + . 3 . + . 4 . + .     1 . + . 2 . + . 3 . + . 4 . + .
     use v5.32;
-    use Carp qw[];
-    use vars qw[@EXPORT_OK @EXPORT %EXPORT_TAGS];
-    use warnings::register;
+    use Carp               qw[];
+    use vars               qw[@EXPORT_OK @EXPORT %EXPORT_TAGS];
+    use warnings::register qw[Type];
     my $okay = 0;
 
     BEGIN {

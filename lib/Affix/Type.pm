@@ -2,6 +2,7 @@ package Affix::Type 0.5 {
     use strict;
     use warnings;
     use Carp qw[];
+    use warnings::register;
     {
         package    #hide
             Affix::Type::Parameterized 0.00 {

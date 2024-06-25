@@ -32,9 +32,6 @@ subtest offsetof => sub {
     is $type->offsetof('rate'),        wrap( $lib, 'offsetof_rate',        [], Size_t )->(), 'offsetof(rate)';
     is $type->offsetof('term'),        wrap( $lib, 'offsetof_term',        [], Size_t )->(), 'offsetof(term)';
 };
-
-#~ done_testing;
-#~ exit;
 typedef Example => Struct [
     bool      => Bool,
     char      => Char,
