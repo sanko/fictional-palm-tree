@@ -8,13 +8,11 @@ use t::lib::helper;
 #
 ok my $lib = compile_test_lib('236_types_struct'), 'build test lib';
 
-
-
-my $s = Struct[first => String, second => String, third => Int];
-use Data::Dump;
-ddx $s;
-done_testing;
-exit;
+# my $s = Struct [ first => String, second => String, third => Int ];
+# use Data::Dump;
+# ddx $s;
+# done_testing;
+# exit;
 subtest offsetof => sub {
     isa_ok my $type = Struct [
         name => Struct [ first => String, last => String, middle => Char ],
@@ -23,13 +21,8 @@ subtest offsetof => sub {
         term => Int        # months
         ],
         [ 'Affix::Type::Struct', 'Affix::Type' ];
-
-        use Data::Dump;
-        ddx $type;
-        exit;
     is $type->offsetof('name'),        wrap( $lib, 'offsetof_name',        [], Size_t )->(), 'offsetof(name)';
     is $type->offsetof('name.first'),  wrap( $lib, 'offsetof_name_first',  [], Size_t )->(), 'offsetof(name.first)';
-    exit;
     is $type->offsetof('name.middle'), wrap( $lib, 'offsetof_name_middle', [], Size_t )->(), 'offsetof(name.middle)';
     is $type->offsetof('name.last'),   wrap( $lib, 'offsetof_name_last',   [], Size_t )->(), 'offsetof(name.last)';
     is $type->offsetof('dob'),         wrap( $lib, 'offsetof_dob',         [], Size_t )->(), 'offsetof(dob)';
@@ -131,8 +124,6 @@ my $struct = {
 #
 #~ die pack 'i', ord 'ッ';
 is Affix::Type::sizeof( Example() ), SIZEOF(), 'our size calculation vs platform';
-
-
 done_testing;
 exit;
 subtest 'functions with aggregates' => sub {

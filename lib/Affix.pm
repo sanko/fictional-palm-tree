@@ -9,6 +9,7 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
     use v5.32;
     use Carp qw[];
     use vars qw[@EXPORT_OK @EXPORT %EXPORT_TAGS];
+    use warnings::register;
     my $okay = 0;
 
     BEGIN {

@@ -22,32 +22,24 @@ package Affix::Type::Struct 0.5 {
 
     sub Struct : prototype($) {
         my (@types) = @{ +shift };
+        warnings::warnif( 'Affix', 'Odd number of elements in pairs' ) if @types % 2;
         my @fields;
         my $sizeof = 0;
         my $packed = 0;
-        my @store;
-        use Data::Dump;
-        ddx \@types;
+        my @store_;
+
+        #for my ( $field, $subtype ) (@types) { # requires perl 5.36
         for ( my $i = 0; $i < $#types; $i += 2 ) {
             my $field    = $types[$i];
             my $subtype  = $types[ $i + 1 ];
-            warn $field;
             my $__sizeof = $subtype->sizeof;
             my $__align  = $subtype->align;
-            $subtype->{offset} =
-
-                #~ $sizeof +
-                #~ Affix::Platform::padding_needed_for( $sizeof + $__sizeof, $__align );
-                int( ( $sizeof + $__align - 1 ) / $__align ) * $__align;
+            $subtype->{offset} = int( ( $sizeof + $__align - 1 ) / $__align ) * $__align;
 
             #~ warn sprintf '%10s => %d', $field, $subtype->{offset};
             $subtype->{name} = $field;    # field name
-            push @store, $subtype;
+            push @store_, bless { %{$subtype} }, ref $subtype;
             push @fields, sprintf '%s => %s', $field, $subtype;
-
-            #~ warn sprintf 'Before: struct size: %d, element size: %d, align: %d, offset: %d', $sizeof, $__sizeof, $__align,
-            #~ $subtype->[Affix::SLOT_TYPE_OFFSET];
-            #~ $sizeof += $__sizeof + Affix::Platform::padding_needed_for( $sizeof + $__sizeof, $__align );
             $sizeof = $subtype->{offset} + $__sizeof;
 
             #~ warn sprintf 'After:  struct size: %d, element size: %d', $sizeof, $__sizeof;
@@ -58,11 +50,12 @@ package Affix::Type::Struct 0.5 {
             sizeof    => $sizeof + Affix::Platform::padding_needed_for( $sizeof, Affix::Platform::BYTE_ALIGN() ),    # SLOT_TYPE_SIZEOF
             alignment => Affix::Platform::BYTE_ALIGN(),                                                              # SLOT_TYPE_ALIGNMENT
             offset    => undef,                                                                                      # SLOT_TYPE_OFFSET
-            subtype   => \@store,                                                                                    # SLOT_TYPE_SUBTYPE
+            subtype   => \@store_,                                                                                   # SLOT_TYPE_SUBTYPE
             length    => 1,                                                                                          # SLOT_TYPE_ARRAYLEN
             const     => !1,                                                                                         # SLOT_TYPE_CONST
             volitile  => !1,                                                                                         # SLOT_TYPE_VOLATILE
             restrict  => !1,                                                                                         # SLOT_TYPE_RESTRICT
+
             #typedef   => undef,                                                                                      # SLOT_TYPE_TYPEDEF
             #name      => undef                                                                                       # SLOT_TYPE_FIELD
             },
@@ -75,21 +68,21 @@ package Affix::Type::Struct 0.5 {
         my ( $field, $tail ) = split '\.', $path, 2;
         $field //= $path;
         my $now;
-        my $i = 0;
-        use Data::Dump;
-        ddx $s->{subtype};
+
+        # use Data::Dump;
+        # ddx $s->{subtype};
         for my $element ( @{ $s->{subtype} } ) {
-            warn sprintf '%s vs %s', $field, $element->{name};
+
+            #~ warn sprintf '%s vs %s', $field, $element->{name};
             $now = $element and last if $element->{name} eq $field;
         }
+
         # warn $now;
         # die $now;
         return () unless defined $now;
-        if ( length $tail && $now->isa('Affix::Type::Struct') ) {
-            return $now->offsetof($tail);
-        }
+        return $now->offsetof($tail) if ( length $tail && $now->isa('Affix::Type::Struct') );
         $offset += $now->{offset} + ( $s->{offset} // 0 );
-        return $offset//0;
+        return $offset // 0;
     }
 };
 1;

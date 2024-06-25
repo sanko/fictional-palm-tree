@@ -35,7 +35,7 @@ package Affix::Type 0.5 {
         '0+' => sub { shift->{numeric} };
     sub parameterized($) {0}
 
-    sub sizeof ($) {       
+    sub sizeof ($) {
         shift->{sizeof};
     }
 
