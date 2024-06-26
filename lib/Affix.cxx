@@ -33,7 +33,12 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
     size_t st_pos = 0;
     for (const auto & type : affix->argtypes) {
-        // warn("[%d] %s", st_pos, type->stringify());
+        // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
+        if (type->depth > 0) {
+            croak("POINTER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos), 0));
+            ++st_pos;
+        }
         switch (type->numeric) {
         case VOID_FLAG:
 
@@ -175,9 +180,8 @@ dcArgPointer(cvm, ptr);*/
             }
         default:
             //~ sv_dump(*av_fetch(affix->argtypes, st_pos, 0));
-            croak("Unhandled argument type: %s", type->stringify());
+            croak("Unhandled argument type: %s", type->stringify);
         }
-
         ++st_pos;
     }
 
@@ -301,7 +305,7 @@ dcArgPointer(cvm, ptr);*/
         }*/
         break;
     default:
-        croak("Unknown or unhandled return type: %s", affix->restype->stringify());
+        croak("Unknown or unhandled return type: %s", affix->restype->stringify);
     };
 
     if (affix->res == NULL)
@@ -431,7 +435,7 @@ XS_INTERNAL(Affix_affix) {
         // ..., ..., ..., ret
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
             affix->restype = sv2type(aTHX_ ST(3));
-            if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->pointer_depth == 0))
+            if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->depth == 0))
                 affix->res = newSV(0);
         } else
             croak("Unknown return type");

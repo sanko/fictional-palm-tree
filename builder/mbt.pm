@@ -211,8 +211,14 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             my $version = $opt{meta}->version;
             my $obj     = $builder->object_file($source);
             push @dirs, $source->dirname();
+
+            # warn sprintf '%d vs %d (%d)',
+            #             $source->stat->mtime, path($obj)->stat->mtime,
+            #             $source->stat->mtime - path($obj)->stat->mtime
+            #             ;
             push @objs,    # misses headers but that's okay
-                ( ( !-f $obj ) || ( $source->stat->mtime > path($obj)->stat->mtime ) || ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) ) ?
+                ( ( !-f $obj ) || ( $source->stat->mtime >= path($obj)->stat->mtime ) || ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) )
+                ?
                 $builder->compile(
                 'C++'        => ( $source =~ /\.cxx$/ ? 1 : 0 ),
                 source       => $source->stringify,
@@ -227,12 +233,6 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
                 )
                 ) :
                 $obj;
-
-            #my $op_lib_file = catfile(
-            #    $paths->install_destination('arch'),
-            #qw[auto Object],
-            #'Pad' . $opt{config}->get('dlext')
-            #);
         }
 
         #~ warn join ', ', @dirs;

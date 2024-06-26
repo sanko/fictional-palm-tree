@@ -58,7 +58,8 @@ package Affix::Type 0.5 {
             typedef   => undef,             # TODO
             const     => !1,
             volitile  => !1,
-            restrict  => !1
+            restrict  => !1,
+            depth     => 0                  # pointer depth
         }, $pkg;
     }
 
@@ -219,20 +220,13 @@ package Affix::Type 0.5 {
     #define SLOT_POINTER_SUBTYPE SLOT_SUBTYPE
     #define SLOT_POINTER_COUNT SLOT_ARRAYLEN
     #define SLOT_POINTER_ADDR 7
-    sub Pointer : prototype(;$) {
-        my ( $subtype, @etc ) = @_ ? @{ +shift } : Void();    # Defaults to Pointer[Void]
-        Carp::croak sprintf( 'Too may arguments in Pointer[ %s, %s ]', $subtype, join ', ', @etc ) if @etc;
-        Affix::Type::Pointer->new(
-            'Pointer[ ' . $subtype . ' ]',          # SLOT_STRINGIFY
-            Affix::POINTER_FLAG(),                  # SLOT_NUMERIC
-            Affix::Platform::SIZEOF_INTPTR_T(),     # SLOT_SIZEOF
-            Affix::Platform::ALIGNOF_INTPTR_T(),    # SLOT_ALIGNMENT
-            undef,                                  # SLOT_OFFSET
-            $subtype,                               # SLOT_SUBTYPE
-            1                                       # SLOT_ARRAYLEN
-
-            #  my ( $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len ) = @_;
-        );
+    sub Pointer : prototype($) {
+        my ($subtype) = @{ +shift };
+        use Data::Dump;
+        ddx $subtype;
+        $subtype->{depth}++;
+        $subtype->{stringify} = 'Pointer[ ' . $subtype->{stringify} . ' ]';
+        $subtype;
     }
 
     sub Array : prototype($) {
@@ -271,8 +265,13 @@ package Affix::Type 0.5 {
     #~ typedef wchar_t => WChar;
     # Qualifier flags
     sub Const : prototype($) {
-        $_[0][0]->{const} = 1;
-        $_[0][0];
+        my ( $subtype, @etc ) = @_ ? @{ +shift } : Void();    # Defaults to Pointer[Void]
+        Carp::croak sprintf( 'Too may arguments in Pointer[ %s, %s ]', $subtype, join ', ', @etc ) if @etc;
+        use Data::Dump;
+        ddx $subtype;
+        $subtype->{const}     = 1;
+        $subtype->{stringify} = 'Const[ ' . $subtype->{stringify} . ' ]';
+        $subtype;
     }
 
     sub Volatile : prototype($) {
@@ -388,6 +387,6 @@ package Affix::Type 0.5 {
         bless( [ 'Syscall', SYSCALL_FLAG(), undef, undef, undef ], 'Affix::CC::Syscall' );
     }
     #
-    sub _Void_Pointer { Pointer [Void] }
+    sub intptr_t { Pointer [Void] }
 }
 1;

@@ -295,15 +295,6 @@ following address will be aligned to `alignment`. */
 #define AXT_POINTER_COUNT(t) SvIV(*av_fetch(MUTABLE_AV(SvRV(t)), SLOT_POINTER_COUNT, 0))
 #define AXT_POINTER_POSITION(t) SvIV(*av_fetch(MUTABLE_AV(SvRV(t)), SLOT_POINTER_POSITION, 0))
 
-// marshal.cxx
-size_t padding_needed_for(size_t offset, size_t alignment);
-SV * ptr2obj(pTHX_ SV * type_sv, DCpointer ptr);
-SV * ptr2sv(pTHX_ SV * type_sv, DCpointer ptr);
-DCpointer sv2ptr(pTHX_ SV * type_sv, SV * data, DCpointer ptr = NULL);
-size_t _alignof(pTHX_ SV * type);
-size_t _sizeof(pTHX_ SV * type);
-size_t _offsetof(pTHX_ SV * type);
-
 // wchar_t.cxx
 SV * wchar2utf(pTHX_ wchar_t * src, size_t len);
 wchar_t * utf2wchar(pTHX_ SV * src, size_t len);
@@ -375,18 +366,18 @@ DCsigchar cbHandlerXXXXX(DCCallback * cb, DCArgs * args, DCValue * result, DCpoi
 
 class Affix_Type {
 public:
-    Affix_Type(const char * stringify, char numeric, size_t size, size_t alignment)
-        : _stringify(stringify), numeric(numeric), size(size), _alignment(alignment) {};
-    const char * stringify() {
-        char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" : ""));
-        for (size_t i = 0; i < pointer_depth; ++i)
-            ret = Perl_form_nocontext("Pointer[ %s ]", ret);
-        if (_typedef != NULL)
-            ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
-        return ret;
-    };
-    size_t alignment(size_t depth = 0) {
-        return pointer_depth > depth ? ALIGNOF_INTPTR_T : _alignment;
+    Affix_Type(const std::string & stringify, char numeric, size_t size, size_t alignment, size_t depth)
+        : numeric(numeric), size(size), _alignment(alignment), depth(depth), stringify(stringify) {};
+    // const char * stringify() {
+    //     char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" :
+    //     "")); for (size_t i = 0; i < pointer_depth; ++i)
+    //         ret = Perl_form_nocontext("Pointer[ %s ]", ret);
+    //     if (_typedef != NULL)
+    //         ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
+    //     return ret;
+    // };
+    size_t alignment(size_t _depth = 0) {
+        return depth > _depth ? ALIGNOF_INTPTR_T : _alignment;
     }
 
 public:  // for now...
@@ -395,12 +386,12 @@ public:  // for now...
     bool volitile_flag = false;
     bool restrict_flag = false;
 
-    size_t pointer_depth = 0;
     size_t size;
     size_t _alignment;
     size_t offset;
+    size_t depth;  // pointer depth
     size_t arraylen;
-    const char * _stringify;
+    std::string stringify;
 
     //
     void * subtype = NULL;  // Affix_Type
@@ -446,6 +437,15 @@ void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx
 
 // Type system
 Affix_Type * sv2type(pTHX_ SV * perl_type);
+
+// marshal.cxx
+// size_t padding_needed_for(size_t offset, size_t alignment);
+// SV * ptr2obj(pTHX_ SV * type_sv, DCpointer ptr);
+SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer ptr);
+DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth = 0, DCpointer ptr = NULL);
+// size_t _alignof(pTHX_ SV * type);
+// size_t _sizeof(pTHX_ SV * type);
+// size_t _offsetof(pTHX_ SV * type);
 
 // XS Boot
 void boot_Affix_pin(pTHX_ CV *);
