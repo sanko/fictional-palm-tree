@@ -35,9 +35,12 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     for (const auto & type : affix->argtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth > 0) {
-            croak("POINTER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos), 0));
+            dcArgPointer(cvm,
+                         sv2ptr(aTHX_ type,
+                                new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
+                                ST(st_pos)));
             ++st_pos;
+            continue;
         }
         switch (type->numeric) {
         case VOID_FLAG:
@@ -232,7 +235,11 @@ dcArgPointer(cvm, ptr);*/
         sv_setuv(affix->res, (unsigned short)dcCallShort(cvm, affix->entry_point));
         break;
     case INT_FLAG:
+        PING;
+
         sv_setiv(affix->res, dcCallInt(cvm, affix->entry_point));
+        PING;
+
         break;
     case UINT_FLAG:
         sv_setuv(affix->res, dcCallInt(cvm, affix->entry_point));
@@ -307,11 +314,12 @@ dcArgPointer(cvm, ptr);*/
     default:
         croak("Unknown or unhandled return type: %s", affix->restype->stringify);
     };
-
     if (affix->res == NULL)
         XSRETURN_EMPTY;
+    PING;
 
     ST(0) = affix->res;
+    PING;
 
     XSRETURN(1);
 }
@@ -489,9 +497,41 @@ XS_INTERNAL(Affix_unpin) {
 XS_INTERNAL(Affix_sv_dump) {
     dXSARGS;
     if (items != 1)
-        croak_xs_usage(cv, "sv");
+        croak_xs_usage(cv, "$sv");
     sv_dump(ST(0));
     XSRETURN_EMPTY;
+}
+
+XS_INTERNAL(Affix_sv2ptr) {
+    dXSARGS;
+    if (items != 2)
+        croak_xs_usage(cv, "$type, $sv");
+    Affix_Pointer * ret = new Affix_Pointer(sv2type(aTHX_ ST(0)));
+    ret->address = sv2ptr(aTHX_ ret->type, ret, ST(1));
+    warn(">>>>> %p", ret->address);
+    if (ret->address == nullptr) {
+        delete ret;
+        XSRETURN_EMPTY;
+    }
+    {
+        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
+        sv_bless(RETVAL, gv_stashpvn("Affix::Pointer::Unmanaged", 25, GV_ADD));
+        ST(0) = sv_2mortal(RETVAL);
+    }
+    XSRETURN(1);
+}
+
+XS_INTERNAL(Affix_ptr2sv) {
+    dXSARGS;
+    if (items != 2)
+        croak_xs_usage(cv, "$type, $ptr");
+    Affix_Type * type = sv2type(aTHX_ ST(0));
+    if (UNLIKELY(!sv_derived_from(ST(1), "Affix::Pointer")))
+        croak("Expected an Affix::Pointer object");
+    Affix_Pointer * ptr = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(1))));
+    warn("<<<<< %p", ptr->address);
+    ST(0) = ptr2sv(aTHX_ type, ptr->address);
+    XSRETURN(1);
 }
 
 // Cribbed from Perl::Destruct::Level so leak testing works without yet another prereq
@@ -522,17 +562,14 @@ XS_EXTERNAL(boot_Affix) {
     // Start exposing API
     // Affix::affix( lib, symbol, [args], return )
     //             ( [lib, version], symbol, [args], return )
+    //             ( lib, [symbol, name], [args], return )
     //             ( [lib, version], [symbol, name], [args], return )
-    //             ( lib, symbol, [args] ) // default return type is Void
-    //             ( lib, symbol ) // use context for parameters, return type is Void
-    cv = newXSproto_portable("Affix::affix", Affix_affix, __FILE__, "$$;$$");
+    cv = newXSproto_portable("Affix::affix", Affix_affix, __FILE__, "$$$$");
     XSANY.any_i32 = 0;
     export_function("Affix", "affix", "core");
     // Affix::wrap(  lib, symbol, [args], return )
     //             ( [lib, version], symbol, [args], return )
-    //             ( lib, symbol, [args] ) // default return type is Void
-    //             ( lib, symbol ) // use context for parameters, return type is Void
-    cv = newXSproto_portable("Affix::wrap", Affix_affix, __FILE__, "$$;$$");
+    cv = newXSproto_portable("Affix::wrap", Affix_affix, __FILE__, "$$$$");
     XSANY.any_i32 = 1;
     export_function("Affix", "wrap", "core");
     // Affix::DESTROY( affix )
@@ -540,8 +577,13 @@ XS_EXTERNAL(boot_Affix) {
     // Affix::END( )
     (void)newXSproto_portable("Affix::END", Affix_END, __FILE__, "");
 
+    // Affix Utils!
     // Affix::set_destruct_level
     (void)newXSproto_portable("Affix::set_destruct_level", Affix_set_destruct_level, __FILE__, "$");
+    // Affix::sv2ptr( type, sv )
+    (void)newXSproto_portable("Affix::sv2ptr", Affix_sv2ptr, __FILE__, "$$");
+    // Affix::ptr2sv( type, ptr )
+    (void)newXSproto_portable("Affix::ptr2sv", Affix_ptr2sv, __FILE__, "$$");
 
     // general purpose flags
     export_constant("Affix", "VOID_FLAG", "flags", VOID_FLAG);
@@ -574,6 +616,7 @@ XS_EXTERNAL(boot_Affix) {
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);
     boot_Affix_Platform(aTHX_ cv);
+    boot_Affix_Pointer(aTHX_ cv);
     //
     Perl_xs_boot_epilog(aTHX_ ax);
 }

@@ -222,8 +222,9 @@ package Affix::Type 0.5 {
     #define SLOT_POINTER_ADDR 7
     sub Pointer : prototype($) {
         my ($subtype) = @{ +shift };
-        use Data::Dump;
-        ddx $subtype;
+
+        # use Data::Dump;
+        # ddx $subtype;
         $subtype->{depth}++;
         $subtype->{stringify} = 'Pointer[ ' . $subtype->{stringify} . ' ]';
         $subtype;
