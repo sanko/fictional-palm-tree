@@ -24,7 +24,6 @@ subtest 'affix' => sub {
     ok affix( $lib, test_2 => []                                      => Int ),  'int test_2()';
     ok affix( $lib, test_3 => [ Pointer [Int], Int ]                  => Int ),  'int test_3(int *, int)';
     ok affix( $lib, test_4 => [ Pointer [ Pointer [Int] ], Int, Int ] => Int ),  'int test_4(int **, int, int)';
-
     # ok affix( $lib, test_5 => []                 => Pointer [Void] ), 'void * test_4(void)';
 };
 like capture_stderr { test_1(100) }, qr[^ok at .+$],     'test_1(100)';
