@@ -57,7 +57,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
             int n = SvIV(data);
             Copy(&n, target, 1, int);
         } else if (UNLIKELY(!SvOK(data)))
-            warn("Data type mismatch for %s [%d]", type->stringify, SvTYPE(data));
+            warn("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         PING;
 
         break;
@@ -69,7 +69,79 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
     return target;
 }
 
+
 SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
+    warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d]",
+         target,
+         depth,
+         type->depth);
+
+    if (depth < type->depth) {
+
+        //   DumpHex(target, 64);
+        AV * tmp = newAV();
+        IV ptr_iv = PTR2IV(target);
+        size_t n = 0;
+
+        while (1) {
+            // warn("tick: %d", n);
+            DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INTPTR_T * n));
+            warn("r: %p", now);
+            if (now == nullptr) {
+                // warn("Null?!?!?");
+                // return newRV_inc(MUTABLE_SV(tmp));
+                break;
+            }
+            warn("n: %d, depth: %d, .at: %d", n, depth, type->length.at(depth));
+            if (n >= type->length.at(depth))
+                break;
+            // warn("Not null?");
+            av_push(tmp, ptr2sv(aTHX_ type, *(DCpointer *)now, depth + 1));
+
+            n++;
+        }
+        PING;
+        DD(MUTABLE_SV(tmp));
+        return newRV_inc(MUTABLE_SV(tmp));
+
+        // return MUTABLE_SV(tmp);
+    }
+    DumpHex(target, 64);
+    IV ptr_iv = PTR2IV(target);
+    size_t n = 0;
+    AV * ret_av = newAV();
+    while (1) {
+        warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
+
+        // warn("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& type->arraylen: %d, n: %d", type->arraylen[depth], n);
+        // if (type->arraylen[depth] > 0 && type->arraylen[depth] == n)
+        if (n >= type->length.at(depth))
+            break;
+        DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
+        warn("r: %p", now);
+        DumpHex(now, SIZEOF_INT);
+        if (now == nullptr) {
+            PING;
+            // warn("Null?!?!?");
+            return newSV(0);
+        }
+        // warn("Not null?");
+        // PING;
+        SV * retlll = newSViv(*(int *)now);
+        // DD(retlll);
+        PING;
+        av_push(ret_av, retlll);
+        // av_push(MUTABLE_AV(ret), retlll);
+        PING;
+
+        // PING;
+        n++;
+    }
+    DD(MUTABLE_SV(ret_av));
+    return newRV_inc(MUTABLE_SV(ret_av));
+}
+
+SV * ptr2svX(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
     // warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer %p, size_t depth)", target);
 
     if (depth < type->depth) {
@@ -121,5 +193,5 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
         // PING;
         n++;
     }
-    return MUTABLE_SV(ret_av);
+    return SvREFCNT_inc(MUTABLE_SV(ret_av));
 }

@@ -183,143 +183,144 @@ dcArgPointer(cvm, ptr);*/
             }
         default:
             //~ sv_dump(*av_fetch(affix->argtypes, st_pos, 0));
-            croak("Unhandled argument type: %s", type->stringify);
+            croak("Unhandled argument type: %s", type->stringify.c_str());
         }
         ++st_pos;
     }
 
-    switch (affix->restype->numeric) {
-    case VOID_FLAG:
-        dcCallVoid(cvm, affix->entry_point);
-        // sv_set_undef(affix->res);
-        break;
-    case BOOL_FLAG:
-        sv_setsv(affix->res, boolSV(dcCallBool(cvm, affix->entry_point)));
-        break;
-    case CHAR_FLAG:
-    case SCHAR_FLAG:
-        {
-            char value[1];
-            value[0] = dcCallChar(cvm, affix->entry_point);
-            sv_setsv(affix->res, newSVpv(value, 1));
-            (void)SvUPGRADE(affix->res, SVt_PVIV);
-            SvIV_set(affix->res, ((IV)value[0]));
-            SvIOK_on(affix->res);
-        }
-        break;
-    case UCHAR_FLAG:
-        {
-            char value[1];
-            value[0] = dcCallChar(cvm, affix->entry_point);
-            sv_setsv(affix->res, newSVpv(value, 1));
-            (void)SvUPGRADE(affix->res, SVt_PVIV);
-            SvIV_set(affix->res, ((UV)value[0]));
-            SvIOK_on(affix->res);
-        }
-        break;
-    case WCHAR_FLAG:
-        {
-            warn(
-                "RETURNING WIDE "
-                "CHAR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            wchar_t src[1];
-            src[0] = (wchar_t)dcCallLongLong(cvm, affix->entry_point);
-            affix->res = wchar2utf(aTHX_ src, 1);
-        }
-        break;
-    case SHORT_FLAG:
-        sv_setiv(affix->res, (short)dcCallShort(cvm, affix->entry_point));
-        break;
-    case USHORT_FLAG:
-        sv_setuv(affix->res, (unsigned short)dcCallShort(cvm, affix->entry_point));
-        break;
-    case INT_FLAG:
-        PING;
-
-        sv_setiv(affix->res, dcCallInt(cvm, affix->entry_point));
-        PING;
-
-        break;
-    case UINT_FLAG:
-        sv_setuv(affix->res, dcCallInt(cvm, affix->entry_point));
-        break;
-    case LONG_FLAG:
-        sv_setiv(affix->res, dcCallLong(cvm, affix->entry_point));
-        break;
-    case ULONG_FLAG:
-        sv_setuv(affix->res, dcCallLong(cvm, affix->entry_point));
-        break;
-    case LONGLONG_FLAG:
-        sv_setiv(affix->res, dcCallLongLong(cvm, affix->entry_point));
-        break;
-    case ULONGLONG_FLAG:
-        sv_setuv(affix->res, dcCallLongLong(cvm, affix->entry_point));
-        break;
-    case FLOAT_FLAG:
-        sv_setnv(affix->res, dcCallFloat(cvm, affix->entry_point));
-        break;
-    case DOUBLE_FLAG:
-        sv_setnv(affix->res, dcCallDouble(cvm, affix->entry_point));
-        break;
-
-        //~ #define STRING_FLAG 'z'
-        //~ #define WSTRING_FLAG '<'
-        //~ #define STDSTRING_FLAG 'Y'
-        //~ #define STRUCT_FLAG 'A'
-        //~ #define CPPSTRUCT_FLAG 'B'
-        //~ #define UNION_FLAG 'u'
-        //~ #define ARRAY_FLAG '@'
-        //~ #define CODEREF_FLAG '&'
-        //~ #define POINTER_FLAG 'P'
-
-    case POINTER_FLAG:
-        /*{
-            DCpointer ret = dcCallPointer(cvm, affix->entry_point);
-            if (ret == NULL)
-                sv_set_undef(affix->res);
-            else {
-                SV * subtype = AXT_TYPE_SUBTYPE(affix->restype);
-                char subtype_c = AXT_TYPE_NUMERIC(subtype);
-                switch (subtype_c) {
-                case CHAR_FLAG:
-                case UCHAR_FLAG:
-                case SCHAR_FLAG:
-                case WCHAR_FLAG:
-                case SV_FLAG:
-                    sv_setsv(affix->res, sv_2mortal(ptr2sv(aTHX_ affix->restype, ret)));
-                    break;
-                default:
-                    sv_setsv(affix->res, sv_2mortal(ptr2obj(aTHX_ affix->restype, ret)));
-                }
+    if (affix->restype->depth) {
+        DCpointer __ptr = dcCallPointer(cvm, affix->entry_point);
+        // DumpHex(__ptr, 16);
+        // if(*(DCpointer*)__ptr!=NULL)
+        // DumpHex(*(DCpointer*)__ptr, 16);
+        sv_setsv(affix->res, ptr2sv(aTHX_ affix->restype, __ptr, 1));
+    } else
+        switch (affix->restype->numeric) {
+        case VOID_FLAG:
+            dcCallVoid(cvm, affix->entry_point);
+            // sv_set_undef(affix->res);
+            break;
+        case BOOL_FLAG:
+            sv_setsv(affix->res, boolSV(dcCallBool(cvm, affix->entry_point)));
+            break;
+        case CHAR_FLAG:
+        case SCHAR_FLAG:
+            {
+                char value[1];
+                value[0] = dcCallChar(cvm, affix->entry_point);
+                sv_setsv(affix->res, newSVpv(value, 1));
+                (void)SvUPGRADE(affix->res, SVt_PVIV);
+                SvIV_set(affix->res, ((IV)value[0]));
+                SvIOK_on(affix->res);
             }
-        }*/
-        break;
-    case CODEREF_FLAG:
-        /*{
-            DCpointer ret = dcCallPointer(cvm, affix->entry_point);
-            sv_setsv(affix->res, sv_2mortal(ptr2sv(aTHX_ affix->restype, ret)));
-        }*/
-        break;
-    case STRUCT_FLAG:
-        /*{
-            DCpointer ret = safecalloc(1, AXT_TYPE_SIZEOF(affix->restype));
-            dcCallAggr(cvm, affix->entry_point, ret_aggr, ret);
-            //~ DumpHex(ret, AXT_TYPE_SIZEOF(affix->restype));
-            SV * HOLD = ptr2sv(aTHX_ affix->restype, ret);
-            //~ sv_setsv(affix->res, sv_2mortal(MUTABLE_SV(HOLD)));
-            affix->res = sv_2mortal(HOLD);
-        }*/
-        break;
-    default:
-        croak("Unknown or unhandled return type: %s", affix->restype->stringify);
-    };
+            break;
+        case UCHAR_FLAG:
+            {
+                char value[1];
+                value[0] = dcCallChar(cvm, affix->entry_point);
+                sv_setsv(affix->res, newSVpv(value, 1));
+                (void)SvUPGRADE(affix->res, SVt_PVIV);
+                SvIV_set(affix->res, ((UV)value[0]));
+                SvIOK_on(affix->res);
+            }
+            break;
+        case WCHAR_FLAG:
+            {
+                warn(
+                    "RETURNING WIDE "
+                    "CHAR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                wchar_t src[1];
+                src[0] = (wchar_t)dcCallLongLong(cvm, affix->entry_point);
+                affix->res = wchar2utf(aTHX_ src, 1);
+            }
+            break;
+        case SHORT_FLAG:
+            sv_setiv(affix->res, (short)dcCallShort(cvm, affix->entry_point));
+            break;
+        case USHORT_FLAG:
+            sv_setuv(affix->res, (unsigned short)dcCallShort(cvm, affix->entry_point));
+            break;
+        case INT_FLAG:
+            sv_setiv(affix->res, dcCallInt(cvm, affix->entry_point));
+            break;
+        case UINT_FLAG:
+            sv_setuv(affix->res, dcCallInt(cvm, affix->entry_point));
+            break;
+        case LONG_FLAG:
+            sv_setiv(affix->res, dcCallLong(cvm, affix->entry_point));
+            break;
+        case ULONG_FLAG:
+            sv_setuv(affix->res, dcCallLong(cvm, affix->entry_point));
+            break;
+        case LONGLONG_FLAG:
+            sv_setiv(affix->res, dcCallLongLong(cvm, affix->entry_point));
+            break;
+        case ULONGLONG_FLAG:
+            sv_setuv(affix->res, dcCallLongLong(cvm, affix->entry_point));
+            break;
+        case FLOAT_FLAG:
+            sv_setnv(affix->res, dcCallFloat(cvm, affix->entry_point));
+            break;
+        case DOUBLE_FLAG:
+            sv_setnv(affix->res, dcCallDouble(cvm, affix->entry_point));
+            break;
+
+            //~ #define STRING_FLAG 'z'
+            //~ #define WSTRING_FLAG '<'
+            //~ #define STDSTRING_FLAG 'Y'
+            //~ #define STRUCT_FLAG 'A'
+            //~ #define CPPSTRUCT_FLAG 'B'
+            //~ #define UNION_FLAG 'u'
+            //~ #define ARRAY_FLAG '@'
+            //~ #define CODEREF_FLAG '&'
+            //~ #define POINTER_FLAG 'P'
+
+        case POINTER_FLAG:
+            /*{
+                DCpointer ret = dcCallPointer(cvm, affix->entry_point);
+                if (ret == NULL)
+                    sv_set_undef(affix->res);
+                else {
+                    SV * subtype = AXT_TYPE_SUBTYPE(affix->restype);
+                    char subtype_c = AXT_TYPE_NUMERIC(subtype);
+                    switch (subtype_c) {
+                    case CHAR_FLAG:
+                    case UCHAR_FLAG:
+                    case SCHAR_FLAG:
+                    case WCHAR_FLAG:
+                    case SV_FLAG:
+                        sv_setsv(affix->res, sv_2mortal(ptr2sv(aTHX_ affix->restype, ret)));
+                        break;
+                    default:
+                        sv_setsv(affix->res, sv_2mortal(ptr2obj(aTHX_ affix->restype, ret)));
+                    }
+                }
+            }*/
+            break;
+        case CODEREF_FLAG:
+            /*{
+                DCpointer ret = dcCallPointer(cvm, affix->entry_point);
+                sv_setsv(affix->res, sv_2mortal(ptr2sv(aTHX_ affix->restype, ret)));
+            }*/
+            break;
+        case STRUCT_FLAG:
+            /*{
+                DCpointer ret = safecalloc(1, AXT_TYPE_SIZEOF(affix->restype));
+                dcCallAggr(cvm, affix->entry_point, ret_aggr, ret);
+                //~ DumpHex(ret, AXT_TYPE_SIZEOF(affix->restype));
+                SV * HOLD = ptr2sv(aTHX_ affix->restype, ret);
+                //~ sv_setsv(affix->res, sv_2mortal(MUTABLE_SV(HOLD)));
+                affix->res = sv_2mortal(HOLD);
+            }*/
+            break;
+        default:
+            croak("Unknown or unhandled return type: %s", affix->restype->stringify.c_str());
+        };
     if (affix->res == NULL)
         XSRETURN_EMPTY;
-    PING;
 
     ST(0) = affix->res;
-    PING;
 
     XSRETURN(1);
 }

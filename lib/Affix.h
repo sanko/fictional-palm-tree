@@ -366,8 +366,15 @@ DCsigchar cbHandlerXXXXX(DCCallback * cb, DCArgs * args, DCValue * result, DCpoi
 
 class Affix_Type {
 public:
-    Affix_Type(const std::string & stringify, char numeric, size_t size, size_t alignment, size_t depth)
-        : numeric(numeric), size(size), _alignment(alignment), depth(depth), stringify(stringify) {};
+    Affix_Type(const std::string & stringify,
+               char numeric,
+               size_t size,
+               size_t alignment,
+               size_t depth,
+               const std::vector<SSize_t> & length)
+        : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
+    ~Affix_Type() = default;
+
     // const char * stringify() {
     //     char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" :
     //     "")); for (size_t i = 0; i < pointer_depth; ++i)
@@ -376,6 +383,7 @@ public:
     //         ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
     //     return ret;
     // };
+
     size_t alignment(size_t _depth = 0) {
         return depth > _depth ? ALIGNOF_INTPTR_T : _alignment;
     }
@@ -390,7 +398,7 @@ public:  // for now...
     size_t _alignment;
     size_t offset;
     size_t depth;  // pointer depth
-    size_t arraylen;
+    std::vector<SSize_t> length;
     std::string stringify;
 
     //
