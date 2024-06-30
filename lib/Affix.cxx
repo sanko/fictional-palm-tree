@@ -480,18 +480,6 @@ XS_INTERNAL(Affix_END) {
     XSRETURN_EMPTY;
 }
 
-XS_INTERNAL(Affix_pin) {
-    dXSARGS;
-    if (items != 1)
-        croak_xs_usage(cv, "lib");
-}
-
-XS_INTERNAL(Affix_unpin) {
-    dXSARGS;
-    if (items != 1)
-        croak_xs_usage(cv, "lib");
-}
-
 // Utils
 XS_INTERNAL(Affix_sv_dump) {
     dXSARGS;
@@ -616,6 +604,7 @@ XS_EXTERNAL(boot_Affix) {
     boot_Affix_Lib(aTHX_ cv);
     boot_Affix_Platform(aTHX_ cv);
     boot_Affix_Pointer(aTHX_ cv);
+    boot_Affix_pin(aTHX_ cv);
     //
     Perl_xs_boot_epilog(aTHX_ ax);
 }

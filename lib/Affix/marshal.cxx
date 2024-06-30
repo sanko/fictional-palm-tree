@@ -75,7 +75,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
 }
 
 
-SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
+SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
     warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d]",
          target,
          depth,
@@ -119,7 +119,6 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
     case VOID_FLAG:
         {
             // TODO: Return a Affix::Pointer object
-
             AV * RETVALAV = newAV();
             {
                 SV * TMP = newSV(0);
@@ -138,32 +137,36 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
         break;
     case INT_FLAG:
         {
-            AV * ret_av = newAV_mortal();
-            while (1) {
-                warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
+            if (wantlist) {
+                AV * ret_av = newAV_mortal();
+                while (1) {
+                    warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
 
-                // warn("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& type->arraylen: %d, n: %d", type->arraylen[depth], n);
-                // if (type->arraylen[depth] > 0 && type->arraylen[depth] == n)
-                if (n >= type->length.at(depth))
-                    break;
+                    // warn("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& type->arraylen: %d, n: %d", type->arraylen[depth], n);
+                    // if (type->arraylen[depth] > 0 && type->arraylen[depth] == n)
+                    if (n >= type->length.at(depth))
+                        break;
 
-                DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
-                warn("r: %p", now);
-                DumpHex(now, SIZEOF_INT);
-                if (now == nullptr) {
+                    DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
+                    warn("r: %p", now);
+                    DumpHex(now, SIZEOF_INT);
+                    if (now == nullptr) {
+                        PING;
+                        // warn("Null?!?!?");
+                        return newSV(0);
+                    }
+                    // warn("Not null?");
+                    // PING;
+                    SV * retlll = newSViv(*(int *)now);
+                    // DD(retlll);
                     PING;
-                    // warn("Null?!?!?");
-                    return newSV(0);
-                }
-                // warn("Not null?");
-                // PING;
-                SV * retlll = newSViv(*(int *)now);
-                // DD(retlll);
-                PING;
-                av_push(MUTABLE_AV(ret_av), retlll);
-                n++;
-            }  // PING;
-            sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
+                    av_push(MUTABLE_AV(ret_av), retlll);
+                    n++;
+                }  // PING;
+
+                sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
+            } else
+                sv_setsv(ret, newSViv(*(int *)target));
         }
         break;
     default:

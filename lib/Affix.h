@@ -450,7 +450,7 @@ Affix_Type * sv2type(pTHX_ SV * perl_type);
 // marshal.cxx
 // size_t padding_needed_for(size_t offset, size_t alignment);
 // SV * ptr2obj(pTHX_ SV * type_sv, DCpointer ptr);
-SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1);
+SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1, bool = true);
 DCpointer sv2ptr(pTHX_ Affix_Type *, Affix_Pointer *, SV *, size_t = 1, DCpointer = nullptr);
 // size_t _alignof(pTHX_ SV * type);
 // size_t _sizeof(pTHX_ SV * type);
