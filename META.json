@@ -94,6 +94,22 @@
       "Affix::Platform::Windows" : {
          "file" : "lib/Affix/Platform/Windows.pm",
          "version" : "0.5"
+      },
+      "Affix::Type" : {
+         "file" : "lib/Affix/Type.pm",
+         "version" : "0.5"
+      },
+      "Affix::Type::Enum" : {
+         "file" : "lib/Affix/Type/Enum.pm",
+         "version" : "0.5"
+      },
+      "Affix::Type::Struct" : {
+         "file" : "lib/Affix/Type/Struct.pm",
+         "version" : "0.5"
+      },
+      "Affix::Type::Union" : {
+         "file" : "lib/Affix/Type/Union.pm",
+         "version" : "0.5"
       }
    },
    "release_status" : "stable",
