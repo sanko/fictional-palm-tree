@@ -372,7 +372,6 @@ XS_INTERNAL(Affix_affix) {
             XSRETURN_EMPTY;
         }
     }
-
     {                        // ..., symbol, ..., ...
         std::string rename;  // affix(...) allows you to change the name of the perlsub
         if (ix == 0 && SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
@@ -403,7 +402,6 @@ XS_INTERNAL(Affix_affix) {
         }
         STMT_END;
     }
-
     {  // ..., ..., args, ...
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
             AV * av_args = MUTABLE_AV(SvRV(ST(2)));
