@@ -61,6 +61,38 @@ $|++;
     # use Data::Dump;
     # diag Data::Dump::dump($leaks);
 }
+{
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        {
+            subtest pin => sub {
+                my ( $lib, $ver );
+                #
+                subtest 'setup for pin' => sub {
+                    ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+#include "std.h"
+// ext: .c
+DLLEXPORT int VERSION = 100;
+DLLEXPORT int get_VERSION(){ return VERSION; }
+
+                    isa_ok affix( $lib, 'get_VERSION', [], Int ), ['Affix'];
+                };
+
+                # bind an exported value to a Perl value
+                ok pin( $ver, $lib, 'VERSION', Int ), 'ping( $ver, ..., "VERSION", Int )';
+                is $ver,          100, 'var pulled value from pin( ... )';
+                is $ver = 2,      2,   'set var on the perl side';
+                is get_VERSION(), 2,   'pin set the value in our library';
+            };
+        }
+        done_testing;
+    };
+    is $leaks->{error}, U(), 'type defined in higher scope';
+
+    # use Data::Dump;
+    # diag Data::Dump::dump($leaks);
+}
 done_testing;
 __END__
 {
