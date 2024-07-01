@@ -3,20 +3,15 @@
 /* Affix::pin( ... ) System
 Bind an exported variable to a perl var */
 
-typedef struct {  // Used in CUnion and pin()
-    Affix_Pointer * ptr;
-    Affix_Type * type;
-} var_ptr;
-
 int get_pin(pTHX_ SV * sv, MAGIC * mg) {
-    var_ptr * ptr = (var_ptr *)mg->mg_ptr;
+    Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     SV * val = ptr2sv(aTHX_ ptr->type, ptr->ptr, 1, false);
     sv_setsv((sv), val);
     return 0;
 }
 
 int set_pin(pTHX_ SV * sv, MAGIC * mg) {
-    var_ptr * ptr = (var_ptr *)mg->mg_ptr;
+    Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     if (SvOK(sv)) {
         DCpointer block = sv2ptr(aTHX_ ptr->type, ptr->ptr, sv);
         Move(block, ptr->ptr, ptr->type->size, char);
@@ -27,36 +22,19 @@ int set_pin(pTHX_ SV * sv, MAGIC * mg) {
 
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
     PERL_UNUSED_VAR(sv);
-    var_ptr * ptr = (var_ptr *)mg->mg_ptr;
-    delete ptr->type;
-    safefree(ptr);
+    Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
+    delete ptr;
     return 0;
 }
 
-static MGVTBL pin_vtbl = {
-    get_pin,   // get
-    set_pin,   // set
-    NULL,      // len
-    NULL,      // clear
-    free_pin,  // free
-    NULL,      // copy
-    NULL,      // dup
-    NULL       // local
-};
-
 void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr) {
     MAGIC * mg = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, NULL, 0);
-    {
-        var_ptr * _ptr;
-        Newx(_ptr, 1, var_ptr);
-        _ptr->ptr = (Affix_Pointer *)ptr;
-        _ptr->type = sv2type(aTHX_ type);
-        if (_ptr->type->depth == 0) {
-            _ptr->type->depth = 1;
-            _ptr->type->length.assign(0, 1);
-        }
-        mg->mg_ptr = (char *)_ptr;
+    Affix_Pin * _ptr = new Affix_Pin((Affix_Pointer *)ptr, sv2type(aTHX_ type));
+    if (_ptr->type->depth == 0) {
+        _ptr->type->depth = 1;
+        _ptr->type->length.assign(0, 1);
     }
+    mg->mg_ptr = (char *)_ptr;
 }
 
 XS_INTERNAL(Affix_pin) {
@@ -102,9 +80,8 @@ XS_INTERNAL(Affix_pin) {
 
     const char * symbol = (const char *)SvPV_nolen(ST(2));
     DCpointer ptr = dlFindSymbol(_lib, symbol);
-    if (ptr == NULL) {
+    if (ptr == NULL)
         croak("Failed to locate '%s'", symbol);
-    }
     _pin(aTHX_ ST(0), ST(3), ptr);
     XSRETURN_YES;
 }

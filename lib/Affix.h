@@ -413,7 +413,7 @@ class Affix_Pointer {
 public:
     Affix_Pointer(Affix_Type * type) : type(type) {};
     Affix_Pointer(Affix_Type * type, DCpointer address) : address(address), type(type) {};
-    ~Affix_Pointer() {};
+    ~Affix_Pointer() = default;
     DCpointer address = nullptr;
     Affix_Type * type;
     size_t count;
@@ -440,6 +440,29 @@ public:  // for now
     std::vector<Affix_Type *> argtypes;
     Affix_Type * restype = nullptr;
     SV * res = nullptr;  // time over ram
+};
+
+// var pin system
+class Affix_Pin {  // Used in CUnion and pin()
+public:
+    Affix_Pin(Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type) {};
+    ~Affix_Pin() = default;
+
+    Affix_Pointer * ptr;
+    Affix_Type * type;
+};
+int get_pin(pTHX_ SV *, MAGIC *);
+int set_pin(pTHX_ SV *, MAGIC *);
+int free_pin(pTHX_ SV *, MAGIC *);
+static MGVTBL pin_vtbl = {
+    get_pin,   // get
+    set_pin,   // set
+    NULL,      // len
+    NULL,      // clear
+    free_pin,  // free
+    NULL,      // copy
+    NULL,      // dup
+    NULL       // local
 };
 
 void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx
