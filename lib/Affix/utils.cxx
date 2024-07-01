@@ -77,6 +77,7 @@ void _DumpHex(pTHX_ const void * addr, size_t len, const char * file, int line) 
         i++;
     }
     printf(" | %s\n", buff);
+    safefree(buff);
     fflush(stdout);
 }
 

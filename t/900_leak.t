@@ -19,8 +19,6 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks in types';
-    use Data::Dump;
-    diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -30,9 +28,6 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when using affix($$$$)';
-
-    # use Data::Dump;
-    # diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -42,9 +37,6 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
-
-    # use Data::Dump;
-    # diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -57,9 +49,6 @@ $|++;
         done_testing;
     };
     is $leaks->{error}, U(), 'type defined in higher scope';
-
-    # use Data::Dump;
-    # diag Data::Dump::dump($leaks);
 }
 {
     my $leaks = leaks {
@@ -80,18 +69,16 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
                 };
 
                 # bind an exported value to a Perl value
-                ok pin( $ver, $lib, 'VERSION', Int ), 'ping( $ver, ..., "VERSION", Int )';
+                ok Affix::pin( $ver, $lib, 'VERSION', Int ), 'ping( $ver, ..., "VERSION", Int )';
                 is $ver,          100, 'var pulled value from pin( ... )';
                 is $ver = 2,      2,   'set var on the perl side';
                 is get_VERSION(), 2,   'pin set the value in our library';
+                Affix::unpin $ver;
             };
         }
         done_testing;
     };
     is $leaks->{error}, U(), 'type defined in higher scope';
-
-    # use Data::Dump;
-    # diag Data::Dump::dump($leaks);
 }
 done_testing;
 __END__

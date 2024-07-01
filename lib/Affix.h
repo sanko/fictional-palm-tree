@@ -371,9 +371,14 @@ public:
                size_t size,
                size_t alignment,
                size_t depth,
-               const std::vector<SSize_t> & length)
+               std::vector<SSize_t> & length)
         : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
-    ~Affix_Type() = default;
+    ~Affix_Type() {
+
+        length.clear();
+        if (_typedef != nullptr)
+            free(_typedef);
+    };
 
     // const char * stringify() {
     //     char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" :
@@ -404,10 +409,10 @@ public:  // for now...
     //
     void * subtype = NULL;  // Affix_Type
 
-    const char * _typedef = NULL;
+    char * _typedef = NULL;
     DCaggr * aggregate = NULL;
-    void ** args = NULL;        // list of Affix_Type
-    const char * field = NULL;  // If part of a struct
+    void ** args = NULL;  // list of Affix_Type
+    char * field = NULL;  // If part of a struct
 };
 class Affix_Pointer {
 public:
@@ -431,6 +436,7 @@ public:  // for now
         // if (entry_point != nullptr) safefree(entry_point);
 
         std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
+        argtypes.clear();
         if (restype != nullptr)
             delete restype;
     };
@@ -445,11 +451,18 @@ public:  // for now
 // var pin system
 class Affix_Pin {  // Used in CUnion and pin()
 public:
-    Affix_Pin(Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type) {};
-    ~Affix_Pin() = default;
-
     Affix_Pointer * ptr;
     Affix_Type * type;
+    DLLib * lib;
+    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : lib(lib), ptr(ptr), type(type) {};
+    ~Affix_Pin() {
+        if (ptr != nullptr)
+            ptr = nullptr;  // DO NOT FREE
+        delete type;
+        type = NULL;
+        dlFreeLibrary(lib);
+        lib = NULL;
+    };
 };
 int get_pin(pTHX_ SV *, MAGIC *);
 int set_pin(pTHX_ SV *, MAGIC *);

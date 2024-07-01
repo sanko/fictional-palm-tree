@@ -1,15 +1,12 @@
 #include "../Affix.h"
-
 /* Affix::pin( ... ) System
 Bind an exported variable to a perl var */
-
 int get_pin(pTHX_ SV * sv, MAGIC * mg) {
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     SV * val = ptr2sv(aTHX_ ptr->type, ptr->ptr, 1, false);
     sv_setsv((sv), val);
     return 0;
 }
-
 int set_pin(pTHX_ SV * sv, MAGIC * mg) {
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     if (SvOK(sv)) {
@@ -23,13 +20,15 @@ int set_pin(pTHX_ SV * sv, MAGIC * mg) {
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
     PERL_UNUSED_VAR(sv);
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
+    // if(ptr != nullptr)
     delete ptr;
+    ptr = nullptr;
     return 0;
 }
 
-void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr) {
+void _pin(pTHX_ SV * sv, SV * type, DLLib * lib, DCpointer ptr) {
     MAGIC * mg = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, NULL, 0);
-    Affix_Pin * _ptr = new Affix_Pin((Affix_Pointer *)ptr, sv2type(aTHX_ type));
+    Affix_Pin * _ptr = new Affix_Pin(lib, (Affix_Pointer *)ptr, sv2type(aTHX_ type));
     if (_ptr->type->depth == 0) {
         _ptr->type->depth = 1;
         _ptr->type->length.assign(0, 1);
@@ -41,13 +40,12 @@ XS_INTERNAL(Affix_pin) {
     dXSARGS;
     if (items != 4)
         croak_xs_usage(cv, "var, lib, symbol, type");
+
     DLLib * _lib;
     // pin( my $integer, 't/src/58_affix_import_vars', 'integer', Int );
-
     {
         SV * const xsub_tmp_sv = ST(1);
         SvGETMAGIC(xsub_tmp_sv);
-
         if (!SvOK(xsub_tmp_sv) && SvREADONLY(xsub_tmp_sv))  // explicit undef
             _lib = _affix_load_library(NULL);
         else if (sv_isobject(xsub_tmp_sv) && sv_derived_from(xsub_tmp_sv, "Affix::Lib")) {
@@ -77,12 +75,13 @@ XS_INTERNAL(Affix_pin) {
             XSRETURN_UNDEF;
         }
     }
-
-    const char * symbol = (const char *)SvPV_nolen(ST(2));
+    char * symbol = (char *)SvPV_nolen(ST(2));
     DCpointer ptr = dlFindSymbol(_lib, symbol);
     if (ptr == NULL)
         croak("Failed to locate '%s'", symbol);
-    _pin(aTHX_ ST(0), ST(3), ptr);
+
+    _pin(aTHX_ ST(0), ST(3), _lib, ptr);
+
     XSRETURN_YES;
 }
 

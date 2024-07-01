@@ -8,6 +8,7 @@ E|---3--------------------------------|------------------3----------------||
 /* globals */
 #define MY_CXT_KEY "Affix::_cxt" XS_VERSION
 
+
 typedef struct {
     DCCallVM * cvm;
 } my_cxt_t;

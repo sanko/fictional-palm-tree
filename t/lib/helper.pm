@@ -140,10 +140,10 @@ package t::lib::helper {
     use warnings;
     use lib %s;
     use Affix;
-    no Test2::Plugin::ExitSummary;    
+    no Test2::Plugin::ExitSummary;
     use Test2::V0;
     pass "generate valgrind suppressions";
-    done_testing;                   
+    done_testing;
 
 
                 #~ use Data::Dump;
@@ -324,24 +324,24 @@ package t::lib::helper {
             # Get source code of the anonymous sub (using B::Deparse)
             #~ my $source = deparse($code_ref);
             require B::Deparse;
-            my $deparse = B::Deparse->new( "-p", "-sC" );
+            my $deparse = B::Deparse->new(qw[-l -p -sC]);
             my ( $package, $file, $line ) = caller;
-            diag $_ for map {"'$_'"} sort { length $a <=> length $b } grep {defined } map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath:() } @INC, 't/lib' ;
             my $source = sprintf
-                <<'', ( join ', ',  map {"'$_'"} sort { length $a <=> length $b } grep {defined } map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath:() } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $line + 2, $file, $deparse->coderef2text($code_ref);
+                <<'', ( join ', ', map {"'$_'"} sort { length $a <=> length $b } grep {defined} map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $deparse->coderef2text($code_ref);
 use lib %s;
 use Test2::V0 '!subtest', -no_srand => 1;
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use Test2::Plugin::UTF8;
 no Test2::Plugin::ExitSummary;
+use t::lib::helper;
 use Affix;
 Affix::set_destruct_level(3);
 no Test2::Plugin::ExitSummary;
 Test2::API::test2_stack()->top->{count} = %d;
 $|++;
-#line %d %s
 my $exit = subtest 'leaks' => sub %s;
 Test2::API::test2_stack()->top->{count}++;
+# done_testing;
 exit !$exit;
 
             my $report = Path::Tiny->tempfile( { realpath => 1 }, 'valgrind_report_XXXXXXXXXX' );
@@ -362,6 +362,8 @@ exit !$exit;
             #~ diag $exit;
             my $xml = parse_xml( $report->slurp_utf8 );
             Test2::API::test2_stack()->top->{count}++;
+            use Data::Dumper;
+            diag Dumper($xml) if $xml->{valgrindoutput}{errorcounts};
             $xml->{valgrindoutput};
         }
     }
