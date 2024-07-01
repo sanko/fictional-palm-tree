@@ -216,6 +216,7 @@ void boot_Affix_Platform(pTHX_ CV * cv) {
     export_constant("Affix::Platform", "ALIGNOF_INTPTR_T", "all", ALIGNOF_INTPTR_T);
 
     // Undocumented
+    register_constant("Affix::Platform", "Windows", boolSV(is_defined(DC__OS_Win64) || is_defined(DC__OS_Win32)));
     register_constant("Affix::Platform", "Win64", boolSV(is_defined(DC__OS_Win64)));
     register_constant("Affix::Platform", "Win32", boolSV(is_defined(DC__OS_Win32)));
     register_constant("Affix::Platform", "macOS", boolSV(is_defined(DC__OS_MacOSX)));
