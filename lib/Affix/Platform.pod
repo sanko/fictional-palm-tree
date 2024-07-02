@@ -363,7 +363,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-dyncall BeOS ARMv4T SuperH ppc
+dyncall BeOS ARMv4T SuperH ppc iOS OpenBSD NetBSD syscall
 
 =end stopwords
 

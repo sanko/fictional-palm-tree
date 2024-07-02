@@ -193,7 +193,7 @@ say $err if $err;
 Returns a human readable string describing the most recent error that occurred from `load_library( ... )`,
 `free_library( ... )`, etc. since the last call to `dlerror( )`.
 
-An undefined value is returned if no errors have occured.
+An undefined value is returned if no errors have occurred.
 
 ## `libc()`
 

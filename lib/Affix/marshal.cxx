@@ -91,13 +91,13 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
         while (1) {
             // warn("tick: %d", n);
             DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INTPTR_T * n));
-            warn("r: %p", now);
+            // warn("r: %p", now);
             if (now == nullptr) {
                 // warn("Null?!?!?");
                 // return newRV_inc(MUTABLE_SV(tmp));
                 break;
             }
-            warn("n: %d, depth: %d, .at: %d", n, depth, type->length.at(depth));
+            // warn("n: %d, depth: %d, .at: %d", n, depth, type->length.at(depth));
             if (n >= type->length.at(depth))
                 break;
             // warn("Not null?");
@@ -140,7 +140,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
             if (wantlist) {
                 AV * ret_av = newAV_mortal();
                 while (1) {
-                    warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
+                    // warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
 
                     // warn("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& type->arraylen: %d, n: %d", type->arraylen[depth], n);
                     // if (type->arraylen[depth] > 0 && type->arraylen[depth] == n)

@@ -159,6 +159,20 @@ package t::lib::helper {
                 #~ diag $err;
                 diag scalar( keys %$known ) . ' suppressions found';
                 diag $dups . ' duplicates have been filtered out';
+                $known->{'BSD is trash'} = <<'';
+{
+    <insert_a_suppression_name_here>
+    Memcheck:Free
+    fun:~vector
+}
+
+                $known->{'chaotic access'} = <<'';
+{
+    <insert_a_suppression_name_here>
+    Memcheck:Addr1
+    fun:_DumpHex
+}
+
 
                 # https://bugs.kde.org/show_bug.cgi?id=453084
                 # https://github.com/Perl/perl5/issues/19949
@@ -332,16 +346,14 @@ use lib %s;
 use Test2::V0 '!subtest', -no_srand => 1;
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use Test2::Plugin::UTF8;
-no Test2::Plugin::ExitSummary;
+no Test2::Plugin::ExitSummary; # I wish
 use t::lib::helper;
 use Affix;
 Affix::set_destruct_level(3);
-no Test2::Plugin::ExitSummary;
 Test2::API::test2_stack()->top->{count} = %d;
 $|++;
 my $exit = subtest 'leaks' => sub %s;
 Test2::API::test2_stack()->top->{count}++;
-# done_testing;
 exit !$exit;
 
             my $report = Path::Tiny->tempfile( { realpath => 1 }, 'valgrind_report_XXXXXXXXXX' );

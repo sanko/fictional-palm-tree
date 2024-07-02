@@ -371,7 +371,7 @@ public:
                size_t size,
                size_t alignment,
                size_t depth,
-               std::vector<SSize_t> & length)
+               std::vector<SSize_t> length)
         : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
     ~Affix_Type() {
 
