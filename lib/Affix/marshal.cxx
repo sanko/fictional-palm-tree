@@ -74,6 +74,27 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
     return target;
 }
 
+SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, char * package) {
+    SV * ret = newSV(0);
+    size_t n = 0;
+    // TODO: Return a Affix::Pointer object
+    AV * RETVALAV = newAV();
+    {
+        SV * TMP = newSV(0);
+        if (ptr != NULL)
+            sv_setref_pv(TMP, NULL, ptr);
+        // av_store(RETVALAV, SLOT_POINTER_ADDR, TMP);
+        // av_store(RETVALAV, SLOT_POINTER_SUBTYPE, newSVsv(type));
+        //~ av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(AXT_POINTER_COUNT(type)));
+        // av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(1));
+        av_store(RETVALAV, SLOT_POINTER_POSITION, newSViv(0));
+    }
+    ret = newRV_noinc(MUTABLE_SV(RETVALAV));  // Create a reference to the AV
+    sv_bless(ret, gv_stashpvn(package, strlen(package), GV_ADD));
+    return ret;
+    return ret;
+}
+
 
 SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
     warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d]",
@@ -113,61 +134,25 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
     }
     DumpHex(target, 64);
     IV ptr_iv = PTR2IV(target);
-    size_t n = 0;
+
     SV * ret = newSV(0);
     switch (type->numeric) {
     case VOID_FLAG:
-        {
-            // TODO: Return a Affix::Pointer object
-            AV * RETVALAV = newAV();
-            {
-                SV * TMP = newSV(0);
-                if (target != NULL)
-                    sv_setref_pv(TMP, NULL, target);
-                // av_store(RETVALAV, SLOT_POINTER_ADDR, TMP);
-                // av_store(RETVALAV, SLOT_POINTER_SUBTYPE, newSVsv(type));
-                //~ av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(AXT_POINTER_COUNT(type)));
-                // av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(1));
-                av_store(RETVALAV, SLOT_POINTER_POSITION, newSViv(0));
-            }
-            ret = newRV_noinc(MUTABLE_SV(RETVALAV));  // Create a reference to the AV
-            sv_bless(ret, gv_stashpvn("Affix::Pointer::Unmanaged", 25, GV_ADD));
-            return ret;
-        }
+        sv_setsv(ret, bless_ptr(aTHX_ target, type));
         break;
     case INT_FLAG:
-        {
-            if (wantlist) {
-                AV * ret_av = newAV_mortal();
-                while (1) {
-                    // warn("tick: %d, depth: %d, length: %d", n, depth, type->length.at(depth));
-
-                    // warn("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& type->arraylen: %d, n: %d", type->arraylen[depth], n);
-                    // if (type->arraylen[depth] > 0 && type->arraylen[depth] == n)
-                    if (n >= type->length.at(depth))
-                        break;
-
-                    DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
-                    warn("r: %p", now);
-                    DumpHex(now, SIZEOF_INT);
-                    if (now == nullptr) {
-                        PING;
-                        // warn("Null?!?!?");
-                        return newSV(0);
-                    }
-                    // warn("Not null?");
-                    // PING;
-                    SV * retlll = newSViv(*(int *)now);
-                    // DD(retlll);
-                    PING;
-                    av_push(MUTABLE_AV(ret_av), retlll);
-                    n++;
-                }  // PING;
-
-                sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
-            } else
-                sv_setsv(ret, newSViv(*(int *)target));
-        }
+        if (wantlist) {
+            AV * ret_av = newAV_mortal();
+            for (size_t n = 0; n < type->length.at(depth); ++n) {
+                DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
+                if (now == nullptr)
+                    return newSV(0);
+                SV * retlll = newSViv(*(int *)now);
+                av_push(MUTABLE_AV(ret_av), retlll);
+            }
+            sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
+        } else
+            sv_setsv(ret, newSViv(*(int *)target));
         break;
     default:
         croak("oh, okay...");

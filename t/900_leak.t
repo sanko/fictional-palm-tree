@@ -84,8 +84,7 @@ DLLEXPORT void free_ptr(){ free (ptr); }
     diag Data::Dump::pp($leaks);
 }
 {
-        my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
-
+    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
     my $leaks = leaks {
         use Affix;
         use t::lib::helper qw[compile_test_lib];

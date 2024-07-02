@@ -414,6 +414,7 @@ public:  // for now...
     void ** args = NULL;  // list of Affix_Type
     char * field = NULL;  // If part of a struct
 };
+
 class Affix_Pointer {
 public:
     Affix_Pointer(Affix_Type * type) : type(type) {};
@@ -432,13 +433,12 @@ public:  // for now
     ~Affix() {
         if (lib != nullptr)
             dlFreeLibrary(lib);
-
         // if (entry_point != nullptr) safefree(entry_point);
-
         std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
         argtypes.clear();
         if (restype != nullptr)
             delete restype;
+        pointers.clear();
     };
     DLLib * lib = nullptr;            // safefree
     DCpointer entry_point = nullptr;  // not malloc'd
@@ -446,6 +446,7 @@ public:  // for now
     std::vector<Affix_Type *> argtypes;
     Affix_Type * restype = nullptr;
     SV * res = nullptr;  // time over ram
+    std::vector<Affix_Pointer *> pointers;
 };
 
 // var pin system
@@ -481,6 +482,7 @@ static MGVTBL pin_vtbl = {
 void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx
 
 // Type system
+SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, char * = "Affix::Pointer::Unmanaged");
 Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // marshal.cxx
