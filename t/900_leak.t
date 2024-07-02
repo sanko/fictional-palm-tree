@@ -80,8 +80,6 @@ DLLEXPORT void free_ptr(){ free (ptr); }
         #done_testing;
     };
     is $leaks->{error}, U(), 'int *';
-    use Data::Dump;
-    diag Data::Dump::pp($leaks);
 }
 {
     my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
@@ -114,6 +112,33 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
         #done_testing;
     };
     is $leaks->{error}, U(), 'pin( ... )';
+}
+{
+    # my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        my ( $lib, $ver );
+        #
+        subtest 'setup for pin' => sub {
+            ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+#include "std.h"
+// ext: .c
+int * ptr(int size){ int * ret = (int*)malloc(sizeof(int) * 5); return ret;}
+
+            isa_ok affix( $lib, 'ptr', [Int], Pointer [Void] ), ['Affix'];
+        };
+
+        # Free it manually
+        isa_ok my $ptr_1 = wrap( $lib, 'ptr', [Int], Pointer [Void] )->(3), ['Affix::Pointer'];
+        $ptr_1->free;
+
+        # Do not free it
+        isa_ok my $ptr_2 = wrap( $lib, 'ptr', [Int], Pointer [Void] )->(3), ['Affix::Pointer'];
+    };
+    is $leaks->{error}, U(), 'managing pointers';
+    use Data::Dump;
+    diag Data::Dump::pp($leaks);
 }
 done_testing;
 __END__

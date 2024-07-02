@@ -75,26 +75,8 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
 }
 
 SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, char * package) {
-    SV * ret = newSV(0);
-    size_t n = 0;
-    // TODO: Return a Affix::Pointer object
-    AV * RETVALAV = newAV();
-    {
-        SV * TMP = newSV(0);
-        if (ptr != NULL)
-            sv_setref_pv(TMP, NULL, ptr);
-        // av_store(RETVALAV, SLOT_POINTER_ADDR, TMP);
-        // av_store(RETVALAV, SLOT_POINTER_SUBTYPE, newSVsv(type));
-        //~ av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(AXT_POINTER_COUNT(type)));
-        // av_store(RETVALAV, SLOT_POINTER_COUNT, newSViv(1));
-        av_store(RETVALAV, SLOT_POINTER_POSITION, newSViv(0));
-    }
-    ret = newRV_noinc(MUTABLE_SV(RETVALAV));  // Create a reference to the AV
-    sv_bless(ret, gv_stashpvn(package, strlen(package), GV_ADD));
-    return ret;
-    return ret;
+    return sv_setref_pv(newSV(0), package, (DCpointer) new Affix_Pointer(type, ptr));
 }
-
 
 SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
     warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d]",
@@ -127,12 +109,12 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
             n++;
         }
         PING;
-        DD(MUTABLE_SV(tmp));
+        // DD(MUTABLE_SV(tmp));
         return newRV_inc(MUTABLE_SV(tmp));
 
         // return MUTABLE_SV(tmp);
     }
-    DumpHex(target, 64);
+    // DumpHex(target, 64);
     IV ptr_iv = PTR2IV(target);
 
     SV * ret = newSV(0);
@@ -158,7 +140,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
         croak("oh, okay...");
     };
     // av_push(MUTABLE_AV(ret), retlll);
-    PING;
-    DD(ret);
+    // PING;
+    // DD(ret);
     return ret;
 }

@@ -42,6 +42,11 @@ void set_isa(const char * package, const char * parent) {
 
 // Debugging
 void _DumpHex(pTHX_ const void * addr, size_t len, const char * file, int line) {
+    if (addr == nullptr) {
+        printf("Dumping %lu bytes from null pointer %p at %s line %d\n", len, addr, file, line);
+        fflush(stdout);
+        return;
+    }
     fflush(stdout);
     int perLine = 16;
     // Silently ignore silly per-line values.
