@@ -19,8 +19,7 @@ int set_pin(pTHX_ SV * sv, MAGIC * mg) {
 
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
     PERL_UNUSED_VAR(sv);
-    Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
-    // if(ptr != nullptr)
+    Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;    
     delete ptr;
     ptr = nullptr;
     return 0;

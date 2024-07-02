@@ -209,7 +209,7 @@ the same shared library exists, the most recent should be returned.
 Returns a human readable string describing the most recent error that occurred from C<load_library( ... )>,
 C<free_library( ... )>, etc. since the last call to C<dlerror( )>.
 
-An undefined value is returned if no errors have occured.
+An undefined value is returned if no errors have occurred.
 
 =head2 C<libc()>
 
@@ -477,7 +477,7 @@ Sanko Robinson <sanko@cpan.org>
 
 =begin stopwords
 
-dyncall
+dyncall macOS struct structs errno FreeBSD eXtension
 
 =end stopwords
 

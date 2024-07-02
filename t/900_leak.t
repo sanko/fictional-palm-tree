@@ -62,6 +62,38 @@ $|++;
                     ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
 #include "std.h"
 // ext: .c
+int * ptr;
+DLLEXPORT int * get_ptr(int size){ ptr = (int*) malloc(size * sizeof(int)); for ( int i = 0; i < size; ++i ) ptr[i] = i; return ptr; }
+DLLEXPORT void free_ptr(){ free (ptr); }
+
+                    isa_ok affix( $lib, 'get_ptr', [Int], Pointer [ Int, 5 ] ), ['Affix'];
+    isa_ok affix( $lib, 'free_ptr', [], Void ), ['Affix'];
+ };
+
+                # bind an exported value to a Perl value
+                ok my $ptr = get_ptr(5), '$ptr = get_ptr()';
+                free_ptr();
+            };
+        }
+
+        #done_testing;
+    };
+    is $leaks->{error}, U(), 'int *';
+    use Data::Dump;
+    diag Data::Dump::pp($leaks);
+}
+{
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        {
+            subtest pin => sub {
+                my ( $lib, $ver );
+                #
+                subtest 'setup for pin' => sub {
+                    ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+#include "std.h"
+// ext: .c
 DLLEXPORT int VERSION = 100;
 DLLEXPORT int get_VERSION(){ return VERSION; }
 
@@ -76,9 +108,10 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
                 Affix::unpin $ver;
             };
         }
-        done_testing;
+
+        #done_testing;
     };
-    is $leaks->{error}, U(), 'type defined in higher scope';
+    is $leaks->{error}, U(), 'pin( ... )';
 }
 done_testing;
 __END__

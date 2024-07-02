@@ -55,6 +55,25 @@ warn("!!!rows: %d, cols: %d", rows, cols);
   return arr;
 }
 
+{
+    my ( $lib, $ver );
+    #
+    subtest 'setup for pin' => sub {
+        ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+#include "std.h"
+// ext: .c
+DLLEXPORT int * get_ptr(int size){ int*ptr = (int*) malloc(size * sizeof(int)); for ( int i = 0; i < size; ++i ) ptr[i] = i; return ptr; }
+DLLEXPORT bool free_ptr(int * ptr){ free( ptr ); return 1; }
+
+        isa_ok affix( $lib, 'get_ptr',  [Int],                  Pointer [ Int, 5 ] ), ['Affix'];
+        isa_ok affix( $lib, 'free_ptr', [ Pointer [ Int, 5 ] ], Bool ),               ['Affix'];
+    };
+
+    # bind an exported value to a Perl value
+    ok my $ptr = get_ptr(5), '$ptr = get_ptr()';
+
+    # ok free_ptr($ptr), 'free_ptr($ptr)';
+}
 #
 subtest 'affix' => sub {
     ok affix( $lib, test_1 => [Int]                                   => Void ),                              'void test_1(int)';

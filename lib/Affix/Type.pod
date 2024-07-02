@@ -351,7 +351,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-dyncall
+dyncall rvalue enum dualvars
 
 =end stopwords
 
