@@ -74,6 +74,24 @@ DLLEXPORT bool free_ptr(int * ptr){ free( ptr ); return 1; }
 
     # ok free_ptr($ptr), 'free_ptr($ptr)';
 }
+{
+    my ( $lib, $ver );
+    #
+    subtest 'setup for pin' => sub {
+        ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+#include "std.h"
+// ext: .c
+int * ptr(int size){ int * ret = (int*)malloc(sizeof(int) * 5); return ret;}
+bool free_ptr(int * ptr){ if(ptr==NULL) return false; free(ptr); return true; }
+
+        isa_ok affix( $lib, 'ptr',      [Int],             Pointer [Void] ), ['Affix'];
+        isa_ok affix( $lib, 'free_ptr', [ Pointer [Int] ], Bool ),           ['Affix'];
+    };
+
+    # Free it manually
+    isa_ok my $ptr = ptr(5), ['Affix::Pointer'];
+    ok free_ptr($ptr), 'free_ptr( $ptr )';
+};
 #
 subtest 'affix' => sub {
     ok affix( $lib, test_1 => [Int]                                   => Void ),                              'void test_1(int)';

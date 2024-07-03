@@ -1,5 +1,18 @@
 #include "../Affix.h"
 
+
+XS_INTERNAL(Affix_Pointer_dump) {
+    dXSARGS;
+    PERL_UNUSED_VAR(items);
+    Affix_Pointer * pointer;
+    pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
+    if (pointer->address == nullptr)
+        XSRETURN_EMPTY;
+    DumpHex(pointer->address, SvIV(ST(1)));
+    XSRETURN_EMPTY;
+};
+
+
 XS_INTERNAL(Affix_Pointer_free) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
@@ -40,6 +53,8 @@ XS_INTERNAL(Affix_Pointer_Unmanaged_DESTROY) {
 
 void boot_Affix_Pointer(pTHX_ CV * cv) {
     PERL_UNUSED_VAR(cv);
+
+    (void)newXSproto_portable("Affix::Pointer::dump", Affix_Pointer_dump, __FILE__, "$$");
 
     (void)newXSproto_portable("Affix::Pointer::free", Affix_Pointer_free, __FILE__, "$");
 

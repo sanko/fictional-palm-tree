@@ -32,16 +32,23 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
         croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
+
     for (const auto & type : affix->argtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth > 0) {
-            dcArgPointer(cvm,
-                         sv2ptr(aTHX_ type,
-                                new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
-                                ST(st_pos)));
+            if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
+                Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
+                dcArgPointer(cvm, pointer->address);  // Even if it's NULL
+            } else {
+                dcArgPointer(cvm,
+                             sv2ptr(aTHX_ type,
+                                    new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
+                                    ST(st_pos)));
+            }
             ++st_pos;
             continue;
         }
+
         switch (type->numeric) {
         case VOID_FLAG:
 
