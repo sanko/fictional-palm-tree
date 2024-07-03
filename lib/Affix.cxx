@@ -22,7 +22,7 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     size_t items = (SP - MARK);
 
     dMY_CXT;
-    DCCallVM * cvm = MY_CXT.cvm;
+    static DCCallVM * cvm = MY_CXT.cvm;
     dcReset(cvm);
 
     // TODO: Generate aggregate in type constructor
@@ -30,14 +30,14 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
     // if (items != affix->argtypes.size())
-        // croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
+    // croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
-    Affix_Type * type;
-    for (size_t c = 0; c < affix->argtypes.size(); c++) {
-        type = affix->argtypes[c];
-        ;
-        // for ( const Affix_Type * type : affix->args) {
+    // Affix_Type * type;
+    // for (size_t c = 0; c < affix->argtypes.size(); c++) {
+    // type = affix->argtypes[c];
+    ;
+    for (const auto & type : affix->argtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
@@ -335,7 +335,9 @@ dcArgPointer(cvm, ptr);*/
 
     ST(0) = affix->res;
 
-    XSRETURN(1);
+    // XSRETURN(1);
+    PL_stack_sp = PL_stack_base + ax;
+    return;
 }
 
 XS_INTERNAL(Affix_affix) {

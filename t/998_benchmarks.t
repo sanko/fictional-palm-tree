@@ -1,32 +1,45 @@
+use strict;
+use warnings;
+use Config;
 use Test2::V0 '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 
 # use Test2::Require::AuthorTesting;
 use lib '../lib', 'lib', '../blib/arch', '../blib/lib', 'blib/arch', 'blib/lib', '../../', '.';
-use Affix qw[wrap affix find_library Double];
+use Affix qw[wrap affix libm Double];
 BEGIN { chdir '../' if !-d 't'; }
 use Benchmark qw[:all];
 $|++;
 #
-my $wrap_w_params = wrap( find_library('m'), 'pow', [ Double, Double ], Double );
-affix( find_library('m'), [ 'pow' => 'affix_w_params' ], [ Double, Double ], Double );
+my $wrap_sin = wrap( libm(), 'sin', [Double], Double );
+affix( libm(), [ 'sin' => 'affix_sin' ], [Double], Double );
 #
+my $num = rand(time);
+my $sin = sin $num;
 subtest verify => sub {
-    ok 81 == $wrap_w_params->( 3.0, 4.0 ), 'wrap w/ params';
-    ok 81 == affix_w_params( 3.0, 4.0 ),   'affix w/ params';
-    ok 81 == pow( 3.0, 4.0 ),              'pure perl [Double, Double]';
+    is $wrap_sin->($num), float( $sin, tolerance => 0.00000001 ), 'wrap';
+    is affix_sin($num),   float( $sin, tolerance => 0.00000001 ), 'affix';
+    is sin($num),         float( $sin, tolerance => 0.00000001 ), 'pure perl';
 };
-
-sub pow($$) {
-    my ( $x, $y ) = @_;
-    return $x**$y;
-}
+my $depth = 20;
 subtest benchmarks => sub {
     my $todo = todo 'these are fun but not important';
-    isnt fastest( -5, wrap => sub { $wrap_w_params->( 3, 4 ) }, affix => sub { affix_w_params( 3, 4 ) }, pure => sub { pow( 3, 4 ) } ), 'pure',
-        '[Int, Int]';
-    isnt fastest( -5, wrap => sub { $wrap_w_params->( 3.0, 4.0 ) }, affix => sub { affix_w_params( 3.0, 4.0 ) }, pure => sub { pow( 3.0, 4.0 ) } ),
-        'pure', '[Double, Double]';
+    isnt fastest(
+        -5,
+        pure => sub {
+            my $x = 0;
+            while ( $x < $depth ) { my $n = sin($x); $x++ }
+        },
+        wrap => sub {
+            my $x = 0;
+            while ( $x < $depth ) { my $n = $wrap_sin->($x); $x++ }
+        },
+        affix => sub {
+            my $x = 0;
+            while ( $x < $depth ) { my $n = affix_sin($x); $x++ }
+        }
+        ),
+        'pure', '[Int]';
 };
 
 # Cribbed from Test::Benchmark

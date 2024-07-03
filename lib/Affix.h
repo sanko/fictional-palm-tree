@@ -446,7 +446,7 @@ public:  // for now
     std::vector<Affix_Type *> argtypes;
     Affix_Type * restype = nullptr;
     SV * res = nullptr;  // time over ram
-    //std::vector<Affix_Pointer *> pointers;
+    // std::vector<Affix_Pointer *> pointers;
 };
 
 // var pin system

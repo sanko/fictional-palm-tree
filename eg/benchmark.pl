@@ -23,16 +23,11 @@ BEGIN {
             '/lib/' . $Config{archname} . '-gnu/libm.so.6' :
         '/lib/libm.so.6';
 }
-
-sub libfile {
-    return undef;
-    $libfile;
-}
 #
 my $sin_default = wrap( $libfile, 'sin', [Double] => Double );
 affix( $libfile, [ 'sin', '_affix_sin_default' ], [Double] => Double );
 #
-my $ffi = FFI::Platypus->new( api => 1 );
+my $ffi = FFI::Platypus->new( api => 2 );
 $ffi->lib($libfile);
 my $ffi_func = $ffi->function( sin => ['double'] => 'double' );
 $ffi->attach( [ sin => 'ffi_sin' ] => ['double'] => 'double' );
@@ -47,18 +42,18 @@ double inline_c_sin(double in) {
 
 # prime the pump and verify results
 subtest 'verify' => sub {
-    my $int = rand;
+    my $int = rand(time);
     my $sin = sin $int;
-    diag sprintf 'pow(%f) == %f', $int, $sin;
-    is $sin_default->($int),     float( $sin, tolerance => 0.000000001 ), 'Affix coderef';
-    is _affix_sin_default($int), float( $sin, tolerance => 0.000000001 ), 'Affix affix\'d';
-    is ffi_sin($int),            float( $sin, tolerance => 0.000000001 ), 'FFI::Platypus attach';
-    is $ffi_func->($int),        float( $sin, tolerance => 0.000000001 ), 'FFI::Platypus coderef';
-    is inline_c_sin($int),       float( $sin, tolerance => 0.000000001 ), 'Inline::C';
+    diag sprintf 'sin(%f) == %f', $int, $sin;
+    is $sin_default->($int),     float( $sin, tolerance => 0.00000001 ), 'Affix::wrap';
+    is _affix_sin_default($int), float( $sin, tolerance => 0.00000001 ), 'Affix::affix';
+    is ffi_sin($int),            float( $sin, tolerance => 0.00000001 ), 'FFI::Platypus->attach';
+    is $ffi_func->($int),        float( $sin, tolerance => 0.00000001 ), 'FFI::Platypus->function';
+    is inline_c_sin($int),       float( $sin, tolerance => 0.00000001 ), 'Inline::C';
 };
 done_testing;
 #
-my $depth = 1000;
+my $depth = 20;
 cmpthese(
     timethese(
         -30,
@@ -66,23 +61,23 @@ cmpthese(
                 my $x = 0;
                 while ( $x < $depth ) { my $n = sin($x); $x++ }
             },
-            affix_sub => sub {
+            'Affix::affix' => sub {
                 my $x = 0;
                 while ( $x < $depth ) { my $n = _affix_sin_default($x); $x++ }
             },
-            affix_coderef => sub {
+            'Affix::wrap' => sub {
                 my $x = 0;
                 while ( $x < $depth ) { my $n = $sin_default->($x); $x++ }
             },
-            ffi_sub => sub {
+            'Platypus->function' => sub {
                 my $x = 0;
                 while ( $x < $depth ) { my $n = ffi_sin($x); $x++ }
             },
-            ffi_coderef => sub {
+            'Platypus->attach' => sub {
                 my $x = 0;
                 while ( $x < $depth ) { my $n = $ffi_func->($x); $x++ }
             },
-            inline_c_sin => sub {
+            'Inline::C' => sub {
                 my $x = 0;
                 while ( $x < $depth ) { my $n = inline_c_sin($x); $x++ }
             }

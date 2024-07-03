@@ -11,13 +11,12 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
-    my $DEBUG = 0;
-    my $CFLAGS
-        = $DEBUG                     ? '-DDEBUG=' . $DEBUG :
-        $Config{osname} eq 'MSWin32' ? '' :
-        ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -O2 -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer ';
-    my $LDFLAGS = ' ';                                              # https://wiki.freebsd.org/LinkTimeOptimization
+    my $DEBUG  = 0;
+    my $CFLAGS = $DEBUG ? '-DDEBUG=' . $DEBUG :
 
+        # $Config{osname} eq 'MSWin32' ? '' :
+        ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
+    my $LDFLAGS = ' -flto';
     #
     sub get_meta {
         state $metafile //= path('META.json');
