@@ -74,7 +74,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
     return target;
 }
 
-SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, char * package) {
+SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, const char * package) {
     return sv_setref_pv(newSV(0), package, (DCpointer) new Affix_Pointer(type, ptr));
 }
 

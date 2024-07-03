@@ -26,16 +26,16 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
     // TODO: Generate aggregate in type constructor
 
-    if (affix->restype->aggregate != NULL)
+    if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
     if (items != affix->argtypes.size())
         croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
 
-    for (const auto & type : affix->argtypes) {
+    for ( auto & type : affix->argtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
-        if (type->depth > 0) {
+        if (type->depth) {
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
                 Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
                 dcArgPointer(cvm, pointer->address);  // Even if it's NULL
@@ -252,7 +252,7 @@ dcArgPointer(cvm, ptr);*/
             sv_setiv(affix->res, dcCallInt(cvm, affix->entry_point));
             break;
         case UINT_FLAG:
-            sv_setuv(affix->res, dcCallInt(cvm, affix->entry_point));
+            sv_setuv(affix->res, (unsigned int)dcCallInt(cvm, affix->entry_point));
             break;
         case LONG_FLAG:
             sv_setiv(affix->res, dcCallLong(cvm, affix->entry_point));
@@ -324,7 +324,8 @@ dcArgPointer(cvm, ptr);*/
         default:
             croak("Unknown or unhandled return type: %s", affix->restype->stringify.c_str());
         };
-    if (affix->res == NULL)
+
+    if (affix->res == nullptr)
         XSRETURN_EMPTY;
 
     ST(0) = affix->res;

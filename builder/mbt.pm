@@ -11,7 +11,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
-    my $DEBUG = 10;
+    my $DEBUG = 0;
     my $CFLAGS
         = $DEBUG                     ? '-DDEBUG=' . $DEBUG :
         $Config{osname} eq 'MSWin32' ? '' :
