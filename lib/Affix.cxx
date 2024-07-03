@@ -15,25 +15,29 @@ typedef struct {
 START_MY_CXT
 
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
-    dXSARGS;
+    dSP;
+    dAXMARK;
 
     Affix * affix = (Affix *)XSANY.any_ptr;
+    size_t items = (SP - MARK);
 
     dMY_CXT;
     DCCallVM * cvm = MY_CXT.cvm;
-    // dcMode(cvm, DC_CALL_C_DEFAULT);
     dcReset(cvm);
 
     // TODO: Generate aggregate in type constructor
 
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
-    if (items != affix->argtypes.size())
-        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
+    // if (items != affix->argtypes.size())
+        // croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
-
-    for ( auto & type : affix->argtypes) {
+    Affix_Type * type;
+    for (size_t c = 0; c < affix->argtypes.size(); c++) {
+        type = affix->argtypes[c];
+        ;
+        // for ( const Affix_Type * type : affix->args) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
@@ -205,6 +209,7 @@ dcArgPointer(cvm, ptr);*/
         switch (affix->restype->numeric) {
         case VOID_FLAG:
             dcCallVoid(cvm, affix->entry_point);
+            XSRETURN_EMPTY;
             // sv_set_undef(affix->res);
             break;
         case BOOL_FLAG:
@@ -325,8 +330,8 @@ dcArgPointer(cvm, ptr);*/
             croak("Unknown or unhandled return type: %s", affix->restype->stringify.c_str());
         };
 
-    if (affix->res == nullptr)
-        XSRETURN_EMPTY;
+    // if (affix->res == nullptr)
+    //     XSRETURN_EMPTY;
 
     ST(0) = affix->res;
 
