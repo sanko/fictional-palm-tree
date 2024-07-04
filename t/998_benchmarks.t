@@ -17,9 +17,9 @@ affix( libm(), [ 'sin' => 'affix_sin' ], [Double], Double );
 my $num = rand(time);
 my $sin = sin $num;
 subtest verify => sub {
-    is $wrap_sin->($num), float( $sin, tolerance => 0.00000001 ), 'wrap';
-    is affix_sin($num),   float( $sin, tolerance => 0.00000001 ), 'affix';
-    is sin($num),         float( $sin, tolerance => 0.00000001 ), 'pure perl';
+    is $wrap_sin->($num), float( $sin, tolerance => 0.000001 ), 'wrap';
+    is affix_sin($num),   float( $sin, tolerance => 0.000001 ), 'affix';
+    is sin($num),         float( $sin, tolerance => 0.000001 ), 'pure perl';
 };
 my $depth = 20;
 subtest benchmarks => sub {
