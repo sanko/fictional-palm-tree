@@ -35,8 +35,10 @@ extern "C" {
 #define dTHXfield(var)
 #endif
 
+#ifndef newAV_morttal
 #define newAV_mortal() MUTABLE_AV(sv_2mortal((SV *)newAV()))
 #define newHV_mortal() MUTABLE_HV(sv_2mortal((SV *)newHV()))
+#endif
 
 /* NOTE: the prototype of newXSproto() is different in versions of perls,
  * so we define a portable version of newXSproto()
@@ -379,15 +381,6 @@ public:
         if (_typedef != nullptr)
             free(_typedef);
     };
-
-    // const char * stringify() {
-    //     char * ret = Perl_form_nocontext("%s%s%s", (const_flag ? "Const[ " : ""), _stringify, (const_flag ? " ]" :
-    //     "")); for (size_t i = 0; i < pointer_depth; ++i)
-    //         ret = Perl_form_nocontext("Pointer[ %s ]", ret);
-    //     if (_typedef != NULL)
-    //         ret = Perl_form_nocontext("typedef %s => %s", _typedef, ret);
-    //     return ret;
-    // };
 
     size_t alignment(size_t _depth = 0) {
         return depth > _depth ? ALIGNOF_INTPTR_T : _alignment;

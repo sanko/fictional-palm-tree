@@ -19,7 +19,7 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
         use Affix::Platform;
         my $platform
             = 'Affix::Platform::' .
-            ( ( Affix::Platform::Win32() || Affix::Platform::Win64() ) ? 'Windows' :
+            ( ( Affix::Platform::Windows() ) ? 'Windows' :
                 Affix::Platform::macOS() ? 'MacOS' :
                 ( Affix::Platform::FreeBSD() || Affix::Platform::OpenBSD() || Affix::Platform::NetBSD() || Affix::Platform::DragonFlyBSD() ) ? 'BSD' :
                 'Unix' );

@@ -1,6 +1,9 @@
 #include "../Affix.h"
+
 /* Affix::pin( ... ) System
+
 Bind an exported variable to a perl var */
+
 int get_pin(pTHX_ SV * sv, MAGIC * mg) {
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     SV * val = ptr2sv(aTHX_ ptr->type, ptr->ptr, 1, false);
