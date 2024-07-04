@@ -35,7 +35,9 @@ extern "C" {
 #define dTHXfield(var)
 #endif
 
-#ifndef newAV_morttal
+// in CORE as of perl 5.40
+// #if PERL_VERSION_LT(5, 40, 0)
+#if PERL_VERSION_MINOR < 40
 #define newAV_mortal() MUTABLE_AV(sv_2mortal((SV *)newAV()))
 #define newHV_mortal() MUTABLE_HV(sv_2mortal((SV *)newHV()))
 #endif

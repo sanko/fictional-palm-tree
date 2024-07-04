@@ -79,32 +79,43 @@ SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, const char * package) {
 }
 
 SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
-    warn("SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d]",
-         target,
-         depth,
-         type->depth);
+    PING;
 
+    warn(
+        "SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d] [type->length.size "
+        "== %d]",
+        target,
+        depth,
+        type->depth,
+        type->length.size());
+        
+            // if (type->length.at(depth ) == -1)  // -1 comes from Affix::Type::Pointer
+    // return bless_ptr(aTHX_ target, type, "Affix::Pointer");
+PING;
     if (depth < type->depth) {
+PING;
 
-        //   DumpHex(target, 64);
+          DumpHex(target, 64);
         AV * tmp = newAV();
         IV ptr_iv = PTR2IV(target);
         size_t n = 0;
+PING;
 
         while (1) {
-            // warn("tick: %d", n);
+            warn("tick: %d", n);
             DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INTPTR_T * n));
-            // warn("r: %p", now);
+            warn("r: %p", now);
             if (now == nullptr) {
                 // warn("Null?!?!?");
                 // return newRV_inc(MUTABLE_SV(tmp));
                 break;
             }
             // warn("n: %d, depth: %d, .at: %d", n, depth, type->length.at(depth));
-            if (n >= type->length.at(depth))
+            if (n >= type->length.at(depth-1))
                 break;
             // warn("Not null?");
             av_push(tmp, ptr2sv(aTHX_ type, *(DCpointer *)now, depth + 1));
+PING;
 
             n++;
         }
@@ -116,6 +127,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
     }
     // DumpHex(target, 64);
     IV ptr_iv = PTR2IV(target);
+PING;
 
     SV * ret = newSV(0);
     switch (type->numeric) {
@@ -123,18 +135,38 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
         sv_setsv(ret, bless_ptr(aTHX_ target, type));
         break;
     case INT_FLAG:
+    PING;
+
         if (wantlist) {
+            PING;
+
             AV * ret_av = newAV_mortal();
-            for (size_t n = 0; n < type->length.at(depth); ++n) {
+            PING;
+
+            for (size_t n = 0; n < type->length.at(depth-1); ++n) {
+                PING;
+
                 DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
+                PING;
+
                 if (now == nullptr)
                     return newSV(0);
+                    PING;
+
                 SV * retlll = newSViv(*(int *)now);
+                PING;
+
                 av_push(MUTABLE_AV(ret_av), retlll);
             }
+            PING;
+
             sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
+            PING;
+
         } else
             sv_setsv(ret, newSViv(*(int *)target));
+            PING;
+
         break;
     default:
         croak("oh, okay...");

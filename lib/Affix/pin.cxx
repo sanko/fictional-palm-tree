@@ -29,12 +29,22 @@ int free_pin(pTHX_ SV * sv, MAGIC * mg) {
 }
 
 void _pin(pTHX_ SV * sv, SV * type, DLLib * lib, DCpointer ptr) {
+    PING;
+
     MAGIC * mg = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, NULL, 0);
+    PING;
+
     Affix_Pin * _ptr = new Affix_Pin(lib, (Affix_Pointer *)ptr, sv2type(aTHX_ type));
-    if (_ptr->type->depth == 0) {
+    PING;
+
+    if (_ptr->type->depth == 0) { // Lazy people forget to pass Pointer[ _type_, 1 ]
+    PING;
+
         _ptr->type->depth = 1;
-        _ptr->type->length.assign(0, 1);
+        _ptr->type->length.push_back(1);
     }
+    PING;
+
     mg->mg_ptr = (char *)_ptr;
 }
 

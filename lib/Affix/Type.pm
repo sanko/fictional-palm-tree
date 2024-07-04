@@ -54,7 +54,7 @@ package Affix::Type 0.5 {
             alignment => $align,
             offset    => $offset,               # TODO
             subtype   => $subtype,
-            length    => [ $array_len // 1 ],
+            length    => [ $array_len // () ],
             typedef   => undef,                 # TODO
             const     => !1,
             volitile  => !1,
