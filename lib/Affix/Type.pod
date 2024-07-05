@@ -352,6 +352,15 @@ C<Enum> but restricts constants to unsigned integers.
 
 C<Enum> but restricts constants to signed chars.
 
+=head2 C<StdString>
+
+Represents the special C++ C<std::string> object.
+
+=head2 C<SV>
+
+Represents perl's internal L<C<SV>|https://perldoc.perl.org/perlguts#Working-with-SVs> type. This is usually passed
+around as a pointer (C<Pointer[SV]>) rather than by value.
+
 =head1 Typedefs 
 
 We provide a few L<typedefs|/typedef( $name, $type )> of our own
