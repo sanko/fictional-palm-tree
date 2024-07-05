@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Affix::Type - A Revew of the Affix 'Type' System
+Affix::Type - Affix's Advisory Type System
 
 =head1 Fundamental Types
 
