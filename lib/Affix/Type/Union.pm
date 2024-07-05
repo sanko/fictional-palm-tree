@@ -37,7 +37,7 @@ package Affix::Type::Union 0.5 {
             push @fields, sprintf '%s => %s', $field, $subtype;
             if ( $sizeof < $__sizeof ) {
                 $sizeof    = $__sizeof;
-                $alignment = $subtype->align;
+                $alignment = $subtype->alignment;
             }
         }
         __PACKAGE__->new(

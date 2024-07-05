@@ -25,7 +25,7 @@ package Affix::Type 0.5 {
             CodeRef Function
             Pointer Array
             SV
-            typedef
+            typedef alignment sizeof
         ]
     ];
     use overload '""' => sub {
@@ -40,8 +40,12 @@ package Affix::Type 0.5 {
         shift->{sizeof};
     }
 
-    sub align ($) {
+    sub alignment ($) {
         shift->{alignment};
+    }
+
+    sub offsetof ($) {
+        shift->{offset};
     }
 
     sub new($$$$$$;$$) {

@@ -33,7 +33,7 @@ package Affix::Type::Struct 0.5 {
             my $field    = $types[$i];
             my $subtype  = $types[ $i + 1 ];
             my $__sizeof = $subtype->{depth} ? Affix::Platform::SIZEOF_INTPTR_T()  : $subtype->sizeof;
-            my $__align  = $subtype->{depth} ? Affix::Platform::ALIGNOF_INTPTR_T() : $subtype->align;
+            my $__align  = $subtype->{depth} ? Affix::Platform::ALIGNOF_INTPTR_T() : $subtype->alignment;
             $subtype->{offset} = int( ( $sizeof + $__align - 1 ) / $__align ) * $__align;
 
             #~ warn sprintf '%10s => %d', $field, $subtype->{offset};

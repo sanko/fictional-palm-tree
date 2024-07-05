@@ -40,6 +40,18 @@ Using these can improve readability by giving complex types a simple name when u
 number of types in a central location making them easier to manage across your codebase.  And provides consistency by
 ensuring that complex types are defined correctly, reducing errors.
 
+=head2 C<alignment( $type )>
+
+This function takes a type definition as its argument and returns the alignment requirement for that type in memory.
+Alignment  refers to the minimum address boundary on which a variable of  that type can be efficiently stored and
+accessed.
+
+    my $alignment_of_int = alignment(Int);
+    # Potentially returns 4 (assuming a 32-bit system where integers are typically 4 bytes)
+
+    my $alignment_of_custom_struct = alignment(Struct[x => Int, y => Double]);
+    # Potentially returns 8 (assuming the system requires 8-byte alignment for doubles)
+
 =head2 C<sizeof( $type )>
 
 Depending on your work, knowing how large a given basic or complex type is might be very important. We do the math for
