@@ -160,57 +160,67 @@ Some types must be provided with more context data.
 
 =head2 C<Pointer[ ... ]>
 
-    Pointer[Int]  ~~ int *
-    Pointer[Void] ~~ void *
+Represents a memory address that points to another variable.
 
-Create pointers to (almost) all other defined types including C<Struct> and C<Void>.
+The Pointer type can optionally take a second argument specifying the number of elements the pointer points to:
 
-To handle a pointer to an object, see L<InstanceOf>.
+=over
 
-Void pointers (C<Pointer[Void]>) might be created with C<malloc> and other memory related functions.
+=item C<Pointer[TYPE]>: A pointer to a single element of a given 'TYPE'. 
+
+C<Pointer[Char]> is equivalent to C<char *> in C. This is a special case where, even without the length, we can use a
+NULL to signal the end of the given pointer's contents.
+
+C<Pointer[Int]> is equivalent to an C<int*> in C, a pointer to a single integer.
+
+C<Pointer[ Struct[ year => Int, balance => Float] ]> represents a pointer to a custom C struct containing an integer
+and a float member.
+
+=item C<Pointer[TYPE, N]>: A pointer to an array of 'N' elements of a given 'TYPE'.
+
+C<Pointer[Char, 10]> is similar to C<char*> in C, but explicitly indicates a pointer to a 10-character array similar to
+C<char name[10]> would in C.
+
+C<Pointer[Int, 5]> is equivalent to an C<int*> in C, but advises Affix to handle the pointer as a list of 5 integers.
+
+C<Pointer[ Struct[ year => Int, balance => Float], 20 ]> represents a list of such C structs.
+
+=back
+
+If the number of elements is omitted, treatment of such pointers will typically default to a generic L<Affix::Pointer>
+object. This is similar to a raw pointer in C and requires caution when dereferencing, as it  doesn't provide enough
+information about the data type it points to.
 
 =head2 C<Struct[ ... ]>
 
-    Struct[                    struct {
-        dob => Struct[              struct {
-            year  => Int,               int year;
-            month => Int,   ~~          int month;
-            day   => Int                int day;
-        ],                          } dob;
-        name => Str              char *name;
-        wId  => Long                long wId;
-    ];                          };
+Represents a custom C struct, allowing you to define the structure of the data it holds. By using C<Struct[...]>, you
+can clearly document the expected layout of custom C  structs within your Perl code, improving readability and
+maintainability.
+
+The C<Struct[...]> type takes a list of key-value pairs within the brackets, where:
+
+=over
+
+=item The key is the name of the member within the struct.
+
+=item The value specifies the type of the member using the defined basic types such as C<Int> or C<Float> or other composite types like C<Pointer[...]> or even nested C<Struct[...]> types.
+
+=back
+
+These are equivalent in Affix's type system and C:
+
+    Struct[                         struct {
+        dob => Struct[                  struct { // No one would represent a date like this but...
+            year  => UInt,                  unsigned int year;
+            month => char,                  char month;
+            day   => Char                   char day;
+        ],                              } dob;
+        name => Pointer[Char]           char *name;
+        wId  => Long                    long wId;
+    ];                              };
 
 A struct consists of a sequence of members with storage allocated in an ordered sequence (as opposed to C<Union>, which
-is a type consisting of a sequence of members where storage overlaps).
-
-A C struct that looks like this:
-
-    struct {
-        char *make;
-        char *model;
-        int   year;
-    };
-
-...would be defined this way:
-
-    Struct[
-        make  => Str,
-        model => Str,
-        year  => Int
-    ];
-
-All fundamental and aggregate types may be found inside of a C<Struct>.
-
-=head2 C<Array[ ... ]>
-
-The elements of the array must pass the additional size constraint.
-
-An array length must be given:
-
-    Array[Int, 5];   # int arr[5]
-    Array[Char, 5];  # char arr[5]
-    Array[Str, 10];  # char *arr[10]
+is a type consisting of a sequence of members where storage overlaps). The order matters!
 
 =head2 C<Union[ ... ]>
 
@@ -333,7 +343,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-dyncall rvalue enum dualvars
+dyncall rvalue enum dualvars dereferencing
 
 =end stopwords
 
