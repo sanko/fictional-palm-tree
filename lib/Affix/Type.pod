@@ -4,184 +4,155 @@
 
 Affix::Type - Affix's Advisory Type System
 
+=head1 Introduction
+
+This module provides an advisory type system for Perl, inspired by libraries like L<Type::Tiny>. It allows developers
+to express intended data types for variables and function arguments, improving code readability and maintainability.
+While Perl itself is dynamically typed, these annotations serve as a guide for L<Affix> and can be used by static
+analysis tools to detect potential type mismatches.
+
+The system supports a range of basic types including C<Char>, C<Int>, C<Long>, C<Double>, and more, corresponding to
+standard C data types. Additionally, it offers a composite C<Pointer> type to represent memory addresses. This type can
+take an optional second argument specifying the number of elements the pointer points to. For instance, C<Pointer[Int,
+1]> denotes a pointer to a single integer, while C<Pointer[Int, 5]> indicates a pointer to an array of five integers.
+If the second argument is omitted, the return values of this type are blessed to a generic L<Affix::Pointer> objects.
+Similarly, C<Struct[...]> allows defining the structure of custom C structs by listing their member types within the
+brackets. These annotations provide a clear and concise way to document expected data formats, promoting better code
+understanding and reducing the risk of type-related errors.
+
 =head1 Fundamental Types
 
-=begin text
+The core of this system lies in its support for fundamental types that mirror those found in C. These include C<Char>
+for storing single characters, C<Int> for whole numbers, C<Long> and C<LongLong> for larger integers, C<Double> and
+C<Float> for floating-point numbers, and C<ULong> for unsigned long integers. Additionally, types like C<Char> and
+C<Int> are well-suited for representing textual data (e.g., ASCII codes) and numerical calculations, respectively.
+C<Double> and C<Float> are ideal for scientific computations requiring decimal precision, while C<ULong> can be useful
+for situations where negative values are not expected. By explicitly declaring these types, developers can make their
+code's intent clearer and identify potential issues early on, such as attempting arithmetic operations on a string
+variable.
 
-    Type        Description
-    ----------------------------------------------------------------------------
-    Void        Generally only used as a return value.
-    Bool
-    Char
-    UChar
-    Int8        TODO
-    UInt8       TODO
-    Short
-    UShort
-    Int16       TODO
-    UInt16      TODO
-    Int
-    UInt
-    Int32       TODO: aka Long
-    UInt32      TODO: aka ULong
-    Long
-    ULong
-    Int64       TODO: aka LongLong
-    UInt64      TODO: aka ULongLong
-    LongLong
-    ULongLong
-    Float       32bit floating point number
-    Double      64bit floating point number
-    Pointer     Parameterized type such as Pointer[Void] or Pointer[Int]
-    Str         Essentially const char *
-    Enum        Parameterized type such as Enum[ 'up', 'down', 'left', 'right' ]
-    Struct      Parameterized type
-    Array       Parameterized type
-
-=end text
-
-=begin html
-
-<table>
-
-<thead>
-
- <tr><th>Affix</th> <th>C99</th> <th>Rust</th> <th>C#</th> <th>pack()</th> <th>Raku</th></tr>
-
-</thead>
-
-<tbody>
-
- <tr><td>Void</td> <td>void</td> <td>-&gt;()</td> <td>void/NULL</td> <td>-</td> <td></td></tr>
-
-<tr><td>Bool</td> <td>_Bool</td> <td>bool</td> <td>bool</td> <td>-</td> <td>bool</td>       </tr>
-
-<tr><td>Char</td> <td>int8_t</td>    <td>i8</td> <td>sbyte</td>  <td>c</td>       <td>int8</td>    </tr>
-
-<tr> <td>UChar</td> <td>uint8_t</td>         <td>u8</td> <td>byte</td>     <td>C</td> <td>byte, uint8</td>       </tr>
-
-<tr> <td>Short</td> <td>int16_t</td> <td>i16</td> <td>short</td> <td>s</td>         <td>int16</td>       </tr>
-
-<tr> <td>UShort</td> <td>uint16_t</td> <td>u16</td> <td>ushort</td>     <td>S</td>   <td>uint16</td>       </tr>
-
-<tr> <td>Int</td> <td>int32_t</td> <td>i32</td> <td>int</td> <td>i</td> <td>int32</td>    </tr>
-
-<tr> <td>UInt</td> <td>uint32_t</td> <td>u32</td> <td>uint</td> <td>I</td> <td>uint32</td>       </tr>
-
-<tr> <td>Long</td> <td>int64_t</td> <td>i64</td> <td>long</td> <td>l</td> <td>int64, long</td> </tr>
-
-<tr> <td>ULong</td> <td>uint64_t</td>     <td>u64</td> <td>ulong</td> <td>L</td> <td>uint64, ulong</td> </tr>
-
-<tr> <td>LongLong</td>    <td>-/long long</td> <td>i128</td>   <td>q</td> <td>longlong</td>         <td></td> </tr>
-
-<tr> <td>ULongLong</td> <td>-/unsigned long long</td> <td>u128</td> <td>Q</td> <td>ulonglong</td>       <td></td> </tr>
-
-<tr> <td>Float</td> <td>float</td>      <td>f32</td> <td>f</td> <td>num32</td> <td></td>       </tr>
-
-<tr> <td>Double</td> <td>double</td> <td>f64</td> <td>d</td>  <td>num64</td>        <td></td> </tr>
-
-<tr> <td>Size_t</td> <td>size_t</td> <td>size_t</td>      <td></td>   <td></td> <td></td>       </tr>
-
-<tr> <td>Str</td> <td>char *</td> <td></td> <td></td>         <td></td> <td></td> </tr>
-
-<tr> <td>WStr</td> <td>wchar_t</td> <td></td> <td></td>       <td></td>      </tr>
-
-</tbody> </table>
-
-=end html
-
-Given sizes are minimums measured in bits
-
-Other types are also defined according to the system's platform. See L<Affix::Type>.
+Given sizes are minimums measured in bits.
 
 =head2 C<Void>
 
-The C<Void> type corresponds to the C C<void> type. It is generally found in typed pointers representing the equivalent
-to the C<void *> pointer in C.
+The C<Void> type corresponds to the C C<void> type. It is generally found in opaque pointers representing the
+equivalent to the C<void *> in C.
 
-    affix undef, 'malloc', [Size_t] => Pointer[Void];
+    affix undef, 'malloc', [Size_t] => Pointer[ Void ];
     my $data = malloc( 32 );
 
 As the example above shows, it's represented by a parameterized C<Pointer[ ... ]> type, using as parameter whatever the
-original pointer is pointing to (in this case, C<void>). This role represents native pointers, and can be used wherever
-they need to be represented in a Perl script.
+original pointer is pointing to (in this case, C<void>). Here, we're representing native pointers.
 
-In addition, you may place a C<Void> in your signature to skip a passed argument.
+As a side effect of it being a no-op in parameter lists, you may use a C<Void> to skip a passed argument.
 
 =head2 C<Bool>
 
 Boolean type may only have room for one of two values: C<true> or C<false>.
 
+Perl considers the number zero, empty strings, the special value C<undef>, and the
+L<builtin::false|https://perldoc.perl.org/builtin#false> to all be false. All other values including
+L<builtin::true|https://perldoc.perl.org/builtin#true> are considered true.
+
+To explicitly convert a value to a simple boolean (true or false), you can use the logical negation operator (C<!>)
+twice, written as C<!!$value>. This coerces the expression into a boolean result.
+
 =head2 C<Char>
 
-Signed character. It's guaranteed to have a width of at least 8 bits.
+It's guaranteed to have a width of at least 8 bits and represents a single character, typically an ASCII code (C<0 ..
+127>).
 
-Pointers (C<Pointer[Char]>) might be better expressed with a C<Str>.
+Useful for storing textual data or performing character-level operations.
 
 =head2 C<UChar>
 
-Unsigned character. It's guaranteed to have a width of at least 8 bits.
+Unsigned version of C<Char>, guaranteed to have a width of at least 8 bits and represents a single character in the
+range of C<0 .. 255>.
+
+Suitable for byte manipulation or working in raw binary data.
+
+=head2 C<WChar>
+
+Represents a wide character, capable of storing characters beyond the basic ASCII range.
+
+This allows for working with languages that use alphabets outside the standard 7-bit ASCII set (e.g., Cyrillic, Kanji).
+
+The specific size and encoding of C<WChar> can vary depending on the system, but it's  typically at least 16 bits.
 
 =head2 C<Short>
 
-Signed short integer. It's guaranteed to have a width of at least 16 bits.
+Signed integer guaranteed to have a width of at least 16 bits in the range of C<-32_768 .. 32_767>.
+
+Can be used for representing small whole numbers or memory offsets where the full range of an C<Int> is not required.
 
 =head2 C<UShort>
 
-Unsigned short integer. It's guaranteed to have a width of at least 16 bits.
+Unsigned counterpart of C<Short>, holding values from C<0 ..  65_535> range.
+
+Useful for calculations involving non-negative integers or working with memory addresses, pixel values, etc.
 
 =head2 C<Int>
 
-Basic signed integer type.
+Represents a signed integer, with the specific range depending on the system architecture (typically 32 or 64 bits).
 
-It's guaranteed to have a width of at least 16 bits. However, on 32/64 bit systems it is almost exclusively guaranteed
-to have width of at least 32 bits.
+Commonly used for general-purpose integer calculations.
 
 =head2 C<UInt>
 
-Basic unsigned integer type.
+Unsigned version of C<Int>, allowing positive values within the same system-specific range.
 
-It's guaranteed to have a width of at least 16 bits. However, on 32/64 bit systems it is almost exclusively guaranteed
-to have width of at least 32 bits.
-
-=head2 C<Long>
-
-Signed long integer type. It's guaranteed to have a width of at least 32 bits.
-
-=head2 C<ULong>
-
-Unsigned long integer type. It's guaranteed to have a width of at least 32 bits.
-
-=head2 C<LongLong>
-
-Signed long long integer type. It's guaranteed to have a width of at least 64 bits.
-
-=head2 C<ULongLong>
-
-Unsigned long long integer type. It's guaranteed to have a width of at least 64 bits.
-
-=head2 C<Float>
-
-L<Single precision floating-point type|https://en.wikipedia.org/wiki/Single-precision_floating-point_format>.
-
-=head2 C<Double>
-
-L<Double precision floating-point type|https://en.wikipedia.org/wiki/Double-precision_floating-point_format>.
+Useful for calculations where negative values are not expected or for representing bit fields.
 
 =head2 C<Size_t>
 
-Unsigned integer type often expected as the result of C<sizeof> or C<offsetof> but can be found elsewhere.
+An unsigned integer type specifically designed to hold the size of objects in memory.
 
-=head2 C<Str>
+Used with functions like C<sizeof> and memory allocation functions like C<malloc>.  The actual size of C<Size_t> can
+vary depending on the system architecture, but it's  guaranteed to be large enough to represent any object size.
 
-Automatically handle null terminated character pointers with this rather than trying using C<Pointer[Char]> and doing
-it yourself.
+=head2 C<Long>
 
-You'll learn a bit more about C<Pointer[...]> and other parameterized types in the next section.
+Signed integer type, typically offering a larger range than C<Int> (often 32 bits on 64-bit systems).
 
-=head2 C<WStr>
+Can be used for storing larger whole numbers or for compatibility with older code.
 
-A null-terminated wide string is a sequence of valid wide characters, ending with a null character.
+=head2 C<ULong>
+
+Unsigned counterpart of C<Long>, holding non-negative values within the same larger range.
+
+Suitable for calculations involving very large positive integers.
+
+=head2 C<LongLong>
+
+Signed integer type with an even larger range than C<LongC> (usually 64 bits).
+
+Ideal for storing very large whole numbers or precise calculations.
+
+=head2 C<ULongLong>
+
+Unsigned version of C<LongLong>, allowing positive values in the extended range.
+
+Useful for representing extremely large non-negative integers.
+
+=head2 C<Float>
+
+Stores L<single-precision floating-point type|https://en.wikipedia.org/wiki/Single-precision_floating-point_format>
+numbers, offering a balance between precision and memory usage.
+
+Useful for scientific calculations or representing real-world values that don't require extremely high precision (e.g.,
+scientific measurements, financial calculations).
+
+Be aware that floating-point calculations can introduce small rounding errors due to their limited precision.
+
+=head2 C<Double>
+
+Represents  L<double precision floating-point
+type|https://en.wikipedia.org/wiki/Double-precision_floating-point_format> numbers, providing a higher degree of
+precision compared to C<Float>.
+
+Ideal for situations where high accuracy is critical, such as complex scientific computations or financial modeling.
+
+However, C<Double> uses more memory than C<Float>, so choose it only when the extra precision is necessary.
 
 =head2 Parameterized Types
 
@@ -337,6 +308,17 @@ C<Enum> but with unsigned integers.
 =head2 C<CharEnum[ ... ]>
 
 C<Enum> but with signed chars.
+
+=head1 Typedefs 
+
+...
+
+=head2 C<String>
+
+Char pointers (C<Pointer[Char]>) might be better expressed with C<String> for clarity's sake.
+
+=head2 C<WString>
+
 
 =head1 LICENSE
 
