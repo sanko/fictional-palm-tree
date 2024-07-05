@@ -49,43 +49,6 @@ int ** test_6( int rows, int cols){
   return arr;
 }
 
-{
-    my ( $lib, $ver );
-    #
-    subtest 'setup for pin' => sub {
-        ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
-#include "std.h"
-// ext: .c
-DLLEXPORT int * get_ptr(int size){ int*ptr = (int*) malloc(size * sizeof(int)); for ( int i = 0; i < size; ++i ) ptr[i] = i; return ptr; }
-DLLEXPORT bool free_ptr(int * ptr){ free( ptr ); return 1; }
-
-        isa_ok affix( $lib, 'get_ptr',  [Int],                  Pointer [ Int, 5 ] ), ['Affix'];
-        isa_ok affix( $lib, 'free_ptr', [ Pointer [ Int, 5 ] ], Bool ),               ['Affix'];
-    };
-
-    # bind an exported value to a Perl value
-    ok my $ptr = get_ptr(5), '$ptr = get_ptr()';
-
-    # ok free_ptr($ptr), 'free_ptr($ptr)';
-}
-{
-    my ( $lib, $ver );
-    #
-    subtest 'setup for pin' => sub {
-        ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
-#include "std.h"
-// ext: .c
-int * ptr(int size){ int * ret = (int*)malloc(sizeof(int) * 5); return ret;}
-bool free_ptr(int * ptr){ if(ptr==NULL) return false; free(ptr); return true; }
-
-        isa_ok affix( $lib, 'ptr',      [Int],             Pointer [Void] ), ['Affix'];
-        isa_ok affix( $lib, 'free_ptr', [ Pointer [Int] ], Bool ),           ['Affix'];
-    };
-
-    # Free it manually
-    isa_ok my $ptr = ptr(5), ['Affix::Pointer'];
-    ok free_ptr($ptr), 'free_ptr( $ptr )';
-};
 #
 subtest 'affix' => sub {
     ok affix( $lib, test_1 => [Int]                                   => Void ),                              'void test_1(int)';
@@ -96,6 +59,7 @@ subtest 'affix' => sub {
     ok affix( $lib, test_6 => [ Int, Int ]                            => Pointer [ Pointer [ Int, 3 ], 5 ] ), 'int ** test_6(int, int)';
     ok affix( $lib, [ test_6 => 'test_7' ] => [ Int, Int ]            => Pointer [ Pointer [Int], 3 ] ),      'int ** test_7(int, int)';
     ok affix( $lib, [ test_6 => 'test_8' ] => [ Int, Int ]            => Pointer [ Pointer [Int] ] ),         'int ** test_8(int, int)';
+    ok affix( $lib, [ test_6 => 'test_9' ] => [ Int, Int ]            => Pointer [ Pointer [ Int, 1 ], 5 ] ), 'int ** test_8(int, int)';
 };
 like capture_stderr { test_1(100) }, qr[^ok at .+$],     'test_1(100)';
 like capture_stderr { test_1(99) },  qr[^not ok at .+$], 'test_1(99)';
@@ -112,5 +76,6 @@ like test_7( 5, 3 ), array {
     end();
 }, 'test_7(5, 3)';
 isa_ok test_8( 5, 3 ), ['Affix::Pointer'], 'test_8(5, 3)';
+is test_9( 5, 1 ), [ 0 .. 4 ], 'test_9(5, 1)';
 #
 done_testing;
