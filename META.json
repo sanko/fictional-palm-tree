@@ -53,6 +53,20 @@
             "Path::Tiny" : "0"
          }
       },
+      "develop" : {
+         "requires" : {
+            "CPAN::Uploader" : "0",
+            "Code::TidyAll" : "0",
+            "Code::TidyAll::Plugin::ClangFormat" : "0",
+            "Code::TidyAll::Plugin::PodTidy" : "0",
+            "Perl::Tidy" : "0",
+            "Pod::Tidy" : "0",
+            "Software::License::Artistic_2_0" : "0",
+            "Test::CPAN::Meta" : "0",
+            "Test::MinimumVersion::Fast" : "0",
+            "Test::PAUSE::Permissions" : "0"
+         }
+      },
       "runtime" : {
          "requires" : {
             "perl" : "v5.32.0"
@@ -62,6 +76,8 @@
          "requires" : {
             "Capture::Tiny" : "0",
             "Data::Dump" : "0",
+            "Test2::Plugin::UTF8" : "0",
+            "Test2::Tools::Compare" : "0",
             "Test2::V0" : "0"
          }
       }

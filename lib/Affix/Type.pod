@@ -393,7 +393,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-dyncall rvalue enum dualvars dereferencing typeless codebase
+dyncall rvalue enum dualvars dereferencing typeless codebase typedefs stringified
 
 =end stopwords
 
