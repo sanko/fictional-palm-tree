@@ -20,7 +20,38 @@ Similarly, C<Struct[...]> allows defining the structure of custom C structs by l
 brackets. These annotations provide a clear and concise way to document expected data formats, promoting better code
 understanding and reducing the risk of type-related errors.
 
-=head1 Fundamental Types
+=head1 Functions
+
+To help with the complexities of representing typeless Perl code to typed compiled languages, we provide a few handy
+functions.
+
+=head2 C<typedef( $name, $type )>
+
+This function allows you to define a new type alias which may be used in your own code or even exported to other
+modules.
+
+    typedef Money => Struct[amount => Double, currency => CharEnum[USD, EUR, JPY]];
+
+    typedef Time => Long; # simple but effective
+
+    typedef 'Acme::Schedule' => Pointer[Struct[ when => Time, event => String ] ]; # Wow
+
+Using these can improve readability by giving complex types a simple name when used frequently. Allows you to define a
+number of types in a central location making them easier to manage across your codebase.  And provides consistency by
+ensuring that complex types are defined correctly, reducing errors.
+
+=head2 C<sizeof( $type )>
+
+Depending on your work, knowing how large a given basic or complex type is might be very important. We do the math for
+you here.
+
+    my $one = sizeof( Char ); # That one's easy
+
+    my $int_size = sizeof( Int ); # May help figure out platform info?
+
+    my $memory = sizeof( Pointer[Struct[ i => Int, label => Union[ f => Float, D => Double, string => Pointer[Char]], 22]); # Now we're talking
+
+=head1 Basic Types
 
 The core of this system lies in its support for fundamental types that mirror those found in C. These include C<Char>
 for storing single characters, C<Int> for whole numbers, C<Long> and C<LongLong> for larger integers, C<Double> and
@@ -225,7 +256,7 @@ is a type consisting of a sequence of members where storage overlaps). The order
 =head2 C<Union[ ... ]>
 
 A union is a type consisting of a sequence of members with overlapping storage (as opposed to C<Struct>, which is a
-type consisting of a sequence of members whose storage is allocated in an ordered sequence).
+type consisting of members whose storage is allocated in an ordered sequence).
 
 The value of at most one of the members can be stored in a union at any one time and the union is only as big as
 necessary to hold its largest member (additional unnamed trailing padding may also be added). The other members are
@@ -233,21 +264,24 @@ allocated in the same bytes as part of that largest member.
 
 A C union that looks like this:
 
-    union {
-        char  c[5];
-        float f;
+    union Data {
+        char  message[5];
+        float decimal;
+        int value;
     };
 
 ...would be defined this way:
 
     Union[
-        c => Array[Char, 5],
-        f => Float
+        message => Pointer[Char, 5],
+        decimal => Float,
+        value => Int
     ];
 
-=head2 C<CodeRef[ ... ]>
+=head2 C<Code[ ... ]>
 
-A value where C<ref($value)> equals C<CODE>. This would be how CodeRefs are defined.
+The C<Code[...]> type takes a list of arguments within square brackets, followed by  the return type. Each argument is
+specified using the existing basic types or composite types.
 
 The argument list and return value must be defined. For example, C<CodeRef[[Int, Int]=>Int]> ~~ C<typedef int
 (*fuc)(int a, int b);>; that is to say our function accepts two integers and returns an integer.
@@ -256,24 +290,11 @@ The argument list and return value must be defined. For example, C<CodeRef[[Int,
     CodeRef[[Pointer[Int]] => Int];        # typedef Int (*function)(int * a);
     CodeRef[[Str, Int] => Struct[...]];    # typedef struct Person (*function)(chat * name, int age);
 
-=head2 C<InstanceOf[ ... ]>
-
-    InstanceOf['Some::Class']
-
-A blessed object of a certain type. When used as an lvalue, the result is properly blessed. As an rvalue, the reference
-is checked to be a subclass of the given package.
-
-Note: This "type" is in a state of development flux and might be made complete with L<issue
-#32|https://github.com/sanko/Affix.pm/issues/32>
-
-=head2 C<Any>
-
-Anything you dump here will be passed along unmodified. We hand off a pointer to the C<SV*> perl gives us without
-copying it.
+When used as a return type, C<Code[...]> returns a callable subroutine which is nice.
 
 =head2 C<Enum[ ... ]>
 
-The value of an C<Enum> is defined by its underlying type which includes C<Int>, C<Char>, etc.
+Represents a generic enumeration type, allowing you to define a set of named integer constants.
 
 This type is declared with an list of strings.
 
@@ -309,19 +330,20 @@ dualvars so that works:
 
 =head2 C<IntEnum[ ... ]>
 
-Same as C<Enum>.
+Same as C<Enum> but restricts constants to integer values.
 
 =head2 C<UIntEnum[ ... ]>
 
-C<Enum> but with unsigned integers.
+C<Enum> but restricts constants to unsigned integers.
 
 =head2 C<CharEnum[ ... ]>
 
-C<Enum> but with signed chars.
+C<Enum> but restricts constants to signed chars.
 
 =head1 Typedefs 
 
-...
+We provide a few L<typedefs|/typedef( $name, $type )> of our own
+
 
 =head2 C<String>
 
@@ -343,7 +365,7 @@ Sanko Robinson E<lt>sanko@cpan.orgE<gt>
 
 =begin stopwords
 
-dyncall rvalue enum dualvars dereferencing
+dyncall rvalue enum dualvars dereferencing typeless codebase
 
 =end stopwords
 
