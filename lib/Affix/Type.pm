@@ -3,8 +3,9 @@ package Affix::Type 0.5 {
     use warnings;
     use Carp qw[];
     use warnings::register;
+    use feature 'current_sub';    # perl 5.16+
     {
-        package    #hide
+        package                   #hide
             Affix::Type::Parameterized 0.00 {
             use parent -norequire, 'Affix::Type';
             sub parameterized          {1}
@@ -21,7 +22,7 @@ package Affix::Type 0.5 {
             Void Bool Char UChar SChar WChar Short UShort Int UInt Long ULong LongLong ULongLong Float Double
             Size_t
             String WString StdString
-            Code
+            CodeRef
             Pointer
             SV
             Const
@@ -31,6 +32,7 @@ package Affix::Type 0.5 {
     use overload '""' => sub {
         my $ret = $_[0]->{stringify};
         return $ret unless $_[0]->{const};
+        return $ret if $_[0]->{depth};
         return 'Const[ ' . $ret . ' ]';
         },
         '0+' => sub { shift->{numeric} };
@@ -67,7 +69,7 @@ package Affix::Type 0.5 {
         }, $pkg;
     }
 
-    sub typedef {
+    sub typedef ($$) {
         my ( $name, $type ) = @_;
         if ( !$type->isa('Affix::Type') ) {
             require Carp;
@@ -82,9 +84,10 @@ package Affix::Type 0.5 {
         }
         bless $type, $fqn;
         $type->{typedef}   = $name;
-        $type->{stringify} = sprintf q[typedef %s => %s], $name =~ /::/ ? "'$name'" : $name, $type->{stringify};
+        $type->{stringify} = sprintf q[typedef ( %s => %s )], $name =~ /::/ ? "'$name'" : $name, $type->{stringify};
         push @{ $EXPORT_TAGS{types} }, $name if $fqn eq 'Affix::' . $name;    # only great when triggered by/before import
-        $type->typedef($fqn) if $type->can('typedef');
+        my $next = $type->can('typedef');
+        $next->( $type, $fqn ) if defined $next && __SUB__ != $next;
         $type;
     }
 
