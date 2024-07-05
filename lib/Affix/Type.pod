@@ -6,10 +6,10 @@ Affix::Type - Affix's Advisory Type System
 
 =head1 Introduction
 
-This module provides an advisory type system for Perl, inspired by libraries like L<Type::Tiny>. It allows developers
-to express intended data types for variables and function arguments, improving code readability and maintainability.
-While Perl itself is dynamically typed, these annotations serve as a guide for L<Affix> and can be used by static
-analysis tools to detect potential type mismatches.
+This module provides an advisory type system for Perl, inspired by libraries like L<Types::Standard>. It allows
+developers to express intended data types for variables and function arguments, improving code readability and
+maintainability. While Perl itself is dynamically typed, these annotations serve as a guide for L<Affix> and can be
+used by static analysis tools to detect potential type mismatches.
 
 The system supports a range of basic types including C<Char>, C<Int>, C<Long>, C<Double>, and more, corresponding to
 standard C data types. Additionally, it offers a composite C<Pointer> type to represent memory addresses. This type can
@@ -344,13 +344,15 @@ C<Enum> but restricts constants to signed chars.
 
 We provide a few L<typedefs|/typedef( $name, $type )> of our own
 
-
 =head2 C<String>
 
 Char pointers (C<Pointer[Char]>) might be better expressed with C<String> for clarity's sake.
 
 =head2 C<WString>
 
+C<WString> represents a string containing wide characters, enabling the storage and  manipulation of characters beyond
+the basic ASCII range. This is particularly useful for working with languages that use alphabets outside the standard
+7-bit ASCII set (e.g., Cyrillic, Kanji). C<WString> is equivalent to C<wchar_t *> in C.
 
 =head1 LICENSE
 
