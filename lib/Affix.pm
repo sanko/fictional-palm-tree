@@ -23,21 +23,19 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
                 Affix::Platform::macOS() ? 'MacOS' :
                 ( Affix::Platform::FreeBSD() || Affix::Platform::OpenBSD() || Affix::Platform::NetBSD() || Affix::Platform::DragonFlyBSD() ) ? 'BSD' :
                 'Unix' );
-
-        #~ warn $platform;
         eval 'use ' . $platform . ' qw[:all];';
         $@ && die $@;
         our @ISA = ($platform);
     }
     #
     #~ use lib '../lib';
-    use Affix::Type       qw[:all];
-    use Affix::Type::Enum qw[:all];
-
-    # use Affix::Platform;
+    use Affix::Type         qw[:all];
+    use Affix::Type::Enum   qw[:all];
+    use Affix::Type::Struct qw[:all];
+    use Affix::Type::Union  qw[:all];
     use parent 'Exporter';
-    $EXPORT_TAGS{types}  = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK ];
-    $EXPORT_TAGS{pin}    = [qw[pin unpin]];
+    $EXPORT_TAGS{types} = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK, @Affix::Type::Struct::EXPORT_OK, @Affix::Type::Union::EXPORT_OK ];
+    $EXPORT_TAGS{pin}   = [qw[pin unpin]];
     $EXPORT_TAGS{memory} = [
         qw[
             affix wrap pin unpin

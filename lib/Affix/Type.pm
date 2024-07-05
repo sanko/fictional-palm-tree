@@ -21,10 +21,10 @@ package Affix::Type 0.5 {
             Void Bool Char UChar SChar WChar Short UShort Int UInt Long ULong LongLong ULongLong Float Double
             Size_t
             String WString StdString
-            Struct Union
-            CodeRef Function
-            Pointer Array
+            Code
+            Pointer
             SV
+            Const
             typedef alignment sizeof
         ]
     ];
@@ -270,8 +270,6 @@ package Affix::Type 0.5 {
     sub Const : prototype($) {
         my ( $subtype, @etc ) = @_ ? @{ +shift } : Void();    # Defaults to Pointer[Void]
         Carp::croak sprintf( 'Too may arguments in Pointer[ %s, %s ]', $subtype, join ', ', @etc ) if @etc;
-        use Data::Dump;
-        ddx $subtype;
         $subtype->{const}     = 1;
         $subtype->{stringify} = 'Const[ ' . $subtype->{stringify} . ' ]';
         $subtype;

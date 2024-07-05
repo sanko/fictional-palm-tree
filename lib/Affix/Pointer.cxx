@@ -1,6 +1,5 @@
 #include "../Affix.h"
 
-
 XS_INTERNAL(Affix_Pointer_dump) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
