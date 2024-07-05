@@ -51,7 +51,7 @@ package Affix::Type::Struct 0.5 {
             alignment => Affix::Platform::BYTE_ALIGN(),                                                              # SLOT_TYPE_ALIGNMENT
             offset    => undef,                                                                                      # SLOT_TYPE_OFFSET
             subtype   => \@store_,                                                                                   # SLOT_TYPE_SUBTYPE
-            length    => 1,                                                                                          # SLOT_TYPE_ARRAYLEN
+            length    => [1],                                                                                        # SLOT_TYPE_ARRAYLEN
             const     => !1,                                                                                         # SLOT_TYPE_CONST
             volitile  => !1,                                                                                         # SLOT_TYPE_VOLATILE
             restrict  => !1,                                                                                         # SLOT_TYPE_RESTRICT

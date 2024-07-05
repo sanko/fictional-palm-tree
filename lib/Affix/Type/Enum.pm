@@ -62,7 +62,7 @@ package Affix::Type::Enum 0.5 {
             alignment => Affix::Platform::ALIGNOF_INT(),
             enum      => $enum,
             position  => 0,
-            typedef   => (),
+            typedef   => undef,
             const     => !1
             },
             'Affix::Type::IntEnum';
@@ -79,7 +79,7 @@ package Affix::Type::Enum 0.5 {
             alignment => Affix::Platform::ALIGNOF_UINT(),
             enum      => $enum,
             position  => 0,
-            typedef   => (),
+            typedef   => undef,
             const     => !1
             },
             'Affix::Type::UIntEnum';
@@ -110,7 +110,7 @@ package Affix::Type::Enum 0.5 {
             alignment => Affix::Platform::ALIGNOF_CHAR(),
             enum      => $enum,
             position  => 0,
-            typedef   => (),
+            typedef   => undef,
             const     => !1
             },
             'Affix::Type::CharEnum';

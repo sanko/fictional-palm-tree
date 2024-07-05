@@ -47,7 +47,7 @@ package Affix::Type::Union 0.5 {
             $alignment,                                                                                 # SLOT_TYPE_ALIGNMENT
             undef,                                                                                      # SLOT_TYPE_OFFSET
             \@store,                                                                                    # SLOT_TYPE_SUBTYPE
-            1,                                                                                          # SLOT_TYPE_ARRAYLEN
+            [1],                                                                                        # SLOT_TYPE_ARRAYLEN
             !1,                                                                                         # SLOT_TYPE_CONST
             !1,                                                                                         # SLOT_TYPE_VOLATILE
             !1,
