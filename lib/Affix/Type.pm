@@ -52,14 +52,14 @@ package Affix::Type 0.5 {
             numeric   => $flag,
             sizeof    => $sizeof,
             alignment => $align,
-            offset    => $offset,               # TODO
+            offset    => $offset,                # TODO
             subtype   => $subtype,
             length    => [ $array_len // () ],
-            typedef   => undef,                 # TODO
+            typedef   => undef,                  # TODO
             const     => !1,
             volitile  => !1,
             restrict  => !1,
-            depth     => 0                      # pointer depth
+            depth     => 0                       # pointer depth
         }, $pkg;
     }
 
@@ -223,13 +223,13 @@ package Affix::Type 0.5 {
     sub Pointer : prototype($) {
         my ( $subtype, $length ) = @{ +shift };
         $subtype->{depth}++;
-        push @{ $subtype->{length} }, $length //= -1;    # -1 forces fallback
-        $subtype->{stringify} = 'Pointer[ ' . $subtype->{stringify} . ' ]';
+        unshift @{ $subtype->{length} }, $length // -1;    # -1 forces fallback
+        $subtype->{stringify} = 'Pointer[ ' . $subtype->{stringify} . ( defined $length ? ', ' . $length : '' ) . ' ]';
         $subtype;
     }
 
     sub Array : prototype($) {
-        my ( $subtype, $length ) = @{ +shift };          # No defaults
+        my ( $subtype, $length ) = @{ +shift };            # No defaults
         bless(
             [   'Array[ ' . $subtype . ', ' . $length . ' ]',    # SLOT_STRINGIFY
                 Affix::POINTER_FLAG(),                           # SLOT_NUMERIC

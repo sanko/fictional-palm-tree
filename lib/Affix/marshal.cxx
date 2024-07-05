@@ -69,8 +69,6 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
     default:
         croak("TODO: sv2ptr for everything else");
     }
-    PING;
-
     return target;
 }
 
@@ -79,100 +77,61 @@ SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, const char * package) {
 }
 
 SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
-    PING;
-
-    warn(
-        "SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == %d] [type->length.size "
-        "== %d]",
-        target,
-        depth,
-        type->depth,
-        type->length.size());
-        
-            // if (type->length.at(depth ) == -1)  // -1 comes from Affix::Type::Pointer
-    // return bless_ptr(aTHX_ target, type, "Affix::Pointer");
-PING;
+#if DEBUG > 1
+// warn(
+//     "SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == "
+//     "%d][type->length.size "
+//     "== %d][type->length.at(%d) == %d]",
+//     target,
+//     depth,
+//     type->depth,
+//     type->length.size(),
+//     depth - 1,
+//     type->length.at(depth - 1));
+#endif
+    if (type->length.at(depth - 1) == -1)  // -1 comes from Affix::Type::Pointer
+        return bless_ptr(aTHX_ target, type, "Affix::Pointer");
     if (depth < type->depth) {
-PING;
-
-          DumpHex(target, 64);
+        // DumpHex(target, 64);
         AV * tmp = newAV();
         IV ptr_iv = PTR2IV(target);
         size_t n = 0;
-PING;
 
         while (1) {
-            warn("tick: %d", n);
             DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INTPTR_T * n));
-            warn("r: %p", now);
             if (now == nullptr) {
-                // warn("Null?!?!?");
                 // return newRV_inc(MUTABLE_SV(tmp));
                 break;
             }
-            // warn("n: %d, depth: %d, .at: %d", n, depth, type->length.at(depth));
-            if (n >= type->length.at(depth-1))
+            if (n >= type->length.at(depth - 1))
                 break;
-            // warn("Not null?");
             av_push(tmp, ptr2sv(aTHX_ type, *(DCpointer *)now, depth + 1));
-PING;
-
             n++;
         }
-        PING;
-        // DD(MUTABLE_SV(tmp));
         return newRV_inc(MUTABLE_SV(tmp));
-
-        // return MUTABLE_SV(tmp);
     }
-    // DumpHex(target, 64);
     IV ptr_iv = PTR2IV(target);
-PING;
-
     SV * ret = newSV(0);
     switch (type->numeric) {
     case VOID_FLAG:
         sv_setsv(ret, bless_ptr(aTHX_ target, type));
         break;
     case INT_FLAG:
-    PING;
-
-        if (wantlist) {
-            PING;
-
+        if (depth == type->depth && type->length.at(depth - 1) == 1)
+            return newSViv(*(int *)target);
+        {
             AV * ret_av = newAV_mortal();
-            PING;
-
-            for (size_t n = 0; n < type->length.at(depth-1); ++n) {
-                PING;
-
+            for (size_t n = 0; n < type->length.at(depth - 1); ++n) {
                 DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
-                PING;
-
                 if (now == nullptr)
                     return newSV(0);
-                    PING;
-
-                SV * retlll = newSViv(*(int *)now);
-                PING;
-
-                av_push(MUTABLE_AV(ret_av), retlll);
+                av_push(MUTABLE_AV(ret_av), newSViv(*(int *)now));
             }
-            PING;
-
             sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
-            PING;
-
-        } else
-            sv_setsv(ret, newSViv(*(int *)target));
-            PING;
-
+        }
         break;
     default:
         croak("oh, okay...");
     };
-    // av_push(MUTABLE_AV(ret), retlll);
-    // PING;
-    // DD(ret);
     return ret;
 }
