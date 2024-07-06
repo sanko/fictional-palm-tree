@@ -1,9 +1,9 @@
 # Security Policy
 
-## Supported Versions
-
-Until I have the version 1.0.0 release, I'll support only the last two minor versions with
+Until I (Maintainers) have the version 1.0.0 release, I'll support only the last two minor versions with
 security updates.
+
+## Supported Versions
 
 | Version  | Supported          |
 | -------- | ------------------ |
@@ -11,7 +11,7 @@ security updates.
 | 0.2.x    | :white_check_mark: |
 | \<= 0.1  | :x:                |
 
-## Reporting a Vulnerability
+# Reporting a Vulnerability
 
 If you have any issue regarding security, please disclose the information responsibly by sending a report to https://github.com/sanko/Affix.pm/security/advisories/new and *not* at the public issue tracker or via email.
 
@@ -21,11 +21,11 @@ Maintaining the security of our open-source software is paramount. This policy o
 
 - Security vulnerabilities identified in the project will be assigned a unique identifier and (if applicable) a Common Vulnerabilities and Exposures (CVE) identifier.
 
-- The project's Maintainers team will be responsible for addressing the vulnerability through a standard pull request, backporting the fix to immediate prior minor release branch, and including the fix in the next stable release.
+- The project's Maintainers will be responsible for addressing the vulnerability through a standard pull request, backporting the fix to immediate prior minor release branch, and including the fix in the next stable release.
 
 - Release notes for the patched version will include the assigned identifier and, if applicable, the CVE identifier for the vulnerability.
 
-- A grace period will be provided for Maintainers to update to the vulerable minor version and remove vulerable releases from PAUSE.
+- A grace period will be provided for Maintainers to update the vulerable minor version and remove vulerable releases from PAUSE (nothing can be done about backpan).
 
   This period will be one month for non-critical vulnerabilities and three months for critical vulnerabilities.
 
