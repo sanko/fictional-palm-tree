@@ -42,6 +42,16 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
                 croak("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         }
         break;
+        /*
+#define VOID_FLAG 'v'
+#define BOOL_FLAG 'b'
+#define SCHAR_FLAG 'a'
+#define CHAR_FLAG 'c'
+#define UCHAR_FLAG 'h'
+#define WCHAR_FLAG 'w'
+#define SHORT_FLAG 's'
+#define USHORT_FLAG 't'
+*/
     case INT_FLAG:
         if (LIKELY(SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVAV)) {
             AV * list = MUTABLE_AV(SvRV(data));
@@ -66,6 +76,40 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
         } else if (UNLIKELY(!SvOK(data)))
             warn("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         break;
+        /*
+        #define UINT_FLAG 'j'
+        #define LONG_FLAG 'l'
+        #define ULONG_FLAG 'm'
+        #define LONGLONG_FLAG 'x'
+        #define ULONGLONG_FLAG 'y'
+        #if SIZEOF_SIZE_T == INTSIZE
+        #define SIZE_T_FLAG UINT_FLAG
+        #elif SIZEOF_SIZE_T == LONGSIZE
+        #define SIZE_T_FLAG ULONG_FLAG
+        #elif SIZEOF_SIZE_T == LONGLONGSIZE
+        #define SIZE_T_FLAG ULONGLONG_FLAG
+        #else  // quadmath is broken
+        #define SIZE_T_FLAG ULONGLONG_FLAG
+        #endif
+        #define FLOAT_FLAG 'f'
+        #define DOUBLE_FLAG 'd'
+        // #define STRING_FLAG 'z'
+        #define WSTRING_FLAG '<'
+        #define STDSTRING_FLAG 'Y'
+        #define STRUCT_FLAG 'A'
+        #define CPPSTRUCT_FLAG 'B'
+        #define UNION_FLAG 'u'
+        #define AFFIX_FLAG '@'
+        */
+    case CODEREF_FLAG:
+        target = cv2dcb(aTHX_ type, data);
+        break;
+        /*
+        #define POINTER_FLAG 'P'
+        #define SV_FLAG '?'
+        */
+
+
     default:
         croak("TODO: sv2ptr for everything else");
     }
@@ -133,5 +177,14 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
     default:
         croak("oh, okay...");
     };
+    return ret;
+}
+DCCallback * cv2dcb(pTHX_ Affix_Type * type, SV * cb) {
+    DCCallback * ret = NULL;
+    // ret = dcbNewCallback("ii)v", cbHandler, new Affix_Callback((std::vector<Affix_Type *>)(type->argtypes)));
+
+    // char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata) {
+
+
     return ret;
 }

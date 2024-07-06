@@ -29,8 +29,8 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
-    // if (items != affix->argtypes.size())
-    // croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
+    if (items != affix->argtypes.size())
+        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
 
     size_t st_pos = 0;
     // Affix_Type * type;
@@ -161,10 +161,11 @@ dcArgPointer(cvm, ptr);*/
                 break;
             }
         case CODEREF_FLAG:
-            {
-                // dcArgPointer(cvm, sv2ptr(aTHX_ * av_fetch(affix->argtypes, st_pos, 0), ST(st_pos)));
-                break;
-            }
+            dcArgPointer(cvm,
+                         sv2ptr(aTHX_ type,
+                                new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
+                                ST(st_pos)));
+            break;
 
             //~ #define STRING_FLAG 'z'
             //~ #define WSTRING_FLAG '<'
