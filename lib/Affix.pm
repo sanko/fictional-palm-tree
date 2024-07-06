@@ -29,13 +29,17 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
     }
     #
     #~ use lib '../lib';
-    use Affix::Type         qw[:all];
-    use Affix::Type::Enum   qw[:all];
-    use Affix::Type::Struct qw[:all];
-    use Affix::Type::Union  qw[:all];
+    use Affix::Type          qw[:all];
+    use Affix::Type::CodeRef qw[:all];
+    use Affix::Type::Enum    qw[:all];
+    use Affix::Type::Struct  qw[:all];
+    use Affix::Type::Union   qw[:all];
     use parent 'Exporter';
-    $EXPORT_TAGS{types} = [ @Affix::Type::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK, @Affix::Type::Struct::EXPORT_OK, @Affix::Type::Union::EXPORT_OK ];
-    $EXPORT_TAGS{pin}   = [qw[pin unpin]];
+    $EXPORT_TAGS{types} = [
+        @Affix::Type::EXPORT_OK,         @Affix::Type::CodeRef::EXPORT_OK, @Affix::Type::Enum::EXPORT_OK,
+        @Affix::Type::Struct::EXPORT_OK, @Affix::Type::Union::EXPORT_OK
+    ];
+    $EXPORT_TAGS{pin}    = [qw[pin unpin]];
     $EXPORT_TAGS{memory} = [
         qw[
             affix wrap pin unpin
@@ -51,7 +55,8 @@ package Affix v0.0.1 {    # 'FFI' is my middle name!
         my %seen;
         push @{ $EXPORT_TAGS{all} }, grep { !$seen{$_}++ } @{ $EXPORT_TAGS{$_} } for keys %EXPORT_TAGS;
     }
-    @EXPORT    = sort @{ $EXPORT_TAGS{default} };
+    #
+    @EXPORT    = sort @{ $EXPORT_TAGS{default} };    # XXX: Don't do this...
     @EXPORT_OK = sort @{ $EXPORT_TAGS{all} };
     #
     sub libm() { CORE::state $m //= find_library('m'); $m }

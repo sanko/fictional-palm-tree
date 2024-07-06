@@ -12,8 +12,11 @@ package Affix::Type 0.5 {
             sub subtype : prototype($) { return shift->[ Affix::SLOT_SUBTYPE() ]; }
         }
     }
-    use Affix::Type::Struct qw[:all];
-    use Affix::Type::Union  qw[:all];
+
+    # use Affix::Type::Struct qw[:all];
+    # use Affix::Type::Union  qw[:all];
+    # use Affix::Type::Enum qw[:all];
+    # use Affix::Type::CodeRef qw[:all];
     $Carp::Internal{ (__PACKAGE__) }++;
     use parent 'Exporter';
     our ( @EXPORT_OK, %EXPORT_TAGS );
@@ -22,7 +25,6 @@ package Affix::Type 0.5 {
             Void Bool Char UChar SChar WChar Short UShort Int UInt Long ULong LongLong ULongLong Float Double
             Size_t
             String WString StdString
-            CodeRef
             Pointer
             SV
             Const
@@ -50,8 +52,8 @@ package Affix::Type 0.5 {
         shift->{offset};
     }
 
-    sub new($$$$$$;$$) {
-        my ( $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len ) = @_;
+    sub new : prototype($$$$$$;$$$) {
+        my ( $pkg, $str, $flag, $sizeof, $align, $offset, $array_len, $cb_args, $cb_res ) = @_;
         die 'Please subclass Affix::Type' if $pkg eq __PACKAGE__;
         bless {
             stringify => $str,
@@ -59,13 +61,15 @@ package Affix::Type 0.5 {
             sizeof    => $sizeof,
             alignment => $align,
             offset    => $offset,                # TODO
-            subtype   => $subtype,
             length    => [ $array_len // () ],
             typedef   => undef,                  # TODO
             const     => !1,
             volitile  => !1,
             restrict  => !1,
-            depth     => 0                       # pointer depth
+            depth     => 0,                      # pointer depth
+
+            # Callbacks
+            ( defined $cb_args ? ( cb_args => $cb_args ) : () ), ( defined $cb_res ? ( cb_res => $cb_res ) : () )
         }, $pkg;
     }
 
@@ -175,79 +179,12 @@ package Affix::Type 0.5 {
 
     # TODO: CPPStruct
     #~ $pkg, $str, $flag, $sizeof, $align, $offset, $subtype, $array_len
-    sub CodeRef : prototype($) {
-        my (@elements) = @{ +shift };
-        my ( $args, $ret ) = @elements;
-        $ret //= Void;
-        my $s = Affix::Type::CodeRef->new(
-            sprintf( 'CodeRef[ [ %s ] => %s ]', join( ', ', @$args ), $ret ),    # SLOT_CODEREF_STRINGIFY
-            Affix::CODEREF_FLAG(),                                               # SLOT_CODEREF_NUMERIC
-            Affix::Platform::SIZEOF_INTPTR_T(),                                  # SLOT_CODEREF_SIZEOF
-            Affix::Platform::ALIGNOF_INTPTR_T(),                                 # SLOT_CODEREF_ALIGNMENT
-            undef,                                                               # SLOT_CODEREF_OFFSET
-            $ret                                                                 # SLOT_CODEREF_RET
-        );
-
-        # TODO:
-        # $s->[ Affix::SLOT_CODEREF_ARGS() ] = $args;
-        # $s->[ Affix::SLOT_CODEREF_SIG() ]  = join( '', map { chr $_ } @$args );
-        $s;
-    }
-
-    sub Function : prototype($) {
-        my (@elements) = @{ +shift };
-        my ( $args, $ret ) = @elements;
-        $ret //= Void;
-        Affix::Type::Function->new(
-            sprintf( 'Function[ [ %s ] => %s ]', join( ', ', @$args ), $ret ),    # SLOT_STRINGIFY
-            Affix::AFFIX_FLAG(),                                                  # SLOT_NUMERIC
-            Affix::Platform::SIZEOF_INTPTR_T(),                                   # SLOT_SIZEOF
-            Affix::Platform::ALIGNOF_INTPTR_T(),                                  # SLOT_ALIGNMENT
-            undef,                                                                # SLOT_OFFSET
-            $ret,                                                                 # SLOT_CODEREF_RET (result type)
-            $args,                                                                # SLOT_CODEREF_ARGS
-            join '', map { chr $_ } @$args                                        # SLOT_CODEREF_SIG
-        );
-    }
-
-    #~ // [ text, id, size, align, offset, subtype, length, aggregate, typedef ]
-    #define SLOT_STRINGIFY 0
-    #define SLOT_NUMERIC 1
-    #define SLOT_SIZEOF 2
-    #define SLOT_ALIGNMENT 3
-    #define SLOT_OFFSET 4
-    #define SLOT_SUBTYPE 5
-    #define SLOT_ARRAYLEN 6
-    #define SLOT_AGGREGATE 7
-    #define SLOT_TYPEDEF 8
-    #define SLOT_CAST 9
-    #define SLOT_CODEREF_RET 5
-    #define SLOT_CODEREF_ARGS 6
-    #define SLOT_CODEREF_SIG 7
-    #define SLOT_POINTER_SUBTYPE SLOT_SUBTYPE
-    #define SLOT_POINTER_COUNT SLOT_ARRAYLEN
-    #define SLOT_POINTER_ADDR 7
     sub Pointer : prototype($) {
         my ( $subtype, $length ) = @{ +shift };
         $subtype->{depth}++;
         unshift @{ $subtype->{length} }, $length // -1;    # -1 forces fallback
         $subtype->{stringify} = 'Pointer[ ' . $subtype->{stringify} . ( defined $length ? ', ' . $length : '' ) . ' ]';
         $subtype;
-    }
-
-    sub Array : prototype($) {
-        my ( $subtype, $length ) = @{ +shift };            # No defaults
-        bless(
-            [   'Array[ ' . $subtype . ', ' . $length . ' ]',    # SLOT_STRINGIFY
-                Affix::POINTER_FLAG(),                           # SLOT_NUMERIC
-                Affix::Platform::SIZEOF_INTPTR_T(),              # SLOT_SIZEOF
-                Affix::Platform::ALIGNOF_INTPTR_T(),             # SLOT_ALIGNMENT
-                undef,                                           # SLOT_OFFSET
-                $subtype,                                        # SLOT_SUBTYPE
-                $length                                          # SLOT_ARRAYLEN
-            ],
-            'Affix::Type::Pointer'
-        );
     }
 
     # Should only be used inside of a Pointer[]
@@ -286,12 +223,6 @@ package Affix::Type 0.5 {
     sub Restrict : prototype($) {
         $_[0][0]->{restrict} = 1;
         $_[0][0];
-    }
-    package    # hide
-        Affix::Type::CodeRef {
-        sub parameterized           {1}
-        sub rettype : prototype($)  { return shift->[ Affix::SLOT_SUBTYPE() ]; }
-        sub argtypes : prototype($) { return shift->[ Affix::SLOT_CODEREF_ARGS() ]; }
     }
     @Affix::Type::Void::ISA = @Affix::Type::SV::ISA
 

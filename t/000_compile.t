@@ -1,7 +1,7 @@
 use Test2::V0 '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix;    # :default
+use Affix qw[:all];
 use t::lib::helper;
 #
 diag $Affix::VERSION;

@@ -6,12 +6,11 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
     if (depth < type->depth) {
         AV * list = MUTABLE_AV(SvRV(data));
         size_t length = av_count(list);
-        IV ptr_iv = PTR2IV(target);
         if (target == nullptr)
             Newxz(target, length + 1, intptr_t);
         DCpointer next;
         SV ** _tmp;
-        for (auto i = 0; i < length; i++) {
+        for (size_t i = 0; i < length; i++) {
             _tmp = av_fetch(list, i, 0);
             if (UNLIKELY(_tmp == nullptr))
                 break;
@@ -61,7 +60,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
             IV ptr_iv = PTR2IV(target);
             int n;
             SV ** _tmp;
-            for (auto i = 0; i < length; i++) {
+            for (size_t i = 0; i < length; i++) {
                 _tmp = av_fetch(list, i, 0);
                 if (UNLIKELY(_tmp == nullptr))
                     break;
@@ -102,7 +101,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
         #define AFFIX_FLAG '@'
         */
     case CODEREF_FLAG:
-        target = cv2dcb(aTHX_ type, data);
+        target = cv2dcb(aTHX_(Affix_Type_Callback *) type, data);
         break;
         /*
         #define POINTER_FLAG 'P'
@@ -120,7 +119,7 @@ SV * bless_ptr(pTHX_ DCpointer ptr, Affix_Type * type, const char * package) {
     return sv_setref_pv(newSV(0), package, (DCpointer) new Affix_Pointer(type, ptr));
 }
 
-SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantlist) {
+SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
 #if DEBUG > 1
 // warn(
 //     "SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target = %p, size_t depth = %d); [type->depth == "
@@ -139,7 +138,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
         // DumpHex(target, 64);
         AV * tmp = newAV();
         IV ptr_iv = PTR2IV(target);
-        size_t n = 0;
+        int n = 0;
 
         while (1) {
             DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INTPTR_T * n));
@@ -165,7 +164,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
             return newSViv(*(int *)target);
         {
             AV * ret_av = newAV_mortal();
-            for (size_t n = 0; n < type->length.at(depth - 1); ++n) {
+            for (auto n = 0; n < type->length.at(depth - 1); ++n) {
                 DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_INT * n));
                 if (now == nullptr)
                     return newSV(0);
@@ -179,9 +178,13 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth, bool wantli
     };
     return ret;
 }
-DCCallback * cv2dcb(pTHX_ Affix_Type * type, SV * cb) {
+
+DCCallback * cv2dcb(pTHX_ Affix_Type_Callback * type, SV * cb) {
     DCCallback * ret = NULL;
-    // ret = dcbNewCallback("ii)v", cbHandler, new Affix_Callback((std::vector<Affix_Type *>)(type->argtypes)));
+    auto afxcb = new Affix_Callback(type);
+    storeTHX(afxcb->perl);
+
+    ret = dcbNewCallback("ii)v", cbHandler, afxcb);
 
     // char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata) {
 

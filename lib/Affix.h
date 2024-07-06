@@ -337,11 +337,9 @@ public:
                std::vector<SSize_t> length)
         : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
     ~Affix_Type() {
-
         length.clear();
         if (_typedef != nullptr)
             free(_typedef);
-        argtypes.clear();
     };
 
     size_t alignment(size_t _depth = 0) {
@@ -366,8 +364,28 @@ public:  // for now...
 
     char * _typedef = NULL;
     DCaggr * aggregate = NULL;
-    std::vector<Affix_Type> argtypes;  // list of Affix_Type
-    char * field = NULL;               // If part of a struct
+    char * field = NULL;  // If part of a struct
+};
+
+
+class Affix_Type_Callback : public Affix_Type {
+public:
+    Affix_Type_Callback(const std::string & stringify,
+                        char numeric,
+                        size_t size,
+                        size_t alignment,
+                        size_t depth,
+                        std::vector<SSize_t> length,
+                        std::vector<Affix_Type *> argtypess,
+                        Affix_Type * restype)
+        : Affix_Type(stringify, numeric, size, alignment, depth, length), argtypes(argtypes), restype(restype) {};
+    ~Affix_Type_Callback() {
+        argtypes.clear();
+    };
+
+public:                                  // for now...
+    std::vector<Affix_Type *> argtypes;  // list of Affix_Type for a callback
+    Affix_Type * restype;                // result type for a callback
 };
 
 class Affix_Pointer {
@@ -383,18 +401,14 @@ public:
 
 class Affix_Callback {
 public:
-    Affix_Callback(std::vector<Affix_Type *> types) : argtypes(types) {};
+    Affix_Callback(Affix_Type_Callback * type) : type(type) {};
     Affix_Callback(const std::string & signature) : signature(signature) {};
-    ~Affix_Callback() {
-        std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
-        argtypes.clear();
-    };
+    ~Affix_Callback() = default;
 
 public:  // for now
     std::string signature;
     std::string perl_sig;
-    std::vector<Affix_Type *> argtypes;
-    Affix_Type * restype;
+    Affix_Type_Callback * type;
     SV * retval;
     SV * cv;
     dTHXfield(perl)
@@ -430,7 +444,7 @@ public:
     Affix_Pointer * ptr;
     Affix_Type * type;
     DLLib * lib;
-    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : lib(lib), ptr(ptr), type(type) {};
+    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {};
     ~Affix_Pin() {
         if (ptr != nullptr)
             ptr = nullptr;  // DO NOT FREE
@@ -461,16 +475,15 @@ SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, const char * = "Affix::Pointer::Un
 Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // marshal.cxx
-SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1, bool = true);
+SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1);
 DCpointer sv2ptr(pTHX_ Affix_Type *, Affix_Pointer *, SV *, size_t = 1, DCpointer = nullptr);
-DCCallback * cv2dcb(pTHX_ Affix_Type *, SV *);  // callback system
+DCCallback * cv2dcb(pTHX_ Affix_Type_Callback *, SV *);  // callback system
 
 // // Callback system
 // struct CodeRefWrapper {
 //     DCCallback * cb;
 // };
-char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata);
-DCsigchar cbHandlerXXXXX(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata);
+DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata);
 
 // XS Boot
 void boot_Affix_pin(pTHX_ CV *);

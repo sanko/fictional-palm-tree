@@ -1,19 +1,40 @@
 #include "../Affix.h"
 // TODO: USE cbHandlerXXXXX INSTEAD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata) {
+DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata) {
     warn("Inside cbHandler(...)");
     PERL_UNUSED_VAR(cb);
+    PING;
     auto afxcb = (Affix_Callback *)userdata;
+    PING;
+
     dTHXa(afxcb->perl);
+    PING;
+
     dSP;
+    PING;
+
     int count;
-    char ret_c = afxcb->restype->numeric;
+
+    // char ret_c = afxcb->restype->numeric;
+    PING;
+
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
     EXTEND(SP, (int)afxcb->signature.length());
+    PING;
+
+    warn("(int)afxcb->signature.length() == %d", (int)afxcb->signature.length());
+    warn("(int)afxcb->type->argtypes.size() == %d", (int)afxcb->type->argtypes.size());
+
     // for (size_t i = 0; i < afxcb->sig_len; ++i) {
-    for (const auto & type : afxcb->argtypes) {
+    for (const auto & type : afxcb->type->argtypes) {
+        PING;
+
+        warn("%s [ptr:%d]", type->stringify.c_str(), type->depth);
+        PING;
+
+        continue;
         switch (type->numeric) {
         case DC_SIGCHAR_VOID:
             // TODO: push undef?
@@ -132,7 +153,7 @@ char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userd
     }
 
     PUTBACK;
-    if (afxcb->restype->numeric == DC_SIGCHAR_VOID) {
+    if (afxcb->type->restype->numeric == DC_SIGCHAR_VOID) {
         count = call_sv(afxcb->cv, G_VOID);
         SPAGAIN;
     } else {
@@ -141,7 +162,8 @@ char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userd
         if (count != 1)
             croak("Big trouble: %d returned items", count);
         SV * ret = POPs;
-        switch (ret_c) {
+        switch (afxcb->type->restype->numeric) {
+
         case DC_SIGCHAR_VOID:
             break;
         case DC_SIGCHAR_BOOL:
@@ -155,7 +177,7 @@ char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userd
             break;
         case WCHAR_FLAG:
             {
-                ret_c = DC_SIGCHAR_LONG;  // Fake it
+                // ret_c = DC_SIGCHAR_LONG;  // Fake it
                 if (SvPOK(ret)) {
                     STRLEN len;
                     (void)SvPVx(ret, len);
@@ -221,13 +243,13 @@ char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userd
         //~ result->p = SvPOK(ret) ?  sv2ptr(aTHX_ ret, _instanceof(aTHX_ cbx->retval), false):
         // NULL; ~ ret_c = DC_SIGCHAR_POINTER; ~ break;
         default:
-            croak("Unhandled return from callback: %c", ret_c);
+            croak("Unhandled return from callback: %c", afxcb->type->restype->numeric);
         }
     }
     PUTBACK;
 
     FREETMPS;
     LEAVE;
-
-    return ret_c;
+    return 'v';
+    // return ret_c;
 }
