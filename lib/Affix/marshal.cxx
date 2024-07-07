@@ -181,13 +181,9 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
 
 DCCallback * cv2dcb(pTHX_ Affix_Type_Callback * type, SV * cb) {
     DCCallback * ret = NULL;
-    auto afxcb = new Affix_Callback(type);
+    // TODO: Be smart. Check that cb != undef, a CV*, etc.
+    auto afxcb = new Affix_Callback(type, SvREFCNT_inc(cb));
     storeTHX(afxcb->perl);
-
-    ret = dcbNewCallback("ii)v", cbHandler, afxcb);
-
-    // char cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer userdata) {
-
-
+    ret = dcbNewCallback("ii)v", cbHandler, afxcb);  // TODO: generate (somewhat) correct signature
     return ret;
 }

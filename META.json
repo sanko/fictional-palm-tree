@@ -115,6 +115,10 @@
          "file" : "lib/Affix/Type.pm",
          "version" : "0.5"
       },
+      "Affix::Type::CodeRef" : {
+         "file" : "lib/Affix/Type/CodeRef.pm",
+         "version" : "0.5"
+      },
       "Affix::Type::Enum" : {
          "file" : "lib/Affix/Type/Enum.pm",
          "version" : "0.5"

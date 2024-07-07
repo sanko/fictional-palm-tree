@@ -376,9 +376,12 @@ public:
                         size_t alignment,
                         size_t depth,
                         std::vector<SSize_t> length,
-                        std::vector<Affix_Type *> argtypess,
+                        std::vector<Affix_Type *> argtypes,
                         Affix_Type * restype)
-        : Affix_Type(stringify, numeric, size, alignment, depth, length), argtypes(argtypes), restype(restype) {};
+        : Affix_Type(stringify, numeric, size, alignment, depth, length), argtypes(argtypes), restype(restype) {
+
+
+          };
     ~Affix_Type_Callback() {
         argtypes.clear();
     };
@@ -401,9 +404,12 @@ public:
 
 class Affix_Callback {
 public:
-    Affix_Callback(Affix_Type_Callback * type) : type(type) {};
-    Affix_Callback(const std::string & signature) : signature(signature) {};
-    ~Affix_Callback() = default;
+    Affix_Callback(Affix_Type_Callback * type, SV * cv) : type(type), cv(cv) {};
+    // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
+    ~Affix_Callback() {
+        dTHXa(perl);
+        SvREFCNT_dec(cv);  // allow it to be cleaned up
+    };
 
 public:  // for now
     std::string signature;
