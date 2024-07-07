@@ -11,8 +11,16 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
-    my $DEBUG  = 0;
-    my $CFLAGS = $DEBUG ? '-DDEBUG=' . $DEBUG :
+    my $DEBUG = 1;
+    my $CFLAGS
+        = $DEBUG ?
+        '-DDEBUG=' .
+        $DEBUG .
+        ' -std=c++17 -g3 -pthread -gdwarf-4 -fPIC ' .
+        ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree ' .
+        ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference ' .
+        ' -Wswitch-enum -fvar-tracking-assignments -Wduplicated-cond ' .
+        ' -Wduplicated-branches -Wsuggest-override' :
 
         # $Config{osname} eq 'MSWin32' ? '' :
         ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';

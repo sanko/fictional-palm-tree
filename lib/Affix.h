@@ -429,7 +429,7 @@ public:  // for now
         if (lib != nullptr)
             dlFreeLibrary(lib);
         // if (entry_point != nullptr) safefree(entry_point);
-        std::for_each(argtypes.begin(), argtypes.end(), [](Affix_Type * argtype) { delete argtype; });
+        std::for_each(argtypes.begin(), argtypes.end(), [](auto argtype) { delete argtype; });
         argtypes.clear();
         if (restype != nullptr)
             delete restype;

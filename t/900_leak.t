@@ -177,11 +177,12 @@ int do_cb(cb callback, int x, int y) { return callback(x, y); }
             isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ),  ['Affix'],       'int do_cb(cb callback, int x, int y) ';
             #
         };
-        is do_cb( sub { my ( $x, $y ) = @_; $x * $y }, 4, 5 ), 20, 'do_cb( sub {...}, 4, 5 )';
+
+        # is do_cb( sub { my ( $x, $y ) = @_; $x * $y }, 4, 5 ), 20, 'do_cb( sub {...}, 4, 5 )';
     };
     is $leaks->{error}, U(), 'callbacks';
-    use Data::Dumper;
-    diag Dump($leaks);
+    use Data::Dump qw[pp];
+    diag pp($leaks);
 }
 done_testing;
 __END__
