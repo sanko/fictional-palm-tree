@@ -1,6 +1,6 @@
 #include "../Affix.h"
 
-DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t depth, DCpointer target) {
+DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer target) {
     // Do I really need the Affix_Pointer here? I'm really only after ptr->count
     // DD(data);
     if (depth < type->depth) {
@@ -14,7 +14,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
             _tmp = av_fetch(list, i, 0);
             if (UNLIKELY(_tmp == nullptr))
                 break;
-            next = sv2ptr(aTHX_ type, ptr, *_tmp, depth + 1);
+            next = sv2ptr(aTHX_ type, *_tmp, depth + 1);
             Copy(&next, INT2PTR(intptr_t *, PTR2IV(target) + (i * SIZEOF_INTPTR_T)), 1, intptr_t);
         }
         return target;
@@ -33,10 +33,10 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
                 }
             } else if (SvTYPE(data) != SVt_NULL) {
                 size_t len = 0;
-                DCpointer ptr = SvPVbyte(data, len);
+                DCpointer ptr_ = SvPVbyte(data, len);
                 if (target == NULL)
                     Newxz(target, len, char);
-                Copy(ptr, target, len, char);
+                Copy(ptr_, target, len, char);
             } else
                 croak("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         }
@@ -101,7 +101,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, Affix_Pointer * ptr, SV * data, size_t
         #define AFFIX_FLAG '@'
         */
     case CODEREF_FLAG:
-        target = cv2dcb(aTHX_(Affix_Type_Callback *) type, data);
+        target = cv2dcb(aTHX_(Affix_Type *) type, data);
         break;
         /*
         #define POINTER_FLAG 'P'
@@ -179,7 +179,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
     return ret;
 }
 
-DCCallback * cv2dcb(pTHX_ Affix_Type_Callback * type, SV * cb) {
+DCCallback * cv2dcb(pTHX_ Affix_Type * type, SV * cb) {
     DCCallback * ret = NULL;
     // TODO: Be smart. Check that cb != undef, a CV*, etc.
     auto afxcb = new Affix_Callback(type, SvREFCNT_inc(cb));

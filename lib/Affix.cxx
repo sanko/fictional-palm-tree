@@ -44,10 +44,7 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
                 Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
                 dcArgPointer(cvm, pointer->address);  // Even if it's NULL
             } else {
-                dcArgPointer(cvm,
-                             sv2ptr(aTHX_ type,
-                                    new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
-                                    ST(st_pos)));
+                dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos)));
             }
             ++st_pos;
             continue;
@@ -151,20 +148,23 @@ if (SvOK(arg)) {
   ptr = *(DCpointer *)(affix->temp_ptrs[st_pos]);
 }
 dcArgPointer(cvm, ptr);*/
-                break;
             }
+            break;
         case STDSTRING_FLAG:
             {
                 SV * arg = ST(st_pos);
                 std::string tmp = SvOK(arg) ? SvPV_nolen(arg) : NULL;
                 dcArgPointer(cvm, static_cast<void *>(&tmp));
-                break;
             }
+            break;
         case CODEREF_FLAG:
-            dcArgPointer(cvm,
-                         sv2ptr(aTHX_ type,
-                                new Affix_Pointer(type),  // XXX: Should this be here? Do I really need this?
-                                ST(st_pos)));
+            {
+                DCpointer tmp = sv2ptr(aTHX_ type, ST(st_pos));
+                // should i store the pointer in the type? elsewhere?
+                // this leaks the ptr
+                dcArgPointer(cvm, tmp);
+                //  safefree(tmp);
+            }
             break;
 
             //~ #define STRING_FLAG 'z'
@@ -491,8 +491,10 @@ XS_INTERNAL(Affix_DESTROY) {
 XS_INTERNAL(Affix_END) {
     dXSARGS;
     dMY_CXT;
-    if (MY_CXT.cvm)
+    if (MY_CXT.cvm) {
+        dcReset(MY_CXT.cvm);
         dcFree(MY_CXT.cvm);
+    }
     XSRETURN_EMPTY;
 }
 
@@ -510,7 +512,7 @@ XS_INTERNAL(Affix_sv2ptr) {
     if (items != 2)
         croak_xs_usage(cv, "$type, $sv");
     Affix_Pointer * ret = new Affix_Pointer(sv2type(aTHX_ ST(0)));
-    ret->address = sv2ptr(aTHX_ ret->type, ret, ST(1));
+    ret->address = sv2ptr(aTHX_ ret->type, ST(1));
     warn(">>>>> %p", ret->address);
     if (ret->address == nullptr) {
         delete ret;

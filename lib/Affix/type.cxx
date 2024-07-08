@@ -32,14 +32,14 @@ Affix_Type * sv2type(pTHX_ SV * perl_type) {  // This is it until we get to para
             SV * arg_i = *ptr_arg_i;
             argtypes.push_back(sv2type(aTHX_ arg_i));
         }
-        return new Affix_Type_Callback(SvPV_nolen(*ptr_stringify),
-                                       SvIV(*ptr_numeric),
-                                       SvIV(*ptr_sizeof),
-                                       SvIV(*ptr_alignment),
-                                       ptr_depth != nullptr ? SvIV(*ptr_depth) : 0,
-                                       lengths,
-                                       argtypes,
-                                       restype);
+        return new Affix_Type(SvPV_nolen(*ptr_stringify),
+                              SvIV(*ptr_numeric),
+                              SvIV(*ptr_sizeof),
+                              SvIV(*ptr_alignment),
+                              ptr_depth != nullptr ? SvIV(*ptr_depth) : 0,
+                              lengths,
+                              argtypes,
+                              restype);
     }
 
     return new Affix_Type(SvPV_nolen(*ptr_stringify),

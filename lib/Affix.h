@@ -336,7 +336,35 @@ public:
                size_t depth,
                std::vector<SSize_t> length)
         : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
+
+    Affix_Type(const std::string & stringify,
+               char numeric,
+               size_t size,
+               size_t alignment,
+               size_t depth,
+               std::vector<SSize_t> length,
+               std::vector<Affix_Type *> argtypes,
+               Affix_Type * restype)
+        : numeric(numeric),
+          size(size),
+          _alignment(alignment),
+          depth(depth),
+          length(length),
+          stringify(stringify),
+          argtypes(argtypes),
+          restype(restype) {
+
+
+          };
+
+
     ~Affix_Type() {
+        std::for_each(argtypes.begin(), argtypes.end(), [](auto argtype) { delete argtype; });
+
+        argtypes.clear();
+        if (restype != nullptr)
+            delete restype;
+
         length.clear();
         if (_typedef != nullptr)
             free(_typedef);
@@ -360,35 +388,14 @@ public:  // for now...
     std::string stringify;
 
     //
-    void * subtype = NULL;  // Affix_Type
+    void * subtype = nullptr;  // Affix_Type
 
-    char * _typedef = NULL;
-    DCaggr * aggregate = NULL;
-    char * field = NULL;  // If part of a struct
-};
+    char * _typedef = nullptr;
+    DCaggr * aggregate = nullptr;
+    char * field = nullptr;  // If part of a struct
 
-
-class Affix_Type_Callback : public Affix_Type {
-public:
-    Affix_Type_Callback(const std::string & stringify,
-                        char numeric,
-                        size_t size,
-                        size_t alignment,
-                        size_t depth,
-                        std::vector<SSize_t> length,
-                        std::vector<Affix_Type *> argtypes,
-                        Affix_Type * restype)
-        : Affix_Type(stringify, numeric, size, alignment, depth, length), argtypes(argtypes), restype(restype) {
-
-
-          };
-    ~Affix_Type_Callback() {
-        argtypes.clear();
-    };
-
-public:                                  // for now...
     std::vector<Affix_Type *> argtypes;  // list of Affix_Type for a callback
-    Affix_Type * restype;                // result type for a callback
+    Affix_Type * restype = nullptr;      // result type for a callback
 };
 
 class Affix_Pointer {
@@ -404,17 +411,24 @@ public:
 
 class Affix_Callback {
 public:
-    Affix_Callback(Affix_Type_Callback * type, SV * cv) : type(type), cv(cv) {};
+    Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {};
     // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
     ~Affix_Callback() {
         dTHXa(perl);
         SvREFCNT_dec(cv);  // allow it to be cleaned up
+        delete type;
+        if (cv != nullptr)
+            sv_2mortal(cv);
+        safefree(cv);
+        if (retval != nullptr)
+            sv_2mortal(retval);
+        safefree(retval);
     };
 
 public:  // for now
     std::string signature;
     std::string perl_sig;
-    Affix_Type_Callback * type;
+    Affix_Type * type;
     SV * retval;
     SV * cv;
     dTHXfield(perl)
@@ -452,8 +466,7 @@ public:
     DLLib * lib;
     Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {};
     ~Affix_Pin() {
-        if (ptr != nullptr)
-            ptr = nullptr;  // DO NOT FREE
+        ptr = nullptr;  // DO NOT FREE
         delete type;
         type = NULL;
         dlFreeLibrary(lib);
@@ -482,8 +495,8 @@ Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // marshal.cxx
 SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1);
-DCpointer sv2ptr(pTHX_ Affix_Type *, Affix_Pointer *, SV *, size_t = 1, DCpointer = nullptr);
-DCCallback * cv2dcb(pTHX_ Affix_Type_Callback *, SV *);  // callback system
+DCpointer sv2ptr(pTHX_ Affix_Type *, SV *, size_t = 1, DCpointer = nullptr);
+DCCallback * cv2dcb(pTHX_ Affix_Type *, SV *);  // callback system
 
 // // Callback system
 // struct CodeRefWrapper {
