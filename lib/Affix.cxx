@@ -160,10 +160,10 @@ dcArgPointer(cvm, ptr);*/
         case CODEREF_FLAG:
             {
                 DCpointer tmp = sv2ptr(aTHX_ type, ST(st_pos));
-                // should i store the pointer in the type? elsewhere?
-                // this leaks the ptr
+                // should i store the pointer in the sv itself. A blessed object that free's the pointer when the SV *
+                // goes out of scope and also can be caalled like CODE ref
+                // ...because this leaks the ptr
                 dcArgPointer(cvm, tmp);
-                //  safefree(tmp);
             }
             break;
 
@@ -182,6 +182,8 @@ dcArgPointer(cvm, ptr);*/
 
                 SV * const xsub_tmp_sv = ST(st_pos);
                 SvGETMAGIC(xsub_tmp_sv);
+
+
                 // dcArgPointer(cvm, sv2ptr(aTHX_ AXT_TYPE_SUBTYPE(*av_fetch(affix->argtypes, st_pos, 0)),
                 //                          xsub_tmp_sv));
                 break;
