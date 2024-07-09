@@ -292,15 +292,27 @@ XS_INTERNAL(Affix_Callback_DESTROY) {
     warn("Here [%d]", ptr_iv);
     auto cb = INT2PTR(DCCallback *, ptr_iv);
     warn("HereB");
+    auto afxcb = (Affix_Callback *)dcbGetUserData(cb);
+
+    delete afxcb;
+    afxcb = nullptr;
+    warn("HereC");
+    //~ if(afxcb != nullptr)
+    //~ delete afxcb;
+    warn("HereD");
 
     dcbFreeCallback(cb);
+    cb = nullptr;
+
+
+    warn("HereE");
+
+    // if (cb != nullptr) safefree(cb);
     // warn("signature: %s", cb->signature.c_str());
     // delete cb;
-    warn("HereC");
 
     // sv_dump(ST(0));
 
-    warn("HereD");
 
     // CvXSUBANY(xsub_tmp_sv).any_sv
 
