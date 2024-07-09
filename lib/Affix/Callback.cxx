@@ -7,12 +7,6 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
     char restype_c = afxcb->type->restype->numeric;
     // if (afxcb->cv == nullptr || !SvPOK(afxcb->cv))
     //     return DC_SIGCHAR_VOID;
-
-
-    warn("----------------------------------------------------------------------------------------");
-    sv_dump(CvXSUBANY(afxcb->cv).any_sv);
-
-
     {
         dSP;
         ENTER;
@@ -294,7 +288,21 @@ XS_INTERNAL(Affix_Callback_DESTROY) {
     PERL_UNUSED_VAR(items);
 
     warn("DESTROY");
-    sv_dump(CvXSUBANY(ST(0)).any_sv);
+    IV ptr_iv = CvXSUBANY(SvRV(ST(0))).any_iv;
+    warn("Here [%d]", ptr_iv);
+    auto cb = INT2PTR(DCCallback *, ptr_iv);
+    warn("HereB");
+
+    dcbFreeCallback(cb);
+    // warn("signature: %s", cb->signature.c_str());
+    // delete cb;
+    warn("HereC");
+
+    // sv_dump(ST(0));
+
+    warn("HereD");
+
+    // CvXSUBANY(xsub_tmp_sv).any_sv
 
     /*
     Affix_Pointer * pointer;

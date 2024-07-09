@@ -160,14 +160,17 @@ dcArgPointer(cvm, ptr);*/
         case CODEREF_FLAG:
             {
                 SV * xsub_tmp_sv = ST(st_pos);
-                DCpointer tmp = sv2ptr(aTHX_ type, ST(st_pos));
-                if (SvREADONLY(SvRV(ST(st_pos))))
-                    warn("Readonly callback?!?");
-                CvXSUBANY(xsub_tmp_sv).any_sv = newSViv(123456789);
-                sv_dump(CvXSUBANY(xsub_tmp_sv).any_sv);
-                sv_dump(xsub_tmp_sv);
+                DCCallback * tmp = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
+                warn("Setting up p: %" PRIXPTR, (uintptr_t)tmp);
+                warn("Setting up x: %x", (DCpointer) tmp);
+                warn("Setting up ?: %d", PTR2IV(tmp));
                 sv_2mortal(sv_bless((0 ? newRV_noinc(MUTABLE_SV(xsub_tmp_sv)) : newRV_inc(MUTABLE_SV(xsub_tmp_sv))),
-                                    gv_stashpv("Affix::Callback", GV_ADD)));
+                                    gv_stashpv("Affix::Callback", GV_ADD)));   
+                                    
+                                                    CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(tmp);
+
+                                                                 SvGETMAGIC(xsub_tmp_sv);
+
                 dcArgPointer(cvm, tmp);
             }
             break;

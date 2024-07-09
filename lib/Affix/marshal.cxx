@@ -184,6 +184,7 @@ DCCallback * cv2dcb(pTHX_ Affix_Type * type, SV * cb) {
     // TODO: Be smart. Check that cb != undef, a CV*, etc.
     auto afxcb = new Affix_Callback(type, SvREFCNT_inc(cb));
     storeTHX(afxcb->perl);
-    ret = dcbNewCallback("ii)v", cbHandler, afxcb);  // TODO: generate (somewhat) correct signature
+    ret = dcbNewCallback(
+        "ii)v", cbHandler, afxcb);  // TODO: generate (somewhat) correct signature even though we don't use it?
     return ret;
 }
