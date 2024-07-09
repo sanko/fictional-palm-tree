@@ -158,17 +158,26 @@ dcArgPointer(cvm, ptr);*/
             }
             break;
         case CODEREF_FLAG:
-            if (SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV &&
-                sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
-                IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
-                auto cb = INT2PTR(DCCallback *, ptr_iv);
-                dcArgPointer(cvm, cb);
-            } else {
+            {
                 SV * xsub_tmp_sv = ST(st_pos);
-                auto cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
-                sv_2mortal(sv_bless(newRV_noinc(MUTABLE_SV(xsub_tmp_sv)), gv_stashpv("Affix::Callback", GV_ADD)));
-                CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(cb);
                 SvGETMAGIC(xsub_tmp_sv);
+                DCpointer cb = nullptr;
+                HV * st;
+                GV * gvp;
+                auto cb_ = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
+                if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
+                    croak("Type of arg %d to %s must be subroutine (not constant item)", st_pos + 1, GvNAME(CvGV(cv)));
+                } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
+                    IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
+                    cb = INT2PTR(DCCallback *, ptr_iv);
+                } else {
+                    cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
+                    if (!SvREADONLY(xsub_tmp_sv)) {
+                        sv_2mortal(
+                            sv_bless(newRV_noinc(MUTABLE_SV(xsub_tmp_sv)), gv_stashpv("Affix::Callback", GV_ADD)));
+                        CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(cb);
+                    }
+                }
                 dcArgPointer(cvm, cb);
             }
             break;
@@ -356,6 +365,7 @@ XS_INTERNAL(Affix_affix) {
     dXSI32;
     Affix * affix = new Affix();
     std::string prototype;
+    std::string rename;  // affix(...) allows you to change the name of the perlsub
 
     if (items != 4)
         croak_xs_usage(cv, "$lib, $symbol, \\@arguments, $return");
@@ -396,8 +406,7 @@ XS_INTERNAL(Affix_affix) {
             XSRETURN_EMPTY;
         }
     }
-    {                        // ..., symbol, ..., ...
-        std::string rename;  // affix(...) allows you to change the name of the perlsub
+    {  // ..., symbol, ..., ...
         if (ix == 0 && SvROK(ST(1)) && SvTYPE(SvRV(ST(1))) == SVt_PVAV) {
             SV ** symbol_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 0, 0);
             SV ** rename_sv = av_fetch(MUTABLE_AV(SvRV(ST(1))), 1, 0);
@@ -415,16 +424,6 @@ XS_INTERNAL(Affix_affix) {
             croak("Failed to locate symbol named %s", affix->symbol.c_str());
             delete affix;
         }
-
-        STMT_START {
-            cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Affix_trigger, __FILE__, prototype.c_str());
-            if (affix->symbol.empty())
-                affix->symbol = "anonymous subroutine";
-            if (UNLIKELY(cv == NULL))
-                croak("ARG! Something went really wrong while installing a new XSUB!");
-            XSANY.any_ptr = (DCpointer)affix;
-        }
-        STMT_END;
     }
     {  // ..., ..., args, ...
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
@@ -438,7 +437,10 @@ XS_INTERNAL(Affix_affix) {
                     for (size_t i = 0; i < num_args; i++) {
                         sv_type = av_fetch(av_args, i, 0);
                         if (sv_type && LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
-                            prototype += '$';
+                            if (sv_derived_from(*sv_type, "Affix::Type::CodeRef"))
+                                prototype += '&';
+                            else
+                                prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             affix->argtypes.push_back(afx_type);
                         }
@@ -451,7 +453,10 @@ XS_INTERNAL(Affix_affix) {
                         sv_name = av_fetch(av_args, i, 0);
                         sv_type = av_fetch(av_args, i + 1, 0);
                         if (sv_type && LIKELY(SvROK(*sv_type) && sv_derived_from(*sv_type, "Affix::Type"))) {
-                            prototype += '$';
+                            if (sv_derived_from(*sv_type, "Affix::Type::CodeRef"))
+                                prototype += '&';
+                            else
+                                prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             afx_type->field = SvPV_nolen(*sv_name);
                             affix->argtypes.push_back(afx_type);
@@ -471,6 +476,17 @@ XS_INTERNAL(Affix_affix) {
         } else
             croak("Unknown return type");
     }
+
+
+    STMT_START {
+        cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Affix_trigger, __FILE__, prototype.c_str());
+        if (affix->symbol.empty())
+            affix->symbol = "anonymous subroutine";
+        if (UNLIKELY(cv == NULL))
+            croak("ARG! Something went really wrong while installing a new XSUB!");
+        XSANY.any_ptr = (DCpointer)affix;
+    }
+    STMT_END;
 
     ST(0) = sv_2mortal(sv_bless((UNLIKELY(ix == 1) ? newRV_noinc(MUTABLE_SV(cv)) : newRV_inc(MUTABLE_SV(cv))),
                                 gv_stashpv("Affix", GV_ADD)));

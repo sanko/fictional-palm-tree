@@ -97,10 +97,10 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         my $build_params = path('_build_params');
         my ( $env, $bargv ) = $build_params->is_file ? @{ decode_json( $build_params->slurp ) } : ();
         GetOptionsFromArray(
-            $_,
+            [ @ARGV, @$env, @$bargv ],
             \my %opt,
-            qw/install_base=s install_path=s% installdirs=s destdir=s prefix=s config=s% uninst:1 verbose:1 dry_run:1 pureperl-only:1 create_packlist=i jobs=i/
-        ) for grep {defined} $env, $bargv, \@ARGV;
+            qw[install_base=s install_path=s% installdirs=s destdir=s prefix=s config=s% uninst:1 verbose:1 dry_run:1 pureperl-only:1 create_packlist=i jobs=i force:1]
+        );
         $_ = detildefy($_) for grep {defined} @opt{qw[install_base destdir prefix]}, values %{ $opt{install_path} };
         @opt{qw[config meta]} = ( ExtUtils::Config->new( $opt{config} ), get_meta() );
         exit $actions{$action}->( %opt, install_paths => ExtUtils::InstallPaths->new( %opt, dist_name => $opt{meta}->name ) );
@@ -227,8 +227,10 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             #             $source->stat->mtime - path($obj)->stat->mtime
             #             ;
             push @objs,    # misses headers but that's okay
-                ( ( !-f $obj ) || ( $source->stat->mtime >= path($obj)->stat->mtime ) || ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) )
-                ?
+                ( $opt{force} ||
+                    ( !-f $obj ) ||
+                    ( $source->stat->mtime >= path($obj)->stat->mtime ) ||
+                    ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) ) ?
                 $builder->compile(
                 'C++'        => ( $source =~ /\.cxx$/ ? 1 : 0 ),
                 source       => $source->stringify,
@@ -249,7 +251,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         #~ warn join ', ', @parts;
         #~ warn $lib_file;
         return (
-            ( ( !-f $lib_file ) || grep { path($_)->stat->mtime > path($lib_file)->stat->mtime } @objs ) ?
+            ( $opt{force} || ( !-f $lib_file ) || grep { path($_)->stat->mtime > path($lib_file)->stat->mtime } @objs ) ?
                 $builder->link(
                 extra_linker_flags => (
                     ( $opt{config}->get('osname') =~ /bsd/ ? '' : $LDFLAGS ) .

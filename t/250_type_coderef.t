@@ -21,5 +21,6 @@ subtest multicall => sub {
     is do_cb( $code, 4,  5 ),  9,  'do_cb( sub {...}, 4, 5 )';
     is do_cb( $code, 20, -5 ), 15, 'do_cb( sub {...}, 20, -5 )';
 };
+like dies { do_cb( 'nope', 3, 2 ) }, qr[Type of arg 1 .+ must be subroutine], 'CodeRef[...] must be a CODE ref';
 #
 done_testing;
