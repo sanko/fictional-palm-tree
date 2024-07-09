@@ -5,6 +5,13 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
     auto afxcb = (Affix_Callback *)userdata;
     dTHXa(afxcb->perl);
     char restype_c = afxcb->type->restype->numeric;
+    // if (afxcb->cv == nullptr || !SvPOK(afxcb->cv))
+    //     return DC_SIGCHAR_VOID;
+
+
+    warn("----------------------------------------------------------------------------------------");
+    sv_dump(CvXSUBANY(afxcb->cv).any_sv);
+
 
     {
         dSP;
@@ -162,8 +169,10 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
         PUTBACK;
         PING;
 
+
         if (restype_c == DC_SIGCHAR_VOID) {
             call_sv(afxcb->cv, G_DISCARD);
+            restype_c = DC_SIGCHAR_VOID;
         } else {
             int count = call_sv(afxcb->cv, G_SCALAR);
             SPAGAIN;
@@ -278,4 +287,32 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
     }
 
     return restype_c;
+}
+
+XS_INTERNAL(Affix_Callback_DESTROY) {
+    dXSARGS;
+    PERL_UNUSED_VAR(items);
+
+    warn("DESTROY");
+    sv_dump(CvXSUBANY(ST(0)).any_sv);
+
+    /*
+    Affix_Pointer * pointer;
+    pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
+    if (pointer != nullptr) {
+        // if (pointer->address != nullptr)
+        // safefree(pointer->address);
+        pointer->address = nullptr;
+        delete pointer;
+    }
+    pointer = nullptr;*/
+    XSRETURN_EMPTY;
+};
+
+void boot_Affix_Callback(pTHX_ CV * cv) {
+    PERL_UNUSED_VAR(cv);
+
+    (void)newXSproto_portable("Affix::Callback::DESTROY", Affix_Callback_DESTROY, __FILE__, "$");
+
+    // set_isa("Affix::Callback", "Affix::Pointer");
 }

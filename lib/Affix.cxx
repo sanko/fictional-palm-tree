@@ -159,10 +159,15 @@ dcArgPointer(cvm, ptr);*/
             break;
         case CODEREF_FLAG:
             {
+                SV * xsub_tmp_sv = ST(st_pos);
                 DCpointer tmp = sv2ptr(aTHX_ type, ST(st_pos));
-                // should i store the pointer in the sv itself. A blessed object that free's the pointer when the SV *
-                // goes out of scope and also can be caalled like CODE ref
-                // ...because this leaks the ptr
+                if (SvREADONLY(SvRV(ST(st_pos))))
+                    warn("Readonly callback?!?");
+                CvXSUBANY(xsub_tmp_sv).any_sv = newSViv(123456789);
+                sv_dump(CvXSUBANY(xsub_tmp_sv).any_sv);
+                sv_dump(xsub_tmp_sv);
+                sv_2mortal(sv_bless((0 ? newRV_noinc(MUTABLE_SV(xsub_tmp_sv)) : newRV_inc(MUTABLE_SV(xsub_tmp_sv))),
+                                    gv_stashpv("Affix::Callback", GV_ADD)));
                 dcArgPointer(cvm, tmp);
             }
             break;
@@ -591,6 +596,8 @@ XS_EXTERNAL(boot_Affix) {
     (void)newXSproto_portable("Affix::sv2ptr", Affix_sv2ptr, __FILE__, "$$");
     // Affix::ptr2sv( type, ptr )
     (void)newXSproto_portable("Affix::ptr2sv", Affix_ptr2sv, __FILE__, "$$");
+    // Affix::sv_dump( sv )
+    (void)newXSproto_portable("Affix::sv_dump", Affix_sv_dump, __FILE__, "$");
 
     // general purpose flags
     export_constant("Affix", "VOID_FLAG", "flags", VOID_FLAG);
@@ -625,6 +632,7 @@ XS_EXTERNAL(boot_Affix) {
     boot_Affix_Platform(aTHX_ cv);
     boot_Affix_Pointer(aTHX_ cv);
     boot_Affix_pin(aTHX_ cv);
+    boot_Affix_Callback(aTHX_ cv);
     //
     Perl_xs_boot_epilog(aTHX_ ax);
 }

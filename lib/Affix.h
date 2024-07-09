@@ -511,6 +511,7 @@ void boot_Affix_Lib(pTHX_ CV *);
 void boot_Affix_Aggregate(pTHX_ CV *);
 void boot_Affix_Platform(pTHX_ CV *);
 void boot_Affix_Type(pTHX_ CV *);
+void boot_Affix_Callback(pTHX_ CV *);
 
 //
 DLLib * load_library(const char * lib);
