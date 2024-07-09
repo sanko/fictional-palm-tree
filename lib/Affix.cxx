@@ -158,19 +158,14 @@ dcArgPointer(cvm, ptr);*/
             }
             break;
         case CODEREF_FLAG:
-            {
+            {  // TODO: Don't do any of this if the SV is already an Affix::Callback. Just get the pointer and pass it
+               // back to dcArgPointer()
                 SV * xsub_tmp_sv = ST(st_pos);
                 DCCallback * tmp = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
-                warn("Setting up p: %" PRIXPTR, (uintptr_t)tmp);
-                warn("Setting up x: %x", (DCpointer)tmp);
-                warn("Setting up ?: %d", PTR2IV(tmp));
                 sv_2mortal(sv_bless((0 ? newRV_noinc(MUTABLE_SV(xsub_tmp_sv)) : newRV_inc(MUTABLE_SV(xsub_tmp_sv))),
                                     gv_stashpv("Affix::Callback", GV_ADD)));
-
                 CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(tmp);
-
                 SvGETMAGIC(xsub_tmp_sv);
-
                 dcArgPointer(cvm, tmp);
             }
             break;
