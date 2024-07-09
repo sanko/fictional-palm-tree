@@ -180,6 +180,30 @@ int do_cb(cb callback, int x, int y) { return callback(x, y); }
         is do_cb( sub { my ( $x, $y ) = @_; $x * $y }, 4, 5 ), 20, 'do_cb( sub {...}, 4, 5 )';
     };
     is $leaks->{error}, U(), 'callbacks';
+}
+{
+    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        my ( $lib, $ver );
+        #
+        subtest 'setup for pin' => sub {
+            my $lib = compile_test_lib <<'';
+#include "std.h"
+// ext: .c
+typedef int (*cb)(int, int);
+int do_cb(cb callback, int x, int y) { return callback(x, y); }
+
+            isa_ok typedef( CB => CodeRef [ [ Int, Int ] => Int ] ), ['Affix::Type'], 'typedef int (*cb)(int, int);';
+            isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ),  ['Affix'],       'int do_cb(cb callback, int x, int y) ';
+            #
+        };
+        my $code = sub { my ( $x, $y ) = @_; $x + $y };
+        is do_cb( $code, 4,  5 ),  9,  'do_cb( sub {...}, 4, 5 )';
+        is do_cb( $code, 20, -5 ), 15, 'do_cb( sub {...}, 20, -5 )';
+    };
+    is $leaks->{error}, U(), 'callback reuse';
     use Data::Dump qw[pp];
     diag pp($leaks);
 }

@@ -158,15 +158,18 @@ dcArgPointer(cvm, ptr);*/
             }
             break;
         case CODEREF_FLAG:
-            {  // TODO: Don't do any of this if the SV is already an Affix::Callback. Just get the pointer and pass it
-               // back to dcArgPointer()
+            if (SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV &&
+                sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
+                IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
+                auto cb = INT2PTR(DCCallback *, ptr_iv);
+                dcArgPointer(cvm, cb);
+            } else {
                 SV * xsub_tmp_sv = ST(st_pos);
-                DCCallback * tmp = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
-                sv_2mortal(sv_bless((0 ? newRV_noinc(MUTABLE_SV(xsub_tmp_sv)) : newRV_inc(MUTABLE_SV(xsub_tmp_sv))),
-                                    gv_stashpv("Affix::Callback", GV_ADD)));
-                CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(tmp);
+                auto cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
+                sv_2mortal(sv_bless(newRV_noinc(MUTABLE_SV(xsub_tmp_sv)), gv_stashpv("Affix::Callback", GV_ADD)));
+                CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(cb);
                 SvGETMAGIC(xsub_tmp_sv);
-                dcArgPointer(cvm, tmp);
+                dcArgPointer(cvm, cb);
             }
             break;
 

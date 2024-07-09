@@ -286,46 +286,13 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
 XS_INTERNAL(Affix_Callback_DESTROY) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
-
-    warn("DESTROY");
     IV ptr_iv = CvXSUBANY(SvRV(ST(0))).any_iv;
-    warn("Here [%d]", ptr_iv);
     auto cb = INT2PTR(DCCallback *, ptr_iv);
-    warn("HereB");
     auto afxcb = (Affix_Callback *)dcbGetUserData(cb);
-
     delete afxcb;
     afxcb = nullptr;
-    warn("HereC");
-    //~ if(afxcb != nullptr)
-    //~ delete afxcb;
-    warn("HereD");
-
     dcbFreeCallback(cb);
     cb = nullptr;
-
-
-    warn("HereE");
-
-    // if (cb != nullptr) safefree(cb);
-    // warn("signature: %s", cb->signature.c_str());
-    // delete cb;
-
-    // sv_dump(ST(0));
-
-
-    // CvXSUBANY(xsub_tmp_sv).any_sv
-
-    /*
-    Affix_Pointer * pointer;
-    pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
-    if (pointer != nullptr) {
-        // if (pointer->address != nullptr)
-        // safefree(pointer->address);
-        pointer->address = nullptr;
-        delete pointer;
-    }
-    pointer = nullptr;*/
     XSRETURN_EMPTY;
 };
 
@@ -333,6 +300,4 @@ void boot_Affix_Callback(pTHX_ CV * cv) {
     PERL_UNUSED_VAR(cv);
 
     (void)newXSproto_portable("Affix::Callback::DESTROY", Affix_Callback_DESTROY, __FILE__, "$");
-
-    // set_isa("Affix::Callback", "Affix::Pointer");
 }

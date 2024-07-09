@@ -414,13 +414,8 @@ public:
     Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {};
     // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
     ~Affix_Callback() {
-
-        dTHXa(perl);
-
-
-        warn("DESTROY Affix_Callback*");
-
-
+        // dTHXa(perl);
+        // warn("DESTROY Affix_Callback*");
         return;
         /*
         SvREFCNT_dec(cv);  // allow it to be cleaned up
