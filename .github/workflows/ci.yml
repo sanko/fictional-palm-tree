@@ -18,6 +18,16 @@ jobs:
             name: freebsd
             pkg: pkg install -y
             version: 13.2
+          - architecture: x86-64
+            host: ubuntu-latest
+            name: freebsd
+            pkg: pkg install -y
+            version: 14.1
+          - architecture: arm64
+            host: ubuntu-latest
+            name: freebsd
+            pkg: pkg install -y
+            version: 14.1
         perl:
           - 5.38
       max-parallel: 25
