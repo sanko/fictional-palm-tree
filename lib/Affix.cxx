@@ -166,7 +166,9 @@ dcArgPointer(cvm, ptr);*/
                 GV * gvp;
                 auto cb_ = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
                 if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
-                    croak("Type of arg %d to %s must be subroutine (not constant item)", st_pos + 1, GvNAME(CvGV(cv)));
+                    croak("Type of arg %d to %s must be subroutine (not constant item)",
+                          (int)(st_pos + 1),
+                          GvNAME(CvGV(cv)));
                 } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
                     IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
                     cb = INT2PTR(DCCallback *, ptr_iv);

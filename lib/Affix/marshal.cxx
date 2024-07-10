@@ -99,10 +99,22 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         */
 
     case STRUCT_FLAG:
-        croak("struct!");
-        for (auto subtype : type->subtypes) {
-            warn("subtype: %s", subtype->field);
-        }
+        if (SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVHV) {
+            DD(data);
+            HV * hv_struct = MUTABLE_HV(SvRV(data));
+            for (const auto & subtype : type->subtypes) {
+                const char * name = subtype->field.c_str();
+                SV ** ptr_field = hv_fetch(hv_struct, name, strlen(name), 0);
+                DD(*ptr_field);
+                warn("subtype: %s, sizeof: %ud, field: %s, offset: %u",
+                     subtype->stringify.c_str(),
+                     subtype->size,
+                     name,
+                     subtype->offset);
+            }
+            croak("struct!!!!!!!!!!!!!!!! %s", type->stringify.c_str());
+        } else
+            target = nullptr;  // ???: malloc full sized block instead?
         break;
 
         /*

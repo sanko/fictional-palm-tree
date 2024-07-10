@@ -60,13 +60,15 @@ package Affix::Type 0.5 {
             numeric   => $flag,
             sizeof    => $sizeof,
             alignment => $align,
-            offset    => $offset,                # TODO
-            length    => [ $array_len // () ],
-            typedef   => undef,                  # TODO
+            typedef   => undef,     # TODO
             const     => !1,
             volitile  => !1,
             restrict  => !1,
-            depth     => 0,                      # pointer depth
+            depth     => 0,         # pointer depth
+
+            # Optional
+            offset => $offset // 0,           # TODO
+            length => [ $array_len // () ],
 
             # Callbacks
             ( defined $subtypes ? ( subtypes => $subtypes ) : () ), ( defined $cb_res ? ( cb_res => $cb_res ) : () )

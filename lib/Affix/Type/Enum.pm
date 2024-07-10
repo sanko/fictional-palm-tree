@@ -36,53 +36,38 @@ package Affix::Type::Enum 0.5 {
 
     sub Enum : prototype($) {
         my ( $text, $enum ) = &_Enum;
-
-        # TODO: user SUPER->new(...)
-        bless {
-            stringify => sprintf( 'Enum[ %s ]', join ', ', @$text ),
-            numeric   => Affix::INT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_INT(),
-            alignment => Affix::Platform::ALIGNOF_INT(),
-            enum      => $enum,
-            position  => 0,
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::Enum';
+        my $s = Affix::Type::Enum->new(
+            sprintf( 'Enum[ %s ]', join ', ', @$text ),    # SLOT_CODEREF_STRINGIFY
+            Affix::INT_FLAG(),                             # SLOT_CODEREF_NUMERIC
+            Affix::Platform::SIZEOF_INT(),                 # SLOT_CODEREF_SIZEOF
+            Affix::Platform::ALIGNOF_INT(),                # SLOT_CODEREF_ALIGNMENT
+        );
+        $s->{enum} = $enum;
+        $s;
     }
 
     sub IntEnum : prototype($) {
         my ( $text, $enum ) = &_Enum;
-
-        # TODO: user SUPER->new(...)
-        bless {
-            stringify => sprintf( 'IntEnum[ %s ]', join ', ', @$text ),
-            numeric   => Affix::INT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_INT(),
-            alignment => Affix::Platform::ALIGNOF_INT(),
-            enum      => $enum,
-            position  => 0,
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::IntEnum';
+        my $s = Affix::Type::IntEnum->new(
+            sprintf( 'IntEnum[ %s ]', join ', ', @$text ),    # SLOT_CODEREF_STRINGIFY
+            Affix::INT_FLAG(),                                # SLOT_CODEREF_NUMERIC
+            Affix::Platform::SIZEOF_INT(),                    # SLOT_CODEREF_SIZEOF
+            Affix::Platform::ALIGNOF_INT(),                   # SLOT_CODEREF_ALIGNMENT
+        );
+        $s->{enum} = $enum;
+        $s;
     }
 
     sub UIntEnum : prototype($) {
         my ( $text, $enum ) = &_Enum;
-
-        # TODO: user SUPER->new(...)
-        bless {
-            stringify => sprintf( 'UIntEnum[ %s ]', join ', ', @$text ),
-            numeric   => Affix::UINT_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_UINT(),
-            alignment => Affix::Platform::ALIGNOF_UINT(),
-            enum      => $enum,
-            position  => 0,
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::UIntEnum';
+        my $s = Affix::Type::UIntEnum->new(
+            sprintf( 'UIntEnum[ %s ]', join ', ', @$text ),    # SLOT_CODEREF_STRINGIFY
+            Affix::UINT_FLAG(),                                # SLOT_CODEREF_NUMERIC
+            Affix::Platform::SIZEOF_UINT(),                    # SLOT_CODEREF_SIZEOF
+            Affix::Platform::ALIGNOF_UINT(),                   # SLOT_CODEREF_ALIGNMENT
+        );
+        $s->{enum} = $enum;
+        $s;
     }
 
     sub CharEnum : prototype($) {
@@ -103,17 +88,14 @@ package Affix::Type::Enum 0.5 {
             push @$text, sprintf '[%s => %s]', $element, $index;
             $index++;
         }
-        bless {
-            stringify => sprintf( 'CharEnum[ %s ]', join ', ', @$text ),
-            numeric   => Affix::CHAR_FLAG(),
-            sizeof    => Affix::Platform::SIZEOF_CHAR(),
-            alignment => Affix::Platform::ALIGNOF_CHAR(),
-            enum      => $enum,
-            position  => 0,
-            typedef   => undef,
-            const     => !1
-            },
-            'Affix::Type::CharEnum';
+        my $s = Affix::Type::CharEnum->new(
+            sprintf( 'CharEnum[ %s ]', join ', ', @$text ),    # SLOT_CODEREF_STRINGIFY
+            Affix::CHAR_FLAG(),                                # SLOT_CODEREF_NUMERIC
+            Affix::Platform::SIZEOF_CHAR(),                    # SLOT_CODEREF_SIZEOF
+            Affix::Platform::ALIGNOF_CHAR(),                   # SLOT_CODEREF_ALIGNMENT
+        );
+        $s->{enum} = $enum;
+        $s;
     }
 
     sub typedef : prototype($$) {

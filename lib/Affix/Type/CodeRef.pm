@@ -26,7 +26,7 @@ package Affix::Type::CodeRef 0.5 {
             Affix::CODEREF_FLAG(),                                               # SLOT_CODEREF_NUMERIC
             Affix::Platform::SIZEOF_INTPTR_T(),                                  # SLOT_CODEREF_SIZEOF
             Affix::Platform::ALIGNOF_INTPTR_T(),                                 # SLOT_CODEREF_ALIGNMENT
-            undef,                                                               # SLOT_CODEREF_OFFSET
+            0,                                                                   # SLOT_CODEREF_OFFSET
             undef, $args, $ret
         );
 

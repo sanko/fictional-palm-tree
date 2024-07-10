@@ -335,8 +335,15 @@ public:
                size_t size,
                size_t alignment,
                size_t depth,
+               size_t offset,
                std::vector<SSize_t> length)
-        : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
+        : numeric(numeric),
+          size(size),
+          _alignment(alignment),
+          depth(depth),
+          offset(offset),
+          length(length),
+          stringify(stringify) {};
 
     // Struct, Union
     Affix_Type(const std::string & stringify,
@@ -344,12 +351,16 @@ public:
                size_t size,
                size_t alignment,
                size_t depth,
+               size_t offset,
+
                std::vector<SSize_t> length,
                std::vector<Affix_Type *> subtypes)
         : numeric(numeric),
           size(size),
           _alignment(alignment),
           depth(depth),
+          offset(offset),
+
           length(length),
           stringify(stringify),
           subtypes(subtypes) {};
@@ -359,6 +370,7 @@ public:
                size_t size,
                size_t alignment,
                size_t depth,
+               size_t offset,
                std::vector<SSize_t> length,
                std::vector<Affix_Type *> subtypes,
                Affix_Type * restype)
@@ -366,6 +378,7 @@ public:
           size(size),
           _alignment(alignment),
           depth(depth),
+          offset(offset),
           length(length),
           stringify(stringify),
           subtypes(subtypes),
@@ -406,7 +419,7 @@ public:  // for now...
 
     char * _typedef = nullptr;
     DCaggr * aggregate = nullptr;
-    char * field = nullptr;  // If part of a struct
+    std::string field;  // If part of a struct
 
     std::vector<Affix_Type *> subtypes;  // list of Affix_Type for a callback
     Affix_Type * restype = nullptr;      // result type for a callback
