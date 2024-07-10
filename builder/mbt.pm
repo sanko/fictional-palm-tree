@@ -11,23 +11,28 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
-    my $DEBUG  = 0;
-    my $CFLAGS = $DEBUG ?
-        '-DDEBUG=' .
-        $DEBUG .
-        ' -std=c++17 -g3 -pthread -gdwarf-4 -fPIC ' .
-        ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree ' .
-        ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference ' .
-        ' -Wswitch-enum  -Wduplicated-cond ' .
-        ' -Wduplicated-branches -Wsuggest-override'
+    my $DEBUG = 0;
 
-        # .
-        # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
-        :
+    sub CFLAGS($) {
+        ( shift || $DEBUG ) ?
+            '-DDEBUG=' .
+            $DEBUG .
+            ' -g3 -pthread -gdwarf-4 -fPIC ' .
+            ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree ' .
+            ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference ' .
+            ' -Wswitch-enum  -Wduplicated-cond ' .
+            ' -Wduplicated-branches -Wsuggest-override'
 
-        # $Config{osname} eq 'MSWin32' ? '' :
-        ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
-    my $LDFLAGS = ' -flto';
+            # .
+            # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
+            :
+
+            # $Config{osname} eq 'MSWin32' ? '' :
+            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
+    }
+    sub LDFLAGS($) { ' -flto'; }
+    sub CPPVER     {'c++17'}       # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
+
     #
     sub get_meta {
         state $metafile //= path('META.json');
@@ -99,7 +104,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         GetOptionsFromArray(
             [ @ARGV, @$env, @$bargv ],
             \my %opt,
-            qw[install_base=s install_path=s% installdirs=s destdir=s prefix=s config=s% uninst:1 verbose:1 dry_run:1 pureperl-only:1 create_packlist=i jobs=i force:1]
+            qw[install_base=s install_path=s% installdirs=s destdir=s prefix=s config=s% uninst:1 verbose:1 dry_run:1 pureperl-only:1 create_packlist=i jobs=i force:1 debug=i]
         );
         $_ = detildefy($_) for grep {defined} @opt{qw[install_base destdir prefix]}, values %{ $opt{install_path} };
         @opt{qw[config meta]} = ( ExtUtils::Config->new( $opt{config} ), get_meta() );
@@ -129,9 +134,9 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             = 'sh ./configure --prefix=' .
             $pre->absolute .
             ' CFLAGS="-fPIC ' .
-            ( $opt{config}->get('osname') =~ /bsd/ ? '' : $CFLAGS ) .
+            ( $opt{config}->get('osname') =~ /bsd/ ? '' : CFLAGS( $opt{debug} ) ) .
             '" LDFLAGS="' .
-            ( $opt{config}->get('osname') =~ /bsd/ ? '' : $LDFLAGS ) . '"';
+            ( $opt{config}->get('osname') =~ /bsd/ ? '' : LDFLAGS( $opt{debug} ) ) . '"';
 
         if ( $opt{config}->get('osname') eq 'MSWin32' ) {
             require Devel::CheckBin;
@@ -240,8 +245,8 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
                     $source->dirname, $pre->child( $opt{meta}->name, 'include' )->stringify
                 ],
                 extra_compiler_flags => (
-                    '-fPIC -std=c++17 ' .    # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
-                        ( $opt{config}->get('osname') =~ /bsd/ ? '' : $CFLAGS ) . ( $DEBUG ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
+                    '-fPIC -std=' . CPPVER() . ' ' .    # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
+                        ( $opt{config}->get('osname') =~ /bsd/ ? '' : CFLAGS( $opt{debug} ) ) . ( $DEBUG ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
                 )
                 ) :
                 $obj;
@@ -254,7 +259,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             ( $opt{force} || ( !-f $lib_file ) || grep { path($_)->stat->mtime > path($lib_file)->stat->mtime } @objs ) ?
                 $builder->link(
                 extra_linker_flags => (
-                    ( $opt{config}->get('osname') =~ /bsd/ ? '' : $LDFLAGS ) .
+                    ( $opt{config}->get('osname') =~ /bsd/ ? '' : LDFLAGS( $opt{debug} ) ) .
                         ( join ' ', map { ' -L' . $_ } @dirs ) . ' -L' .
                         $pre->child( $opt{meta}->name, 'lib' )->stringify .
                         ' -lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s'

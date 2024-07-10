@@ -29,15 +29,15 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
-    if (items != affix->argtypes.size())
-        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->argtypes.size());
+    if (items != affix->subtypes.size())
+        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->subtypes.size());
 
     size_t st_pos = 0;
     // Affix_Type * type;
-    // for (size_t c = 0; c < affix->argtypes.size(); c++) {
-    // type = affix->argtypes[c];
+    // for (size_t c = 0; c < affix->subtypes.size(); c++) {
+    // type = affix->subtypes[c];
     ;
-    for (const auto & type : affix->argtypes) {
+    for (const auto & type : affix->subtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
@@ -192,26 +192,26 @@ dcArgPointer(cvm, ptr);*/
             //~ #define CODEREF_FLAG '&'
         case POINTER_FLAG:
             {
-                //~ sv_dump(*av_fetch(affix->argtypes, st_pos, 0));
-                //~ sv_dump(AXT_TYPE_SUBTYPE(*av_fetch(affix->argtypes, st_pos, 0)));
+                //~ sv_dump(*av_fetch(affix->subtypes, st_pos, 0));
+                //~ sv_dump(AXT_TYPE_SUBTYPE(*av_fetch(affix->subtypes, st_pos, 0)));
 
                 SV * const xsub_tmp_sv = ST(st_pos);
                 SvGETMAGIC(xsub_tmp_sv);
 
 
-                // dcArgPointer(cvm, sv2ptr(aTHX_ AXT_TYPE_SUBTYPE(*av_fetch(affix->argtypes, st_pos, 0)),
+                // dcArgPointer(cvm, sv2ptr(aTHX_ AXT_TYPE_SUBTYPE(*av_fetch(affix->subtypes, st_pos, 0)),
                 //                          xsub_tmp_sv));
                 break;
             }
         case STRUCT_FLAG:
             {
-                //~ SV *type = *av_fetch(affix->argtypes, st_pos, 0);
-                Affix_Type * type = affix->argtypes[st_pos];
+                //~ SV *type = *av_fetch(affix->subtypes, st_pos, 0);
+                Affix_Type * type = affix->subtypes[st_pos];
                 // dcArgAggr(cvm, _aggregate(aTHX_ type), sv2ptr(aTHX_ type, ST(st_pos)));
                 break;
             }
         default:
-            //~ sv_dump(*av_fetch(affix->argtypes, st_pos, 0));
+            //~ sv_dump(*av_fetch(affix->subtypes, st_pos, 0));
             croak("Unhandled argument type: %s", type->stringify.c_str());
         }
         ++st_pos;
@@ -442,7 +442,7 @@ XS_INTERNAL(Affix_affix) {
                             else
                                 prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
-                            affix->argtypes.push_back(afx_type);
+                            affix->subtypes.push_back(afx_type);
                         }
                     }
                 } else {  // Expect named pairs
@@ -459,7 +459,7 @@ XS_INTERNAL(Affix_affix) {
                                 prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             afx_type->field = SvPV_nolen(*sv_name);
-                            affix->argtypes.push_back(afx_type);
+                            affix->subtypes.push_back(afx_type);
                         }
                     }
                 }

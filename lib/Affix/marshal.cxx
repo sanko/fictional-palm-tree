@@ -96,10 +96,20 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         #define WSTRING_FLAG '<'
         #define STDSTRING_FLAG 'Y'
         #define STRUCT_FLAG 'A'
-        #define CPPSTRUCT_FLAG 'B'
-        #define UNION_FLAG 'u'
-        #define AFFIX_FLAG '@'
         */
+
+    case STRUCT_FLAG:
+        croak("struct!");
+        for (auto subtype : type->subtypes) {
+            warn("subtype: %s", subtype->field);
+        }
+        break;
+
+        /*
+         #define CPPSTRUCT_FLAG 'B'
+         #define UNION_FLAG 'u'
+         #define AFFIX_FLAG '@'
+         */
     case CODEREF_FLAG:
         target = cv2dcb(aTHX_(Affix_Type *) type, data);
         break;
@@ -107,8 +117,6 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         #define POINTER_FLAG 'P'
         #define SV_FLAG '?'
         */
-
-
     default:
         croak("TODO: sv2ptr for everything else");
     }

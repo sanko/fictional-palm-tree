@@ -12,9 +12,9 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
         ENTER;
         SAVETMPS;
         PUSHMARK(SP);
-        EXTEND(SP, (int)afxcb->type->argtypes.size());
+        EXTEND(SP, (int)afxcb->type->subtypes.size());
 
-        for (const auto & type : afxcb->type->argtypes) {
+        for (const auto & type : afxcb->type->subtypes) {
             // warn("%s [ptr:%d]", type->stringify.c_str(), type->depth);
             switch (type->numeric) {
             case VOID_FLAG:

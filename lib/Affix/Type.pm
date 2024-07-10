@@ -53,7 +53,7 @@ package Affix::Type 0.5 {
     }
 
     sub new : prototype($$$$$$;$$$) {
-        my ( $pkg, $str, $flag, $sizeof, $align, $offset, $array_len, $cb_args, $cb_res ) = @_;
+        my ( $pkg, $str, $flag, $sizeof, $align, $offset, $array_len, $subtypes, $cb_res ) = @_;
         die 'Please subclass Affix::Type' if $pkg eq __PACKAGE__;
         bless {
             stringify => $str,
@@ -69,7 +69,7 @@ package Affix::Type 0.5 {
             depth     => 0,                      # pointer depth
 
             # Callbacks
-            ( defined $cb_args ? ( cb_args => $cb_args ) : () ), ( defined $cb_res ? ( cb_res => $cb_res ) : () )
+            ( defined $subtypes ? ( subtypes => $subtypes ) : () ), ( defined $cb_res ? ( cb_res => $cb_res ) : () )
         }, $pkg;
     }
 

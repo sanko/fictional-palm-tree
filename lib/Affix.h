@@ -329,6 +329,7 @@ char * mangle(pTHX_ const char * abi, SV * affix, const char * symbol, SV * args
 
 class Affix_Type {
 public:
+    // Fundamental
     Affix_Type(const std::string & stringify,
                char numeric,
                size_t size,
@@ -337,13 +338,29 @@ public:
                std::vector<SSize_t> length)
         : numeric(numeric), size(size), _alignment(alignment), depth(depth), length(length), stringify(stringify) {};
 
+    // Struct, Union
     Affix_Type(const std::string & stringify,
                char numeric,
                size_t size,
                size_t alignment,
                size_t depth,
                std::vector<SSize_t> length,
-               std::vector<Affix_Type *> argtypes,
+               std::vector<Affix_Type *> subtypes)
+        : numeric(numeric),
+          size(size),
+          _alignment(alignment),
+          depth(depth),
+          length(length),
+          stringify(stringify),
+          subtypes(subtypes) {};
+    // Callbacks
+    Affix_Type(const std::string & stringify,
+               char numeric,
+               size_t size,
+               size_t alignment,
+               size_t depth,
+               std::vector<SSize_t> length,
+               std::vector<Affix_Type *> subtypes,
                Affix_Type * restype)
         : numeric(numeric),
           size(size),
@@ -351,17 +368,14 @@ public:
           depth(depth),
           length(length),
           stringify(stringify),
-          argtypes(argtypes),
-          restype(restype) {
-
-
-          };
+          subtypes(subtypes),
+          restype(restype) {};
 
 
     ~Affix_Type() {
-        std::for_each(argtypes.begin(), argtypes.end(), [](auto argtype) { delete argtype; });
+        std::for_each(subtypes.begin(), subtypes.end(), [](auto argtype) { delete argtype; });
 
-        argtypes.clear();
+        subtypes.clear();
         if (restype != nullptr)
             delete restype;
 
@@ -394,7 +408,7 @@ public:  // for now...
     DCaggr * aggregate = nullptr;
     char * field = nullptr;  // If part of a struct
 
-    std::vector<Affix_Type *> argtypes;  // list of Affix_Type for a callback
+    std::vector<Affix_Type *> subtypes;  // list of Affix_Type for a callback
     Affix_Type * restype = nullptr;      // result type for a callback
 };
 
@@ -447,8 +461,8 @@ public:  // for now
         if (lib != nullptr)
             dlFreeLibrary(lib);
         // if (entry_point != nullptr) safefree(entry_point);
-        std::for_each(argtypes.begin(), argtypes.end(), [](auto argtype) { delete argtype; });
-        argtypes.clear();
+        std::for_each(subtypes.begin(), subtypes.end(), [](auto argtype) { delete argtype; });
+        subtypes.clear();
         if (restype != nullptr)
             delete restype;
         // pointers.clear();
@@ -456,7 +470,7 @@ public:  // for now
     DLLib * lib = nullptr;            // safefree
     DCpointer entry_point = nullptr;  // not malloc'd
     std::string symbol;
-    std::vector<Affix_Type *> argtypes;
+    std::vector<Affix_Type *> subtypes;
     Affix_Type * restype = nullptr;
     SV * res = nullptr;  // time over ram
     // std::vector<Affix_Pointer *> pointers;

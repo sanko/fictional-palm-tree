@@ -44,22 +44,15 @@ package Affix::Type::Struct 0.5 {
 
             #~ warn sprintf 'After:  struct size: %d, element size: %d', $sizeof, $__sizeof;
         }
-        bless {
-            stringify => sprintf( 'Struct[ %s ]', join ', ', @fields ),                                              # SLOT_TYPE_STRINGIFY
-            numeric   => Affix::STRUCT_FLAG(),                                                                       # SLOT_TYPE_NUMERIC
-            sizeof    => $sizeof + Affix::Platform::padding_needed_for( $sizeof, Affix::Platform::BYTE_ALIGN() ),    # SLOT_TYPE_SIZEOF
-            alignment => Affix::Platform::BYTE_ALIGN(),                                                              # SLOT_TYPE_ALIGNMENT
-            offset    => undef,                                                                                      # SLOT_TYPE_OFFSET
-            subtype   => \@store_,                                                                                   # SLOT_TYPE_SUBTYPE
-            length    => [1],                                                                                        # SLOT_TYPE_ARRAYLEN
-            const     => !1,                                                                                         # SLOT_TYPE_CONST
-            volitile  => !1,                                                                                         # SLOT_TYPE_VOLATILE
-            restrict  => !1,                                                                                         # SLOT_TYPE_RESTRICT
-
-            #typedef   => undef,                                                                                      # SLOT_TYPE_TYPEDEF
-            #name      => undef                                                                                       # SLOT_TYPE_FIELD
-            },
-            'Affix::Type::Struct';
+        my $s = Affix::Type::Struct->new(
+            sprintf( 'Struct[ %s ]', join( ', ', @fields ) ),                                           # SLOT_CODEREF_STRINGIFY
+            Affix::STRUCT_FLAG(),                                                                       # SLOT_CODEREF_NUMERIC
+            $sizeof + Affix::Platform::padding_needed_for( $sizeof, Affix::Platform::BYTE_ALIGN() ),    # SLOT_CODEREF_SIZEOF
+            Affix::Platform::BYTE_ALIGN(),                                                              # SLOT_CODEREF_ALIGNMENT
+            undef,                                                                                      # SLOT_CODEREF_OFFSET
+            undef, \@store_
+        );
+        return $s;
     }
 
     sub offsetof {
@@ -71,7 +64,7 @@ package Affix::Type::Struct 0.5 {
 
         # use Data::Dump;
         # ddx $s->{subtype};
-        for my $element ( @{ $s->{subtype} } ) {
+        for my $element ( @{ $s->{subtypes} } ) {
 
             #~ warn sprintf '%s vs %s', $field, $element->{name};
             $now = $element and last if $element->{name} eq $field;
