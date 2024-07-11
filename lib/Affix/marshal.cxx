@@ -100,19 +100,17 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
 
     case STRUCT_FLAG:
         if (SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVHV) {
-            DD(data);
+            // DD(data);
             HV * hv_struct = MUTABLE_HV(SvRV(data));
+            if (target == nullptr)
+                target = safecalloc(type->size, SIZEOF_CHAR);
             for (const auto & subtype : type->subtypes) {
                 const char * name = subtype->field.c_str();
                 SV ** ptr_field = hv_fetch(hv_struct, name, strlen(name), 0);
-                DD(*ptr_field);
-                warn("subtype: %s, sizeof: %ud, field: %s, offset: %u",
-                     subtype->stringify.c_str(),
-                     subtype->size,
-                     name,
-                     subtype->offset);
+                if (ptr_field == nullptr)
+                    croak("Expected field '%s' is missing", name);
+                sv2ptr(aTHX_ subtype, *ptr_field, depth, INT2PTR(DCpointer, (int)subtype->offset + PTR2IV(target)));
             }
-            croak("struct!!!!!!!!!!!!!!!! %s", type->stringify.c_str());
         } else
             target = nullptr;  // ???: malloc full sized block instead?
         break;

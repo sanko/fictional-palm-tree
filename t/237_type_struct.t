@@ -2,7 +2,7 @@ use Test2::V0 '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 BEGIN { chdir '../' if !-d 't'; }
 use lib '../lib', 'lib', '../blib/arch', '../blib/lib', 'blib/arch', 'blib/lib', '../../', '.';
-use Affix qw[:types wrap];
+use Affix qw[:types wrap affix];
 $|++;
 use t::lib::helper;
 #
@@ -61,7 +61,63 @@ typedef Example => Struct [
     #~ Pointer[SV]
     #~ Array
 ];
-note 'TODO: aggregates!!!!!!!!!!!!!!!!!!!!!!!!!';
+subtest 'real world' => sub {
+    ok my $lib = compile_test_lib( <<''), 'build test lib';
+#include "std.h"
+// ext: .cxx
+#include <iostream>
+class Point {
+public:
+  Point(int x = 0, int y = 0) : _x(x), _y(y) {}
+  int getX() const { return _x; }
+  int getY() const { return _y; }
+  void setX(int x) { _x = x; }
+  void setY(int y) { _y = y; }
+  void display() const {
+    std::cout << "Point: (" << _x << ", " << _y << ")" << std::endl;
+  }
+private:
+  int _x;
+  int _y;
+};
+// Function that takes a Point object by value and modifies its coordinates (copy is made)
+extern "C"
+DLLEXPORT void by_value(Point pt) {
+  pt.setX(pt.getX() * 2);
+  pt.setY(pt.getY() * 2);
+  std::cout << "Point inside by_value: ";
+  pt.display();  // Display the modified copy
+}
+extern "C"
+DLLEXPORT void by_reference(Point * pt) {
+  pt->setX(pt->getX() * 2);
+  pt->setY(pt->getY() * 2);
+  std::cout << "Point inside by_reference: ";
+  pt->display();  // Display the modified copy
+}
+extern "C"
+DLLEXPORT int init() {
+  Point p1(5, 3);  // Create a Point object with x=5, y=3
+  std::cout << "Original Point: ";
+  p1.display();  // Display the original point
+  by_value(p1);  // Pass p1 by value (copy is created)
+  std::cout << "Point after by_value: ";
+  p1.display();  // Original point remains unchanged
+  return 0;
+}
+
+    isa_ok typedef( Point => Struct [ x => Int, y => Int ] ), ['Affix::Type'], 'typedef Point => ...';
+
+    # affix $lib, ['init' => 'hit_it'], [], Int;
+    isa_ok affix( $lib, 'by_value',     [ Point() ],             Void ), ['Affix'], 'void by_value( Point )';
+    isa_ok affix( $lib, 'by_reference', [ Pointer [ Point() ] ], Void ), ['Affix'], 'void by_reference( Point * )';
+
+    # by_value( { x => 1001, y => 1002 } );
+    # TODO: I really need a better test here. Maybe it keeps the reference and we later get x from it?
+    ok lives { by_reference( { x => 1001, y => 1002 } ) }, 'by_reference';
+};
+#
+note 'TODO: aggregates by value!!!!!!!!!!!!!!!!!!!!!!!!!';
 done_testing;
 exit;
 subtest 'affix functions' => sub {
