@@ -30,7 +30,7 @@ jobs:
             version: 14.1
         perl:
           - 5.38
-      max-parallel: 25
+      max-parallel: 5
     uses: sanko/actions/.github/workflows/affix-cross.yml@main
     with:
       arch: '${{ matrix.os.architecture }}'
