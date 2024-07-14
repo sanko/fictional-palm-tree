@@ -5,33 +5,49 @@
 Bind an exported variable to a perl var */
 
 int get_pin(pTHX_ SV * sv, MAGIC * mg) {
+    warn("get_pin");
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
+    //~ warn("A1: %p", mg->mg_ptr);
+    //~ warn("A2: %p", ptr->ptr);
+    //~ warn("A3: %p", ptr->type->stringify);
     SV * val = ptr2sv(aTHX_ ptr->type, ptr->ptr, 1);
-    sv_setsv((sv), val);
-    return 0;
+     //~ warn("B");
+   sv_setsv((sv), val);
+     //~ warn("C");
+   return 0;
 }
 int set_pin(pTHX_ SV * sv, MAGIC * mg) {
+    warn("set_pin");
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     (void)sv2ptr(aTHX_ ptr->type, sv, 1, ptr->ptr);
     return 0;
 }
 
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
+    warn("free_pin");
     PERL_UNUSED_VAR(sv);
     Affix_Pin * ptr = (Affix_Pin *)mg->mg_ptr;
     delete ptr;
     ptr = nullptr;
     return 0;
 }
-
-void _pin(pTHX_ SV * sv, SV * type, DLLib * lib, DCpointer ptr) {
-    MAGIC * mg = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, NULL, 0);
-    Affix_Pin * _ptr = new Affix_Pin(lib, (Affix_Pointer *)ptr, sv2type(aTHX_ type));
-    if (_ptr->type->depth == 0) {  // Easy to forget to pass a size to Pointer[...]
-        _ptr->type->depth = 1;
-        _ptr->type->length.push_back(1);
-    }
-    mg->mg_ptr = (char *)_ptr;
+ 
+void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr) {
+	MAGIC * mg_;
+	// for (mg_ = SvMAGIC(sv); mg_; mg_ = mg_->mg_moremagic){
+	//  mg_findext(sv, PERL_MAGIC_ext, &pin_vtbl);
+	    // if (mg_->mg_type == PERL_MAGIC_ext && mg_->mg_virtual == &pin_vtbl) {
+		// warn("ALREADY A PIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");	
+        // }
+// }
+	
+    Affix_Pin * _ptr = new Affix_Pin(NULL, (Affix_Pointer *)ptr, type);
+    MAGIC * mg = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, (char*) _ptr, 0);
+     if (_ptr->type->depth == 0) {  // Easy to forget to pass a size to Pointer[...]
+         _ptr->type->depth = 1;
+         _ptr->type->length.push_back(1);
+     }
+    // mg->mg_ptr = (char *)_ptr;
 }
 
 XS_INTERNAL(Affix_pin) {
@@ -78,7 +94,7 @@ XS_INTERNAL(Affix_pin) {
     if (ptr == NULL)
         croak("Failed to locate '%s'", symbol);
 
-    _pin(aTHX_ ST(0), ST(3), _lib, ptr);
+    _pin(aTHX_ ST(0), sv2type(aTHX_ ST(3)), ptr);
 
     XSRETURN_YES;
 }
@@ -87,7 +103,10 @@ XS_INTERNAL(Affix_unpin) {
     dXSARGS;
     if (items != 1)
         croak_xs_usage(cv, "var");
-    if (mg_findext(ST(0), PERL_MAGIC_ext, &pin_vtbl) && !sv_unmagicext(ST(0), PERL_MAGIC_ext, &pin_vtbl))
+    if (
+         mg_findext(ST(0), PERL_MAGIC_ext, &pin_vtbl) && 
+     !
+    sv_unmagicext(ST(0), PERL_MAGIC_ext, &pin_vtbl))
         XSRETURN_YES;
     XSRETURN_NO;
 }

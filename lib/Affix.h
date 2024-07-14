@@ -518,7 +518,7 @@ static MGVTBL pin_vtbl = {
     NULL       // local
 };
 
-void _pin(pTHX_ SV * sv, SV * type, DCpointer ptr);  // pin.cxx
+void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr);  // pin.cxx
 
 // Type system
 SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, const char * = "Affix::Pointer::Unmanaged");

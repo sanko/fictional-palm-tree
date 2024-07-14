@@ -43,7 +43,7 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
                 Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
                 dcArgPointer(cvm, pointer->address);  // Even if it's NULL
-            } else {
+            } else {              
                 dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos)));
             }
             ++st_pos;
