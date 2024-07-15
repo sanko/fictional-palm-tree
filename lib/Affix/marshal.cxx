@@ -109,15 +109,12 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
                 SV ** ptr_field = hv_fetch(hv_struct, name, strlen(name), 0);
                 if (ptr_field == nullptr)
                     croak("Expected field '%s' is missing", name);
-DCpointer slot = INT2PTR(DCpointer, (int)subtype->offset + PTR2IV(target));
+                DCpointer slot = INT2PTR(DCpointer, (int)subtype->offset + PTR2IV(target));
 
-                sv2ptr(aTHX_ subtype, *ptr_field, depth, 
-                slot
-                );
-                sv_dump(*ptr_field);
+                sv2ptr(aTHX_ subtype, *ptr_field, depth, slot);
+                // sv_dump(*ptr_field);
                 _pin(aTHX_ SvREFCNT_inc_NN(*ptr_field), subtype, slot);
-                                sv_dump(*ptr_field);
-
+                // sv_dump(*ptr_field);
             }
         } else
             target = nullptr;  // ???: malloc full sized block instead?
