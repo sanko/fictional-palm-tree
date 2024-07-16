@@ -493,13 +493,10 @@ public:  // for now
 class Affix_Pin {  // Used in CUnion and pin()
 public:
     Affix_Pointer * ptr;
-    Affix_Type * type;
     DLLib * lib;
-    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {};
+    Affix_Pin(DLLib * lib, Affix_Pointer * ptr) : ptr(ptr), lib(lib) {};
     ~Affix_Pin() {
         ptr = nullptr;  // DO NOT FREE
-        delete type;
-        type = NULL;
         dlFreeLibrary(lib);
         lib = NULL;
     };
@@ -518,15 +515,15 @@ static MGVTBL pin_vtbl = {
     NULL       // local
 };
 
-void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr);  // pin.cxx
+void _pin(pTHX_ SV *, Affix_Pointer *);  // pin.cxx
 
 // Type system
-SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, const char * = "Affix::Pointer::Unmanaged");
+SV * bless_ptr(pTHX_ Affix_Pointer *, const char * = "Affix::Pointer::Unmanaged");
 Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // marshal.cxx
-SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1);
-DCpointer sv2ptr(pTHX_ Affix_Type *, SV *, size_t = 1, DCpointer = nullptr);
+SV * ptr2sv(pTHX_ Affix_Pointer *, size_t = 1);
+Affix_Pointer * sv2ptr(pTHX_ Affix_Pointer *, SV *, size_t = 1);
 DCCallback * cv2dcb(pTHX_ Affix_Type *, SV *);  // callback system
 
 // // Callback system

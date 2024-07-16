@@ -101,7 +101,7 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
                 //~ #define POINTER_FLAG 'P'
 
             case POINTER_FLAG:
-                mPUSHs(ptr2sv(aTHX_ type, dcbArgPointer(args)));
+                mPUSHs(ptr2sv(aTHX_ new Affix_Pointer(type, dcbArgPointer(args))));
                 break;
 
             /*case DC_SIGCHAR_POINTER:
@@ -130,7 +130,7 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
             case WSTRING_FLAG:
                 {
                     DCpointer ptr = dcbArgPointer(args);
-                    mPUSHs(ptr2sv(aTHX_ type, ptr));
+                    mPUSHs(ptr2sv(aTHX_ new Affix_Pointer(type, ptr)));
                 }
                 break;
             //~ case DC_SIGCHAR_INSTANCEOF: {
