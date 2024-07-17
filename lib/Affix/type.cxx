@@ -62,7 +62,6 @@ Affix_Type * sv2type(pTHX_ SV * perl_type) {
                                 SvIV(*ptr_alignment),
                                 ptr_depth != nullptr ? SvIV(*ptr_depth) : 0,
                                 SvIV(*ptr_offset),
-
                                 lengths);
 
 

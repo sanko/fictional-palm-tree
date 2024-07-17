@@ -5,21 +5,18 @@
 Bind an exported variable to a perl var */
 
 int get_pin(pTHX_ SV * sv, MAGIC * mg) {
-    warn("get_pin");
     Affix_Pin * pin = (Affix_Pin *)mg->mg_ptr;
     SV * val = ptr2sv(aTHX_ pin->ptr, 1);
     sv_setsv((sv), val);
     return 0;
 }
 int set_pin(pTHX_ SV * sv, MAGIC * mg) {
-    warn("set_pin");
     Affix_Pin * pin = (Affix_Pin *)mg->mg_ptr;
     (void)sv2ptr(aTHX_ pin->ptr, sv, 1);
     return 0;
 }
 
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
-    warn("free_pin");
     PERL_UNUSED_VAR(sv);
     Affix_Pin * pin = (Affix_Pin *)mg->mg_ptr;
     delete pin;
@@ -41,12 +38,13 @@ void _pin(pTHX_ SV * sv, Affix_Pointer * pointer) {
                 croak("Oh, we messed up");
 
             warn("[O] Set pointer from %p to %p", pin->ptr->address, pointer->address);
-            DumpHex(pin->ptr->address, 16);
+            pin->ptr->address = pointer->address;
+            // DumpHex(pin->ptr->address, 16);
             //    int i = 9999;
             //  Copy(&i, pin->ptr->address, 1, int);
-            sv2ptr(aTHX_ pin->ptr, sv);
-            DumpHex(pin->ptr->address, 16);
-            warn("------------------ %d", *(int*)pin->ptr->address);
+            // sv2ptr(aTHX_ pin->ptr, sv);
+            // DumpHex(pin->ptr->address, 16);
+            // warn("------------------ %d", *(int*)pin->ptr->address);
 
             // set_pin(aTHX_ sv, mg_);
             // sv_dump(sv);
@@ -56,7 +54,7 @@ void _pin(pTHX_ SV * sv, Affix_Pointer * pointer) {
             // Copy( ptr, pin->ptr->address,1, int_ptr);
             // pin->ptr->address = & ptr;
             // pin->ptr->address = *(DCpointer*) ptr;
-            // return;
+            return;
         }
     }
     pin = new Affix_Pin(NULL, pointer);

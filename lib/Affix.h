@@ -437,25 +437,6 @@ public:
 };
 
 class Affix_Callback {
-public:
-    Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {};
-    // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
-    ~Affix_Callback() {
-        // dTHXa(perl);
-        // warn("DESTROY Affix_Callback*");
-        return;
-        /*
-        SvREFCNT_dec(cv);  // allow it to be cleaned up
-    if (cv != nullptr)
-            sv_2mortal(cv);
-        delete type;
-
-        safefree(cv);
-        if (retval != nullptr)
-            sv_2mortal(retval);
-        safefree(retval);*/
-    };
-
 public:  // for now
     std::string signature;
     std::string perl_sig;
@@ -463,6 +444,10 @@ public:  // for now
     SV * retval;
     SV * cv;
     dTHXfield(perl)
+
+        public : Affix_Callback(Affix_Type * type, SV * cv)
+        : type(type), cv(cv) {};
+    ~Affix_Callback() = default;
 };
 
 // Affix::affix(...) and Affix::wrap(...) System

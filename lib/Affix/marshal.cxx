@@ -31,7 +31,14 @@ Affix_Pointer * sv2ptr(pTHX_ Affix_Pointer * pointer, SV * data, size_t depth) {
                     IV tmp = SvIV(MUTABLE_SV(SvRV(ptr_sv)));
                     pointer->address = INT2PTR(DCpointer, tmp);
                 }
-            } else if (SvTYPE(data) != SVt_NULL) {
+            }
+            // else if (SvMAGICAL(data)&& mg_findext(data, PERL_MAGIC_ext, &pin_vtbl)) {
+            //  if (pointer->address == nullptr)
+            // Newxz(pointer->address, 1, int);
+            // int n = SvIV(data);
+            // Copy(n, pointer->address, 1, int);
+            // }
+            else if (SvTYPE(data) != SVt_NULL) {
                 size_t len = 0;
                 DCpointer ptr_ = SvPVbyte(data, len);
                 if (pointer->address == nullptr)
@@ -67,6 +74,11 @@ Affix_Pointer * sv2ptr(pTHX_ Affix_Pointer * pointer, SV * data, size_t depth) {
                 n = SvIV(*_tmp);
                 Copy(&n, INT2PTR(int *, ptr_iv + (i * SIZEOF_INT)), 1, int);
             }
+        } else if (SvMAGICAL(data) && mg_findext(data, PERL_MAGIC_ext, &pin_vtbl)) {
+            if (pointer->address == nullptr)
+                Newxz(pointer->address, 1, int);
+            int n = SvIV(data);
+            Copy(n, pointer->address, 1, int);
         } else if (UNLIKELY(SvIOK(data))) {
             if (pointer->address == nullptr)
                 Newxz(pointer->address, 1, int);

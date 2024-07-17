@@ -41,10 +41,12 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {
             Affix_Pointer * pointer;
+            // sv_dump(ST(st_pos));
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
                 pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
             } else {
-                pointer = sv2ptr(aTHX_ new Affix_Pointer(type, nullptr), ST(st_pos));
+                pointer = new Affix_Pointer(type, nullptr);
+                sv2ptr(aTHX_ pointer, ST(st_pos));
             }
             dcArgPointer(cvm, pointer->address);  // Even if it's NULL
             ++st_pos;
@@ -225,7 +227,9 @@ dcArgPointer(cvm, ptr);*/
         // DumpHex(__ptr, 16);
         // if(*(DCpointer*)__ptr!=NULL)
         // DumpHex(*(DCpointer*)__ptr, 16);
-        sv_setsv(affix->res, ptr2sv(aTHX_ new Affix_Pointer(affix->restype, __ptr), 1));
+        Affix_Pointer * ptr = new Affix_Pointer(affix->restype, __ptr);
+        sv_setsv(affix->res, ptr2sv(aTHX_ ptr, 1));
+        delete ptr;
     } else
         switch (affix->restype->numeric) {
         case VOID_FLAG:
