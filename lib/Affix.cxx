@@ -40,15 +40,12 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     for (const auto & type : affix->subtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {
-            Affix_Pointer * pointer;
-            // sv_dump(ST(st_pos));
             if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
-                pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
+                Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
+                dcArgPointer(cvm, pointer->address);  // Even if it's NULL
             } else {
-                pointer = new Affix_Pointer(type, nullptr);
-                sv2ptr(aTHX_ pointer, ST(st_pos));
+                dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos)));
             }
-            dcArgPointer(cvm, pointer->address);  // Even if it's NULL
             ++st_pos;
             continue;
         }
@@ -176,7 +173,7 @@ dcArgPointer(cvm, ptr);*/
                     IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
                     cb = INT2PTR(DCCallback *, ptr_iv);
                 } else {
-                    cb = (DCCallback *)sv2ptr(aTHX_ new Affix_Pointer(type, NULL), ST(st_pos))->address;
+                    cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
                     if (!SvREADONLY(xsub_tmp_sv)) {
                         sv_2mortal(
                             sv_bless(newRV_noinc(MUTABLE_SV(xsub_tmp_sv)), gv_stashpv("Affix::Callback", GV_ADD)));
@@ -227,9 +224,7 @@ dcArgPointer(cvm, ptr);*/
         // DumpHex(__ptr, 16);
         // if(*(DCpointer*)__ptr!=NULL)
         // DumpHex(*(DCpointer*)__ptr, 16);
-        Affix_Pointer * ptr = new Affix_Pointer(affix->restype, __ptr);
-        sv_setsv(affix->res, ptr2sv(aTHX_ ptr, 1));
-        delete ptr;
+        sv_setsv(affix->res, ptr2sv(aTHX_ affix->restype, __ptr, 1));
     } else
         switch (affix->restype->numeric) {
         case VOID_FLAG:
@@ -542,8 +537,7 @@ XS_INTERNAL(Affix_sv2ptr) {
     dXSARGS;
     if (items != 2)
         croak_xs_usage(cv, "$type, $sv");
-    // Affix_Pointer * ret = new Affix_Pointer(sv2type(aTHX_ ST(0)), sv2ptr(aTHX_ ret->type, ST(1)));
-    Affix_Pointer * ret = sv2ptr(aTHX_ new Affix_Pointer(sv2type(aTHX_ ST(0)), nullptr), ST(1));
+    Affix_Pointer * ret = new Affix_Pointer(sv2type(aTHX_ ST(0)), sv2ptr(aTHX_ ret->type, ST(1)));
     warn(">>>>> %p", ret->address);
     if (ret->address == nullptr) {
         delete ret;
@@ -566,7 +560,7 @@ XS_INTERNAL(Affix_ptr2sv) {
         croak("Expected an Affix::Pointer object");
     Affix_Pointer * ptr = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(1))));
     warn("<<<<< %p", ptr->address);
-    ST(0) = ptr2sv(aTHX_ ptr);
+    ST(0) = ptr2sv(aTHX_ type, ptr->address);
     XSRETURN(1);
 }
 

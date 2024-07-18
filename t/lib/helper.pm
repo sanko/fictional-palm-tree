@@ -364,18 +364,60 @@ exit !$exit;
                 '--gen-suppressions=all', '--xml-file=' . $report->stringify,
                 $^X,                      '-e', $source
             );
+            my ( $out, $err, $exit ) = Capture::Tiny::capture(
+                sub {
+                    system @cmd;
+                }
+            );
+            print $out;
+            $err =~ s[\b# Tests were run .+\Z][]m;
 
-            #~ my ( $out, $err, $exit ) = Capture::Tiny::capture( sub {
-            system @cmd;
-
-            #~ } );
-            #~ print $out;
             #~ diag $err;
             #~ diag $exit;
             my $xml = parse_xml( $report->slurp_utf8 );
             Test2::API::test2_stack()->top->{count}++;
-            use Data::Dumper;
-            diag Dumper($xml) if $xml->{valgrindoutput}{errorcounts};
+
+            #~ use Data::Dumper;
+            sub stack {
+                my (@frames) = @_;
+                use Data::Dump;
+                ddx \@frames;
+
+=fdas
+join " =>\n  ", map{s[&lt;][<]g; # should do this in the xml parser but...			    
+					    
+s[&gt;][>]gsm;
+		s[&quot;]["]g;
+		s[&apos;][']g;
+		s[&amp;][&]gsm;	
+					    
+					    $_;} map { $_->{fn} // $_->{obj} }
+=cut
+
+                'TODO';
+            }
+            require Test2::Util::Table;
+            use Data::Dump;
+            ddx $xml;
+
+            #~ use Data::Dump;
+            #~ ddx $xml;
+            #~ ddx $xml->{valgrindoutput}{error};
+            my @table = Test2::Util::Table::table(
+                max_width => 120,
+                collapse  => 1,                                # Do not show empty columns
+                header    => [ 'kind', 'size', 'location' ],
+                rows      => [
+                    map {
+                        #~ use Data::Dump;
+                        #~ ddx $_;
+                        [ $_->{kind}, $_->{xwhat}{leakedbytes}, stack $_->{stack} ]
+                    } @{ $xml->{valgrindoutput}{error} }
+                ],
+            );
+            is $xml->{valgrindoutput}{error}, U(), 'leaks', @table;
+
+            #~ diag Dumper($xml) if $xml->{valgrindoutput}{errorcounts};
             $xml->{valgrindoutput};
         }
     }

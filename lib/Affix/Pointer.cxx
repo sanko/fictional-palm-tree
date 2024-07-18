@@ -106,7 +106,7 @@ XS_INTERNAL(Affix_malloc) {
     lengths.push_back(size);
     Affix_Type * type =
         new Affix_Type(std::string("Pointer[ Void ]"), POINTER_FLAG, SIZEOF_INTPTR_T, ALIGNOF_INTPTR_T, 1, 0, lengths);
-    ST(0) = bless_ptr(aTHX_ new Affix_Pointer(type, safemalloc(size)), "Affix::Pointer");
+    ST(0) = bless_ptr(aTHX_ safemalloc(size), type, "Affix::Pointer");
     XSRETURN(1);
 };
 

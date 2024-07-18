@@ -427,8 +427,9 @@ public:  // for now...
 
 class Affix_Pointer {
 public:
+    // Affix_Pointer(Affix_Type * type) : type(type) {};
     Affix_Pointer(Affix_Type * type, DCpointer address) : address(address), type(type) {};
-    ~Affix_Pointer() {address = nullptr; delete type;};
+    ~Affix_Pointer() = default;
     DCpointer address = nullptr;
     Affix_Type * type;
     size_t count;
@@ -436,6 +437,25 @@ public:
 };
 
 class Affix_Callback {
+public:
+    Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {};
+    // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
+    ~Affix_Callback() {
+        // dTHXa(perl);
+        // warn("DESTROY Affix_Callback*");
+        return;
+        /*
+        SvREFCNT_dec(cv);  // allow it to be cleaned up
+    if (cv != nullptr)
+            sv_2mortal(cv);
+        delete type;
+
+        safefree(cv);
+        if (retval != nullptr)
+            sv_2mortal(retval);
+        safefree(retval);*/
+    };
+
 public:  // for now
     std::string signature;
     std::string perl_sig;
@@ -443,10 +463,6 @@ public:  // for now
     SV * retval;
     SV * cv;
     dTHXfield(perl)
-
-        public : Affix_Callback(Affix_Type * type, SV * cv)
-        : type(type), cv(cv) {};
-    ~Affix_Callback() = default;
 };
 
 // Affix::affix(...) and Affix::wrap(...) System
@@ -477,10 +493,13 @@ public:  // for now
 class Affix_Pin {  // Used in CUnion and pin()
 public:
     Affix_Pointer * ptr;
+    Affix_Type * type;
     DLLib * lib;
-    Affix_Pin(DLLib * lib, Affix_Pointer * ptr) : ptr(ptr), lib(lib) {};
+    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {};
     ~Affix_Pin() {
         ptr = nullptr;  // DO NOT FREE
+        delete type;
+        type = NULL;
         dlFreeLibrary(lib);
         lib = NULL;
     };
@@ -499,15 +518,15 @@ static MGVTBL pin_vtbl = {
     NULL       // local
 };
 
-void _pin(pTHX_ SV *, Affix_Pointer *);  // pin.cxx
+void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr);  // pin.cxx
 
 // Type system
-SV * bless_ptr(pTHX_ Affix_Pointer *, const char * = "Affix::Pointer::Unmanaged");
+SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, const char * = "Affix::Pointer::Unmanaged");
 Affix_Type * sv2type(pTHX_ SV * perl_type);
 
 // marshal.cxx
-SV * ptr2sv(pTHX_ Affix_Pointer *, size_t = 1);
-Affix_Pointer * sv2ptr(pTHX_ Affix_Pointer *, SV *, size_t = 1);
+SV * ptr2sv(pTHX_ Affix_Type *, DCpointer, size_t = 1);
+DCpointer sv2ptr(pTHX_ Affix_Type *, SV *, size_t = 1, DCpointer = nullptr);
 DCCallback * cv2dcb(pTHX_ Affix_Type *, SV *);  // callback system
 
 // // Callback system

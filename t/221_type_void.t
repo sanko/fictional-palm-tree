@@ -31,6 +31,9 @@ like capture_stderr { test_1() }, qr[^ok at .+$], 'test_1';
 test_2("Just random junk here\0");
 warn test_3();
 warn test_4();
+subtest 'malloc' => sub {
+    isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
+};
 done_testing;
 exit;
 like capture_stderr { test_2("Just random junk here\0") }, qr[^ok at .+$], 'test_2';
