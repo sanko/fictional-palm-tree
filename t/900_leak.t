@@ -207,6 +207,17 @@ int do_cb(cb callback, int x, int y) { return callback(x, y); }
     use Data::Dump qw[pp];
     diag pp($leaks);
 }
+{
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        #
+        subtest 'malloc' => sub {
+            isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
+        }
+    };
+    is $leaks->{error}, U(), 'malloc(1024) freed on scope';
+}
 done_testing;
 __END__
 {
