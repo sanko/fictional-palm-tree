@@ -125,7 +125,7 @@ Affix_Pointer * sv2ptr(pTHX_ Affix_Pointer * pointer, SV * data, size_t depth) {
 
                 sv2ptr(aTHX_ new Affix_Pointer(subtype, slot), *ptr_field, depth);
                 // sv_dump(*ptr_field);
-                _pin(aTHX_ SvREFCNT_inc_NN(*ptr_field), new Affix_Pointer(subtype, slot));
+                // _pin(aTHX_ SvREFCNT_inc_NN(*ptr_field), new Affix_Pointer(subtype, slot));
                 // sv_dump(*ptr_field);
             }
         } else

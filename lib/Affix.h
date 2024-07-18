@@ -427,9 +427,8 @@ public:  // for now...
 
 class Affix_Pointer {
 public:
-    // Affix_Pointer(Affix_Type * type) : type(type) {};
     Affix_Pointer(Affix_Type * type, DCpointer address) : address(address), type(type) {};
-    ~Affix_Pointer() = default;
+    ~Affix_Pointer() {address = nullptr; delete type;};
     DCpointer address = nullptr;
     Affix_Type * type;
     size_t count;
