@@ -40,8 +40,8 @@ extern "C" {
 // #if PERL_VERSION_LT(5, 40, 0)
 #if PERL_VERSION_MINOR < 40
 #define newAV_mortal() MUTABLE_AV(sv_2mortal((SV *)newAV()))
-#define newHV_mortal() MUTABLE_HV(sv_2mortal((SV *)newHV()))
 #endif
+#define newHV_mortal() MUTABLE_HV(sv_2mortal((SV *)newHV()))
 
 /* NOTE: the prototype of newXSproto() is different in versions of perls,
  * so we define a portable version of newXSproto()
