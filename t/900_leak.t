@@ -214,6 +214,18 @@ int do_cb(cb callback, int x, int y) { return callback(x, y); }
         #
         subtest 'malloc' => sub {
             isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
+            $pointer->free;
+        }
+    };
+    is $leaks->{error}, U(), 'malloc(1024) freed manually';
+}
+{
+    my $leaks = leaks {
+        use Affix;
+        use t::lib::helper qw[compile_test_lib];
+        #
+        subtest 'malloc' => sub {
+            isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
         }
     };
     is $leaks->{error}, U(), 'malloc(1024) freed on scope';

@@ -1,5 +1,16 @@
 #include "../Affix.h"
 
+XS_INTERNAL(Affix_malloc) {
+    dXSARGS;
+    SSize_t size = (SSize_t)SvIV(ST(0));
+    std::vector<SSize_t> lengths;
+    lengths.push_back(size);
+    Affix_Type * type =
+        new Affix_Type(std::string("Pointer[ Void ]"), POINTER_FLAG, SIZEOF_INTPTR_T, ALIGNOF_INTPTR_T, 1, 0, lengths);
+    ST(0) = bless_ptr(aTHX_ safemalloc(size), type, "Affix::Pointer");
+    XSRETURN(1);
+};
+
 XS_INTERNAL(Affix_Pointer_dump) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
@@ -16,10 +27,13 @@ XS_INTERNAL(Affix_Pointer_free) {
     PERL_UNUSED_VAR(items);
     Affix_Pointer * pointer;
     pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
-    if (pointer->address != nullptr)
-        safefree(pointer->address);
-    pointer->address = nullptr;
-    XSRETURN_EMPTY;
+    // if(pointer->type != nullptr)
+    // delete pointer->type;
+    // pointer->type = nullptr;
+    safefree(pointer->address);
+    ST(0) = &PL_sv_undef;
+    XSRETURN(1);
+    // XSRETURN_EMPTY;
 };
 
 XS_INTERNAL(Affix_Pointer_DESTROY) {
@@ -44,7 +58,7 @@ XS_INTERNAL(Affix_Pointer_Unmanaged_DESTROY) {
     pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
     // DO NOTHING HERE! Require users to manually call ->free() instead
     delete pointer;
-    pointer = NULL;
+    pointer = nullptr;
     XSRETURN_EMPTY;
 };
 
@@ -96,17 +110,6 @@ XS_INTERNAL(Affix_Pointer_deref_hash) {
             XSRETURN(1);  // Just toss back garbage
         ST(0) = newRV(MUTABLE_SV(newHV_mortal()));
     }
-    XSRETURN(1);
-};
-
-XS_INTERNAL(Affix_malloc) {
-    dXSARGS;
-    SSize_t size = (SSize_t)SvIV(ST(0));
-    std::vector<SSize_t> lengths;
-    lengths.push_back(size);
-    Affix_Type * type =
-        new Affix_Type(std::string("Pointer[ Void ]"), POINTER_FLAG, SIZEOF_INTPTR_T, ALIGNOF_INTPTR_T, 1, 0, lengths);
-    ST(0) = bless_ptr(aTHX_ safemalloc(size), type, "Affix::Pointer");
     XSRETURN(1);
 };
 

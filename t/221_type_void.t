@@ -33,6 +33,7 @@ warn test_3();
 warn test_4();
 subtest 'malloc' => sub {
     isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
+    $pointer->free;
 };
 done_testing;
 exit;
