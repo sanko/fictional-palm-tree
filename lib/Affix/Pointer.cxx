@@ -22,6 +22,17 @@ XS_INTERNAL(Affix_Pointer_dump) {
     XSRETURN_EMPTY;
 };
 
+XS_INTERNAL(Affix_Pointer_raw) {
+    dXSARGS;
+    PERL_UNUSED_VAR(items);
+    Affix_Pointer * pointer;
+    pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
+    if (pointer->address == nullptr)
+        XSRETURN_EMPTY;
+        ST(0) = newSVpv((const char *)pointer->address, SvIV(ST(1)));
+    XSRETURN(1);
+};
+
 XS_INTERNAL(Affix_Pointer_free) {
     dXSARGS;
     PERL_UNUSED_VAR(items);
@@ -135,6 +146,8 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
 
 
     (void)newXSproto_portable("Affix::Pointer::dump", Affix_Pointer_dump, __FILE__, "$$");
+
+    (void)newXSproto_portable("Affix::Pointer::raw", Affix_Pointer_raw, __FILE__, "$$");
 
     (void)newXSproto_portable("Affix::Pointer::free", Affix_Pointer_free, __FILE__, "$");
 

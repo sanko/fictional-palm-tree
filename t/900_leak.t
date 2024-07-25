@@ -7,19 +7,21 @@ $|++;
 leaks 'use Affix' => sub {
     use Affix;
     pass 'loaded';
-    done_testing;
 };
 leaks 'Affix::Type' => sub {
-    use Affix;
     isa_ok $_, ['Affix::Type'],
       for Void, Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong,
       LongLong, ULongLong, Float, Double, Pointer [Void];
 };
 leaks 'affix($$$$)' => sub {
-    use Affix;
     isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
       'double pow(double, double)';
     is pow( 5, 2 ), 25, 'pow(5, 2)';
+};
+leaks 'wrap($$$$)' => sub {
+    isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
+      'double pow(double, double)';
+    is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
 };
 leaks 'return pointer' => sub {
     ok my $lib = compile_test_lib(<<''), 'build test lib';
@@ -27,40 +29,14 @@ leaks 'return pointer' => sub {
 // ext: .c
 void * test( ) { void * ret = "Testing"; return ret; }
 
-    ok affix( $lib, test=> [] => Pointer [Void] ), 'void * test(void)';
-
-    my $tttt = test();
-    warn ref $tttt;
+    ok affix( $lib, test => [] => Pointer [Void] ), 'void * test(void)';
+    isa_ok my $string = test(), ['Affix::Pointer'], 'test()';
+    is $string->raw(7), 'Testing', '->raw(7)';
 };
 done_testing;
-
 exit;
 __END__
 =fdsa
-
-
-{
-    my $leaks = leaks {
-        use Affix;
-        isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ),
-          ['Affix'];
-        is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
-        done_testing;
-    };
-    is $leaks->{error}, U(), 'no leaks when using wrap($$$$)';
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        my $type = Double;
-        {
-            isa_ok affix( 'm', 'pow', [ $type, $type ], $type ), ['Affix'];
-            is pow( 5, 2 ), 25, 'pow(5, 2)';
-        }
-        done_testing;
-    };
-    is $leaks->{error}, U(), 'type defined in higher scope';
-}
 {
     # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
     #   if Affix::Platform::FreeBSD();
@@ -95,6 +71,12 @@ DLLEXPORT void free_ptr(){ free (ptr); }
     };
     is $leaks->{error}, U(), 'int *';
 }
+
+done_testing;
+
+exit;
+__END__
+=fdsa
 {
     # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
     #   if Affix::Platform::FreeBSD();
@@ -130,6 +112,12 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
     };
     is $leaks->{error}, U(), 'pin( ... )';
 }
+
+done_testing;
+
+exit;
+__END__
+=fdsa
 {
     # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
     #   if Affix::Platform::FreeBSD();
