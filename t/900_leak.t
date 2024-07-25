@@ -24,6 +24,9 @@ leaks 'return pointer' => sub {
 // ext: .c
 void * test( ) { void * ret = "Testing"; return ret; }
 
+diag $lib;
+diag system 'nm '.$lib;
+
     ok affix( $lib, test => [] => Pointer [Void] ), 'void * test(void)';
     isa_ok my $string = test(), ['Affix::Pointer'], 'test()';
     is $string->raw(7), 'Testing', '->raw(7)';
