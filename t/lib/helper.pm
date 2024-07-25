@@ -1,10 +1,12 @@
 package t::lib::helper {
     use Test2::V0 '!subtest';
-    use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
+    use Test2::Util::Importer 'Test2::Tools::Subtest' =>
+      ( subtest_streamed => { -as => 'subtest' } );
     use Test2::Plugin::UTF8;
     use Path::Tiny qw[path tempdir tempfile];
     use Exporter 'import';
-    our @EXPORT = qw[compile_test_lib compile_cpp_test_lib is_approx leaktest leaks];
+    our @EXPORT =
+      qw[compile_test_lib compile_cpp_test_lib is_approx leaktest leaks];
     use Config;
     use Affix qw[];
     #
@@ -31,7 +33,9 @@ package t::lib::helper {
         else {
             $opt = tempfile(
                 UNLINK => !$keep,
-                SUFFIX => '_' . path( [ caller() ]->[1] )->basename . ( $name =~ m[^\s*//\s*ext:\s*\.c$]ms ? '.c' : '.cxx' )
+                SUFFIX => '_'
+                  . path( [ caller() ]->[1] )->basename
+                  . ( $name =~ m[^\s*//\s*ext:\s*\.c$]ms ? '.c' : '.cxx' )
             )->absolute;
             push @cleanup, $opt unless $keep;
             my ( $package, $filename, $line ) = caller;
@@ -45,8 +49,12 @@ package t::lib::helper {
             return ();
         }
         my $c_file = $opt->canonpath;
-        my $o_file = tempfile( UNLINK => !$keep, SUFFIX => $Config{_o} )->absolute;
-        my $l_file = tempfile( UNLINK => !$keep, SUFFIX => $opt->basename(qr/\.cx*/) . '.' . $Config{so} )->absolute;
+        my $o_file =
+          tempfile( UNLINK => !$keep, SUFFIX => $Config{_o} )->absolute;
+        my $l_file = tempfile(
+            UNLINK => !$keep,
+            SUFFIX => $opt->basename(qr/\.cx*/) . '.' . $Config{so}
+        )->absolute;
         push @cleanup, $o_file, $l_file unless $keep;
         note sprintf 'Building %s into %s', $opt, $l_file;
         my $compiler = $Config{cc};
@@ -59,8 +67,9 @@ package t::lib::helper {
             }
         }
         my @cmds = (
-            Affix::Platform::Linux() ? "$compiler -Wall -Wformat=0 --shared -fPIC -I$Inc -DBUILD_LIB -o $l_file $aggs $c_file" :
-                "$compiler -o $l_file $c_file --shared -fPIC -DBUILD_LIB -I$Inc  $aggs",
+            Affix::Platform::Linux()
+            ? "$compiler -Wall -Wformat=0 --shared -fPIC -I$Inc -DBUILD_LIB -o $l_file $aggs $c_file"
+            : "$compiler -o $l_file $c_file --shared -fPIC -DBUILD_LIB -I$Inc  $aggs",
 
 #~ "$compiler $c_file --shared -fPIC -DBUILD_LIB -I$Inc $aggs -o $l_file ",
 #  cc -o /tmp/46XFR9cfv9nzaeq812c2.so /tmp/nzaeq812c2.c --shared -fPIC -DBUILD_LIB -I/home/runner/work/Fiction/Fiction/t/src  -Wl,-E  -fstack-protector-strong -L/usr/local/lib  -L/home/runner/perl5/perlbrew/perls/cache-ubuntu-22.04-5.38.2-Dusethreads/lib/5.38.2/x86_64-linux-thread-multi/CORE -lperl -lpthread -ldl -lm -lcrypt -lutil -lc  -D_REENTRANT -D_GNU_SOURCE -fwrapv -fno-strict-aliasing -pipe -fstack-protector-strong -I/usr/local/include -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64  -I/home/runner/perl5/perlbrew/perls/cache-ubuntu-22.04-5.38.2-Dusethreads/lib/5.38.2/x86_64-linux-thread-multi/CORE
@@ -83,7 +92,8 @@ package t::lib::helper {
                 diag 'failed to execute: ' . $!;
             }
             elsif ( $? & 127 ) {
-                diag sprintf "child died with signal %d, %s coredump\n", ( $? & 127 ), ( $? & 128 ) ? 'with' : 'without';
+                diag sprintf "child died with signal %d, %s coredump\n",
+                  ( $? & 127 ), ( $? & 128 ) ? 'with' : 'without';
             }
             else {
                 note 'child exited with value ' . ( $? >> 8 );
@@ -106,10 +116,16 @@ package t::lib::helper {
             require Path::Tiny;
             $file     = Path::Tiny::path($0)->absolute;
             $valgrind = 1;
-            return plan skip_all 'Capture::Tiny is not installed' unless eval 'require Capture::Tiny';
-            return plan skip_all 'Path::Tiny is not installed'    unless eval 'require Path::Tiny';
+            return plan skip_all 'Capture::Tiny is not installed'
+              unless eval 'require Capture::Tiny';
+            return plan skip_all 'Path::Tiny is not installed'
+              unless eval 'require Path::Tiny';
             require Getopt::Long;
-            Getopt::Long::GetOptions( 'test=s' => \$test, 'generate' => \$generate_suppressions, 'count=i' => \$count );
+            Getopt::Long::GetOptions(
+                'test=s'   => \$test,
+                'generate' => \$generate_suppressions,
+                'count=i'  => \$count
+            );
             Test2::API::test2_stack()->top->{count} = $count if defined $count;
 
             if ( defined $test ) {
@@ -134,8 +150,10 @@ package t::lib::helper {
                 diag 'Generating suppressions...';
                 my @cmd = (
                     qw[valgrind --leak-check=full --show-reachable=yes --error-limit=no
-                        --gen-suppressions=all --log-fd=1], $^X, '-e',
-                    sprintf <<'', ( join ', ', map {"'$_'"} sort { length $a <=> length $b } map { path($_)->absolute->canonpath } @INC ) );
+                      --gen-suppressions=all --log-fd=1],
+                    $^X, '-e',
+                    sprintf
+                      <<'', ( join ', ', map { "'$_'" } sort { length $a <=> length $b } map { path($_)->absolute->canonpath } @INC ) );
     use strict;
     use warnings;
     use lib %s;
@@ -211,7 +229,8 @@ package t::lib::helper {
    fun:main
 }
 
-                $supp = Path::Tiny::tempfile( { realpath => 1 }, 'valgrind_suppression_XXXXXXXXXX' );
+                $supp = Path::Tiny::tempfile( { realpath => 1 },
+                    'valgrind_suppression_XXXXXXXXXX' );
                 diag 'spewing to ' . $supp;
                 diag $supp->spew( join "\n\n", values %$known );
                 push @cleanup, $supp;
@@ -219,66 +238,6 @@ package t::lib::helper {
 
                 #~ Test2::API::test2_stack()->top->{count}++;
             }
-        }
-
-        sub valgrind($&) {
-            init_valgrind();
-            my ( $name, $code ) = @_;
-            if ( !defined $test ) {
-                my @cmd = (
-                    'valgrind',                          '-q',
-                    '--suppressions=' . $supp->realpath, '--leak-check=full',
-                    '--show-leak-kinds=all',             '--show-reachable=yes',
-                    '--demangle=yes',                    '--error-limit=no',
-                    '--xml=yes',                         '--xml-fd=2',
-                    $^X,                                 $file,
-                    '--test=' . $name,                   '--count=' . Test2::API::test2_stack()->top->{count}
-                );
-
-                #~ diag join ' ', @cmd;
-                my ( $out, $err, $exit ) = Capture::Tiny::capture( sub { system @cmd } );
-                print $out;
-                my $xml = parse_xml($err);
-                Test2::API::test2_stack()->top->{count}++;
-
-                #~ use Data::Dump;
-                #~ ddx
-                #~ $xml;
-                #~ ddx $xml->{valgrindoutput}{error};
-                is $xml->{valgrindoutput}{error}, U(), 'no leaks in subtest "' . $name . '"';
-                if ( $xml->{valgrindoutput}{error} ) {
-                    require Test2::Util::Table;
-
-                    #~ use Data::Dump;
-                    #~ ddx $xml;
-                    #~ ddx $xml->{valgrindoutput}{error};
-                    my @table = Test2::Util::Table::table(
-                        max_width => 120,
-                        collapse  => 1,                                # Do not show empty columns
-                        header    => [ 'kind', 'size', 'location' ],
-                        rows      => [
-                            map {
-                                #~ use Data::Dump;
-                                #~ ddx $_;
-                                [   $_->{kind},     $_->{xwhat}{leakedbytes},
-                                    join " =>\n  ", map { $_->{fn} // $_->{obj} } reverse @{ $_->{stack}{frame} }
-                                ]
-                            } @{ $xml->{valgrindoutput}{error} }
-                        ],
-                    );
-                    diag $_ for @table;
-                }
-                return $xml->{valgrindoutput}{error};
-                return !$exit;
-            }
-            return unless $name eq $test;
-            no Test2::Plugin::ExitSummary;
-            Affix::set_destruct_level(3);
-            my $exit = subtest $test => $code;
-            Test2::API::test2_stack()->top->{count}++;
-
-            #~ done_testing;
-            exit !$exit;
         }
 
         sub parse_suppression {
@@ -310,6 +269,41 @@ package t::lib::helper {
             return ( $known, $dups );
         }
 
+        sub dec_ent {
+            return $1 if $_[0] =~ m/^<!\[CDATA\[\{(.*)}]]>$/smg;
+            $_[0]              =~ s[&lt;][<]g;
+            $_[0]              =~ s[&gt;][>]g;
+            $_[0]              =~ s[&amp;][&]g;
+            shift;
+        }
+
+        sub stacktrace($) {
+            use Test2::Util::Table qw[table];
+            my $blah = shift;
+            $blah
+              ? join "\n", table(
+                max_width => 120,
+                collapse  => 1,     # Do not show empty columns
+                header    => [ 'function', 'path', 'line' ],
+                rows      => [
+                    map {
+                        [
+                            $_->{fn},
+                            ( defined $_->{dir} && defined $_->{file} )
+                            ? join '/',
+                              $_->{dir},
+                              $_->{file}
+                            : '',
+                            $_->{line} // ''
+                        ]
+                    } @$blah
+
+                ],
+              )
+              : '';
+
+        }
+
         sub parse_xml {
             my ($xml) = @_;
             my $hash  = {};
@@ -317,97 +311,92 @@ package t::lib::helper {
             while ( $xml =~ m/$re/g ) {
                 my ( $tag, $content ) = ( $1, $2 );
                 $content = parse_xml($content) if $content =~ /$re/;
-                $hash->{$tag}
-                    = defined $content ? (
-                    defined $hash->{$tag} ?
-                        ref $hash->{$tag} eq 'HASH' ? [ $hash->{$tag}, $content ] :
-                            ref $hash->{$tag} eq 'ARRAY' ? [ @{ $hash->{$tag} }, $content ] :
-                            [$content] :
-                        $tag eq 'error' ? [$content] :
-                        $content ) :
-                    undef;
+                $content = dec_ent($content) unless ref $content;
+                if ( $tag eq 'error' ) {
+
+                    # use Data::Dump;
+                    # ddx $content;
+                    fail $content->{what} // $content->{xwhat}{text};
+                    for my $i ( 0 .. scalar @{ $content->{stack} } ) {
+                        note $content->{auxwhat}[$i] if $content->{auxwhat}[$i];
+                        note stacktrace $content->{stack}[$i]{frame};
+                    }
+                }
+                $hash->{$tag} =
+                  defined $content
+                  ? (
+                      defined $hash->{$tag}
+                    ? ref $hash->{$tag} eq 'ARRAY'
+                          ? [ @{ $hash->{$tag} }, $content ]
+                          : [ $hash->{$tag}, $content ]
+                    : $tag =~ m/^(error|stack)$/ ? [$content]
+                    :                              dec_ent($content)
+                  )
+                  : undef;
             }
             $hash;
         }
 
         # Function to run anonymous sub in a new process with valgrind
-        sub leaks(&) {
+        sub leaks($&) {
             init_valgrind();
-            my ($code_ref) = @_;
+            my ( $name, $code_ref ) = @_;
             #
-            # Get source code of the anonymous sub (using B::Deparse)
-            #~ my $source = deparse($code_ref);
             require B::Deparse;
-            my $deparse = B::Deparse->new(qw[-l -p -sC]);
+            CORE::state $deparse //= B::Deparse->new(qw[-l]);
             my ( $package, $file, $line ) = caller;
             my $source = sprintf
-                <<'', ( join ', ', map {"'$_'"} sort { length $a <=> length $b } grep {defined} map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $deparse->coderef2text($code_ref);
+              <<'', ( join ', ', map { "'$_'" } sort { length $a <=> length $b } grep { defined } map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $name, $deparse->coderef2text($code_ref);
 use lib %s;
 use Test2::V0 '!subtest', -no_srand => 1;
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use Test2::Plugin::UTF8;
 no Test2::Plugin::ExitSummary; # I wish
 use t::lib::helper;
-use Affix;
-Affix::set_destruct_level(3);
 Test2::API::test2_stack()->top->{count} = %d;
 $|++;
-my $exit = subtest 'leaks' => sub %s;
+my $exit = subtest '%s' => sub {use Affix; Affix::set_destruct_level(3); %s;};
 Test2::API::test2_stack()->top->{count}++;
 exit !$exit;
 
-            my $report = Path::Tiny->tempfile( { realpath => 1 }, 'valgrind_report_XXXXXXXXXX' );
+            my $report = Path::Tiny->tempfile( { realpath => 1 },
+                'valgrind_report_XXXXXXXXXX' );
             push @cleanup, $report;
             my @cmd = (
-                'valgrind',               '-q', '--suppressions=' . $supp->canonpath,
-                '--leak-check=full',      '--show-leak-kinds=all', '--show-reachable=yes', '--demangle=yes', '--error-limit=no', '--xml=yes',
-                '--gen-suppressions=all', '--xml-file=' . $report->stringify,
-                $^X,                      '-e', $source
+                'valgrind',
+                '-q',
+                '--suppressions=' . $supp->canonpath,
+                '--leak-check=full',
+                '--show-leak-kinds=all',
+                '--show-reachable=yes',
+                '--demangle=yes',
+                '--error-limit=no',
+                '--xml=yes',
+                '--gen-suppressions=all',
+                '--xml-file=' . $report->stringify,
+                $^X,
+                '-e',
+                $source
             );
+
             my ( $out, $err, $exit ) = Capture::Tiny::capture(
                 sub {
                     system @cmd;
                 }
             );
-            print $out;
-            $err =~ s[\b# Tests were run .+\Z][]m;
-
-            #~ diag $err;
-            #~ diag $exit;
-            my $xml = parse_xml( $report->slurp_utf8 );
+            $out =~ s[# Seeded srand with seed .+\Z][];
+            $err =~ s[# Tests were run .+\Z][];
+            print $err if $err =~ m[\S];
+            print $out if $out =~ m[\S];
+            my $parsed = parse_xml( $report->slurp_utf8 );
             Test2::API::test2_stack()->top->{count}++;
 
-            #~ use Data::Dumper;
-            require Test2::Util::Table;
-            use Data::Dump;
-            ddx $xml;
-
-            #~ use Data::Dump;
-            #~ ddx $xml;
-            #~ ddx $xml->{valgrindoutput}{error};
-            my @table = $xml->{valgrindoutput}{error} ?
-                Test2::Util::Table::table(
-                max_width => 120,
-                collapse  => 1,                                # Do not show empty columns
-                header    => [ 'kind', 'size', 'location' ],
-                rows      => [
-                    map {
-                        #~ use Data::Dump;
-                        #~ ddx $_;
-                        [ $_->{kind}, $_->{xwhat}{leakedbytes}, $_->{stack} ]
-                    } @{ $xml->{valgrindoutput}{error} }
-                ],
-                ) :
-                ();
-            is $xml->{valgrindoutput}{error}, U(), 'leaks', @table;
-
-            #~ diag Dumper($xml) if $xml->{valgrindoutput}{errorcounts};
-            $xml->{valgrindoutput};
+            !$parsed->{valgrindoutput}{errorcounts};
         }
     }
 
     END {
-        for my $file ( grep {-f} @cleanup ) {
+        for my $file ( grep { -f } @cleanup ) {
             note 'Removing ' . $file;
             unlink $file;
         }

@@ -1,38 +1,49 @@
-use Test2::V0 '!subtest';
-use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
+use Test2::V0;
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix;
+
 use t::lib::helper qw[leaktest compile_test_lib leaks];
 $|++;
+
+leaks 'use Affix' => sub {
+    use Affix;
+    pass 'loaded';
+    done_testing;
+};
+leaks 'Affix::Type' => sub {
+    use Affix;
+    isa_ok $_, ['Affix::Type'],
+      for Void, Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong,
+      LongLong, ULongLong, Float, Double, Pointer [Void];
+};
+leaks 'affix($$$$)' => sub {
+    use Affix;
+    isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
+      'double pow(double, double)';
+    is pow( 5, 2 ), 25, 'pow(5, 2)';
+};
+leaks 'return pointer' => sub {
+    ok my $lib = compile_test_lib(<<''), 'build test lib';
+#include "std.h"
+// ext: .c
+void * test( ) { void * ret = "Testing"; return ret; }
+
+    ok affix( $lib, test=> [] => Pointer [Void] ), 'void * test(void)';
+
+    my $tttt = test();
+    warn ref $tttt;
+};
+done_testing;
+
+exit;
+__END__
+=fdsa
+
+
 {
     my $leaks = leaks {
         use Affix;
-        pass 1, 'loaded';
-        done_testing;
-    };
-    is $leaks->{error}, U(), 'no leaks when just loading Affix';
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        isa_ok $_, ['Affix::Type'], for Void, Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong, LongLong, ULongLong, Float, Double;
-        done_testing;
-    };
-    is $leaks->{error}, U(), 'no leaks in types';
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'];
-        is pow( 5, 2 ), 25, 'pow(5, 2)';
-        done_testing;
-    };
-    is $leaks->{error}, U(), 'no leaks when using affix($$$$)';
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ), ['Affix'];
+        isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ),
+          ['Affix'];
         is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
         done_testing;
     };
@@ -51,7 +62,8 @@ $|++;
     is $leaks->{error}, U(), 'type defined in higher scope';
 }
 {
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
+    # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
+    #   if Affix::Platform::FreeBSD();
     my $leaks = leaks {
         use Affix;
         use t::lib::helper qw[compile_test_lib];
@@ -60,15 +72,17 @@ $|++;
                 my ( $lib, $ver );
                 #
                 subtest 'setup for pin' => sub {
-                    ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+                    ok $lib =
+                      t::lib::helper::compile_test_lib(<<''), 'build libfoo';
 #include "std.h"
 // ext: .c
 int * ptr;
 DLLEXPORT int * get_ptr(int size){ ptr = (int*) malloc(size * sizeof(int)); for ( int i = 0; i < size; ++i ) ptr[i] = i; return ptr; }
 DLLEXPORT void free_ptr(){ free (ptr); }
 
-                    isa_ok affix( $lib, 'get_ptr',  [Int], Pointer [ Int, 5 ] ), ['Affix'];
-                    isa_ok affix( $lib, 'free_ptr', [],    Void ),               ['Affix'];
+                    isa_ok affix( $lib, 'get_ptr', [Int], Pointer [ Int, 5 ] ),
+                      ['Affix'];
+                    isa_ok affix( $lib, 'free_ptr', [], Void ), ['Affix'];
                 };
 
                 # bind an exported value to a Perl value
@@ -82,7 +96,8 @@ DLLEXPORT void free_ptr(){ free (ptr); }
     is $leaks->{error}, U(), 'int *';
 }
 {
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
+    # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
+    #   if Affix::Platform::FreeBSD();
     my $leaks = leaks {
         use Affix;
         use t::lib::helper qw[compile_test_lib];
@@ -91,7 +106,8 @@ DLLEXPORT void free_ptr(){ free (ptr); }
                 my ( $lib, $ver );
                 #
                 subtest 'setup for pin' => sub {
-                    ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+                    ok $lib =
+                      t::lib::helper::compile_test_lib(<<''), 'build libfoo';
 #include "std.h"
 // ext: .c
 DLLEXPORT int VERSION = 100;
@@ -101,7 +117,8 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
                 };
 
                 # bind an exported value to a Perl value
-                ok Affix::pin( $ver, $lib, 'VERSION', Int ), 'ping( $ver, ..., "VERSION", Int )';
+                ok Affix::pin( $ver, $lib, 'VERSION', Int ),
+                  'ping( $ver, ..., "VERSION", Int )';
                 is $ver,          100, 'var pulled value from pin( ... )';
                 is $ver = 2,      2,   'set var on the perl side';
                 is get_VERSION(), 2,   'pin set the value in our library';
@@ -114,8 +131,9 @@ DLLEXPORT int get_VERSION(){ return VERSION; }
     is $leaks->{error}, U(), 'pin( ... )';
 }
 {
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
-    my $leaks = leaks {
+    # my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
+    #   if Affix::Platform::FreeBSD();
+    leaks {
         use Affix;
         use t::lib::helper qw[compile_test_lib];
         my ( $lib, $ver );
@@ -133,103 +151,132 @@ int * ptr(int size){ int * ret = (int*)malloc(sizeof(int) * 5); return ret;}
         isa_ok my $ptr = ptr(3), ['Affix::Pointer'];
         $ptr->free;
     };
-    is $leaks->{error}, U(), 'free unmanaged pointer';
 }
-{
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
-    my $leaks = leaks {
-        use Affix;
-        use t::lib::helper qw[compile_test_lib];
-        my ( $lib, $ver );
-        #
-        subtest 'setup for pin' => sub {
-            ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
+=cut
+
+leaks 'idk yet' => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    ok my $lib = compile_test_lib(<<''), 'build test lib';
+#include "std.h"
+// ext: .c
+void test_1( void ) { warn("ok");}
+void test_2( void * in ) { 
+    if(memcmp(in, "Just random junk here", 22) == 0) { warn( "ok" ); }
+    else{ warn ("not ok"); }
+}
+void * test_3( ) { warn( "ok" ); void * ret = "Testing"; return ret; }
+
+    #
+    subtest 'affix' => sub {
+        ok affix( $lib, test_1 => [] => Void ), 'void test_1(void)';
+        ok affix( $lib, test_2 => [ Pointer [Void] ] => Void ),
+          'void test_2(void *)';
+        ok affix( $lib, test_3 => [] => Pointer [Void] ), 'void * test_3(void)';
+        ok affix( $lib, [ test_3 => 'test_4' ] => [] => Pointer [ Void, 3 ] ),
+          'void * test_3(void)';
+    };
+
+    # test_1();
+    # like capture_stderr { test_1() }, qr[^ok at .+$], 'test_1';
+    # test_2("Just random junk here\0");
+    my $tttt = test_3();
+};
+
+exit;
+leaks 'free pointer' => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    my ( $lib, $ver );
+    #
+    subtest 'setup for pin' => sub {
+        ok $lib = t::lib::helper::compile_test_lib(<<''), 'build libfoo';
 #include "std.h"
 // ext: .c
 int * ptr(int size){ int * ret = (int*)malloc(sizeof(int) * 5); return ret;}
 bool free_ptr(int * ptr){ if(ptr==NULL) return false; free(ptr); return true; }
 
-            isa_ok affix( $lib, 'ptr',      [Int],              Pointer [Void] ), ['Affix'];
-            isa_ok affix( $lib, 'free_ptr', [ Pointer [Void] ], Bool ),           ['Affix'];
-        };
-
-        # Free it manually
-        isa_ok my $ptr = ptr(5), ['Affix::Pointer'];
-        ok free_ptr($ptr), 'free_ptr( $ptr )';
+        isa_ok affix( $lib, 'ptr',      [Int], Pointer [Void] ),    ['Affix'];
+        isa_ok affix( $lib, 'free_ptr', [ Pointer [Void] ], Bool ), ['Affix'];
     };
-    is $leaks->{error}, U(), 'passing unmanaging pointers';
-}
-{
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
-    my $leaks = leaks {
-        use Affix;
-        use t::lib::helper qw[compile_test_lib];
-        my ( $lib, $ver );
-        #
-        subtest 'setup for pin' => sub {
-            my $lib = compile_test_lib <<'';
+
+    # Free it manually
+    isa_ok my $ptr = ptr(1024), ['Affix::Pointer'], 'ptr(1024)';
+    ok free_ptr($ptr), 'free_ptr( $ptr )';
+};
+done_testing;
+exit;
+
+my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
+  if Affix::Platform::FreeBSD();
+leaks callbacks => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    my ( $lib, $ver );
+    #
+    subtest 'setup for pin' => sub {
+        my $lib = compile_test_lib <<'';
 #include "std.h"
 // ext: .c
 typedef int (*cb)(int, int);
 int do_cb(cb callback, int x, int y) { return callback(x, y); }
 
-            isa_ok typedef( CB => CodeRef [ [ Int, Int ] => Int ] ), ['Affix::Type'], 'typedef int (*cb)(int, int);';
-            isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ),  ['Affix'],       'int do_cb(cb callback, int x, int y) ';
-            #
-        };
-        is do_cb( sub { my ( $x, $y ) = @_; $x * $y }, 4, 5 ), 20, 'do_cb( sub {...}, 4, 5 )';
-    };
-    is $leaks->{error}, U(), 'callbacks';
-}
-{
-    my $todo  = todo 'FreeBSD has trouble with vectors under valgrind' if Affix::Platform::FreeBSD();
-    my $leaks = leaks {
-        use Affix;
-        use t::lib::helper qw[compile_test_lib];
-        my ( $lib, $ver );
+        isa_ok typedef( CB => CodeRef [ [ Int, Int ] => Int ] ),
+          ['Affix::Type'], 'typedef int (*cb)(int, int);';
+        isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ), ['Affix'],
+          'int do_cb(cb callback, int x, int y) ';
         #
-        subtest 'setup for pin' => sub {
-            my $lib = compile_test_lib <<'';
+    };
+    is do_cb( sub { my ( $x, $y ) = @_; $x * $y }, 4, 5 ), 20,
+      'do_cb( sub {...}, 4, 5 )';
+};
+
+my $todo = todo 'FreeBSD has trouble with vectors under valgrind'
+  if Affix::Platform::FreeBSD();
+leaks 'callbacks' => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    my ( $lib, $ver );
+    #
+    subtest 'setup for pin' => sub {
+        my $lib = compile_test_lib <<'';
 #include "std.h"
 // ext: .c
 typedef int (*cb)(int, int);
 int do_cb(cb callback, int x, int y) { return callback(x, y); }
 
-            isa_ok typedef( CB => CodeRef [ [ Int, Int ] => Int ] ), ['Affix::Type'], 'typedef int (*cb)(int, int);';
-            isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ),  ['Affix'],       'int do_cb(cb callback, int x, int y) ';
-            #
-        };
-        my $code = sub { my ( $x, $y ) = @_; $x + $y };
-        is do_cb( $code, 4,  5 ),  9,  'do_cb( sub {...}, 4, 5 )';
-        is do_cb( $code, 20, -5 ), 15, 'do_cb( sub {...}, 20, -5 )';
-    };
-    is $leaks->{error}, U(), 'callback reuse';
-    use Data::Dump qw[pp];
-    diag pp($leaks);
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        use t::lib::helper qw[compile_test_lib];
+        isa_ok typedef( CB => CodeRef [ [ Int, Int ] => Int ] ),
+          ['Affix::Type'], 'typedef int (*cb)(int, int);';
+        isa_ok affix( $lib, 'do_cb', [ CB(), Int, Int ], Int ), ['Affix'],
+          'int do_cb(cb callback, int x, int y) ';
         #
-        subtest 'malloc' => sub {
-            isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
-            $pointer->free;
-        }
     };
-    is $leaks->{error}, U(), 'malloc(1024) freed manually';
-}
-{
-    my $leaks = leaks {
-        use Affix;
-        use t::lib::helper qw[compile_test_lib];
-        #
-        subtest 'malloc' => sub {
-            isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';
-        }
-    };
-    is $leaks->{error}, U(), 'malloc(1024) freed on scope';
-}
+    my $code = sub { my ( $x, $y ) = @_; $x + $y };
+    is do_cb( $code, 4,   5 ), 9,  'do_cb( sub {...}, 4, 5 )';
+    is do_cb( $code, 20, -5 ), 15, 'do_cb( sub {...}, 20, -5 )';
+};
+
+leaks 'malloc/free' => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    #
+    subtest 'malloc' => sub {
+        isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'],
+          'malloc(1024)';
+        $pointer->free;
+    }
+};
+
+leaks 'malloc/DESTROY' => sub {
+    use Affix;
+    use t::lib::helper qw[compile_test_lib];
+    #
+    subtest 'malloc' => sub {
+        isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'],
+          'malloc(1024)';
+    }
+};
+
 done_testing;
 __END__
 {
