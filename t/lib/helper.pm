@@ -316,7 +316,7 @@ package t::lib::helper {
 
                     # use Data::Dump;
                     # ddx $content;
-                    fail $content->{what} // $content->{xwhat}{text};
+                    diag $content->{what} // $content->{xwhat}{text};
                     for my $i ( 0 .. scalar @{ $content->{stack} } ) {
                         note $content->{auxwhat}[$i] if $content->{auxwhat}[$i];
                         note stacktrace $content->{stack}[$i]{frame};
@@ -353,10 +353,12 @@ use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as
 use Test2::Plugin::UTF8;
 no Test2::Plugin::ExitSummary; # I wish
 use t::lib::helper;
-Test2::API::test2_stack()->top->{count} = %d;
+# Test2::API::test2_stack()->top->{count} = %d;
 $|++;
-my $exit = subtest '%s' => sub {use Affix; Affix::set_destruct_level(3); %s;};
-Test2::API::test2_stack()->top->{count}++;
+note '%s';
+my $exit = sub {use Affix; Affix::set_destruct_level(3); %s;}->();
+# Test2::API::test2_stack()->top->{count}++;
+done_testing;
 exit !$exit;
 
             my $report = Path::Tiny->tempfile( { realpath => 1 },
@@ -384,14 +386,21 @@ exit !$exit;
                     system @cmd;
                 }
             );
-            $out =~ s[# Seeded srand with seed .+\Z][];
-            $err =~ s[# Tests were run .+\Z][];
-            print $err if $err =~ m[\S];
-            print $out if $out =~ m[\S];
-            my $parsed = parse_xml( $report->slurp_utf8 );
-            Test2::API::test2_stack()->top->{count}++;
 
-            !$parsed->{valgrindoutput}{errorcounts};
+            # $out =~ s[# Seeded srand with seed .+$][]m;
+            # $err =~ s[# Tests were run .+$][];
+            if ( $out =~ m[\S] ) {
+                $out =~ s[^((?:[ \t]*))(?=\S)][$1  ]gm;
+                print $out;
+            }
+            if ( $err =~ m[\S] ) {
+                $err =~ s[^((?:[ \t]*))(?=\S)][$1  ]gm;
+                print STDERR $err;
+            }
+            my $parsed = parse_xml( $report->slurp_utf8 );
+
+            # Test2::API::test2_stack()->top->{count}++;
+            ok !$exit && !$parsed->{valgrindoutput}{errorcounts}, $name;
         }
     }
 

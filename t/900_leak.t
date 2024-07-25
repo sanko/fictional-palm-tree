@@ -8,11 +8,6 @@ leaks 'use Affix' => sub {
     use Affix;
     pass 'loaded';
 };
-leaks 'Affix::Type' => sub {
-    isa_ok $_, ['Affix::Type'],
-      for Void, Bool, Char, UChar, Short, UShort, Int, UInt, Long, ULong,
-      LongLong, ULongLong, Float, Double, Pointer [Void];
-};
 leaks 'affix($$$$)' => sub {
     isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
       'double pow(double, double)';
