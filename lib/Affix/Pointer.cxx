@@ -38,13 +38,13 @@ XS_INTERNAL(Affix_Pointer_free) {
     PERL_UNUSED_VAR(items);
     Affix_Pointer * pointer;
     pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
-    // if(pointer->type != nullptr)
-    // delete pointer->type;
-    // pointer->type = nullptr;
-    safefree(pointer->address);
-    ST(0) = &PL_sv_undef;
+    if(pointer->address!=nullptr) {
+        safefree(pointer->address);
+    }
+    pointer->address = nullptr;
+    sv_set_undef(ST(0));
+    SvSETMAGIC(ST(0));
     XSRETURN(1);
-    // XSRETURN_EMPTY;
 };
 
 XS_INTERNAL(Affix_Pointer_DESTROY) {
@@ -55,8 +55,9 @@ XS_INTERNAL(Affix_Pointer_DESTROY) {
     if (pointer != nullptr) {
         // if (pointer->address != nullptr)
         // safefree(pointer->address);
+        if (pointer->address != nullptr)
         pointer->address = nullptr;
-        delete pointer;
+        delete pointer;        
     }
     pointer = nullptr;
     XSRETURN_EMPTY;
@@ -144,7 +145,6 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
 
     (void)newXSproto_portable("Affix::malloc", Affix_malloc, __FILE__, "$");
 
-
     (void)newXSproto_portable("Affix::Pointer::dump", Affix_Pointer_dump, __FILE__, "$$");
 
     (void)newXSproto_portable("Affix::Pointer::raw", Affix_Pointer_raw, __FILE__, "$$");
@@ -152,7 +152,7 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
     (void)newXSproto_portable("Affix::Pointer::free", Affix_Pointer_free, __FILE__, "$");
 
     (void)newXSproto_portable("Affix::Pointer::DESTROY", Affix_Pointer_DESTROY, __FILE__, "$");
-    (void)newXSproto_portable("Affix::Pointer::Unanaged::DESTROY", Affix_Pointer_Unmanaged_DESTROY, __FILE__, "$");
+    (void)newXSproto_portable("Affix::Pointer::Unmanaged::DESTROY", Affix_Pointer_Unmanaged_DESTROY, __FILE__, "$");
 
     set_isa("Affix::Pointer::Unmanaged", "Affix::Pointer");
 }

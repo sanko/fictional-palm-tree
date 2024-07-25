@@ -156,7 +156,7 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
 //     type->length.at(depth - 1));
 #endif
     if (type->length.at(depth - 1) == -1)  // -1 comes from Affix::Type::Pointer
-        return bless_ptr(aTHX_ target, type, "Affix::Pointer");
+        return bless_ptr(aTHX_ target, type);
     if (depth < type->depth) {
         // DumpHex(target, 64);
         AV * tmp = newAV();

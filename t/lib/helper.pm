@@ -346,7 +346,7 @@ package t::lib::helper {
             CORE::state $deparse //= B::Deparse->new(qw[-l]);
             my ( $package, $file, $line ) = caller;
             my $source = sprintf
-              <<'', ( join ', ', map { "'$_'" } sort { length $a <=> length $b } grep { defined } map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $name, $deparse->coderef2text($code_ref);
+              <<'', ( join ', ', map { "'$_'" } sort { length $a <=> length $b } grep { defined } map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $deparse->coderef2text($code_ref);
 use lib %s;
 use Test2::V0 '!subtest', -no_srand => 1;
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
@@ -355,7 +355,6 @@ no Test2::Plugin::ExitSummary; # I wish
 use t::lib::helper;
 # Test2::API::test2_stack()->top->{count} = %d;
 $|++;
-note '%s';
 my $exit = sub {use Affix; Affix::set_destruct_level(3); %s;}->();
 # Test2::API::test2_stack()->top->{count}++;
 done_testing;
@@ -398,6 +397,10 @@ exit !$exit;
                 print STDERR $err;
             }
             my $parsed = parse_xml( $report->slurp_utf8 );
+
+            # use Data::Dump;
+            # ddx $parsed;
+            # diag 'exit: '. $exit;
 
             # Test2::API::test2_stack()->top->{count}++;
             ok !$exit && !$parsed->{valgrindoutput}{errorcounts}, $name;
