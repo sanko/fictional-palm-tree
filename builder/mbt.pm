@@ -124,7 +124,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     sub build_dyncall {
         my (%opt) = @_;
         my $pre = Path::Tiny->cwd->child( qw[blib arch auto], $opt{meta}->name )->absolute;
-        return                                             if -d $pre;
+        return                                             if !$opt{force} && -d $pre;
         die "Can't build xs files under --pureperl-only\n" if $opt{'pureperl-only'};
         my ($kid) = Path::Tiny->cwd->child('dyncall');
         my $cwd = Path::Tiny->cwd->absolute;
