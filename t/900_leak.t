@@ -1,24 +1,18 @@
 use Test2::V0;
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-
 use t::lib::helper qw[leaktest compile_test_lib leaks];
 $|++;
-
-skip_all 'I have no idea why *BSD is leaking here'
-  if Affix::Platform::OS() =~ /BSD/;
-
+skip_all 'I have no idea why *BSD is leaking here' if Affix::Platform::OS() =~ /BSD/;
 leaks 'use Affix' => sub {
     use Affix;
     pass 'loaded';
 };
 leaks 'affix($$$$)' => sub {
-    isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
-      'double pow(double, double)';
+    isa_ok affix( 'm', 'pow', [ Double, Double ], Double ), ['Affix'], 'double pow(double, double)';
     is pow( 5, 2 ), 25, 'pow(5, 2)';
 };
 leaks 'wrap($$$$)' => sub {
-    isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ), ['Affix'],
-      'double pow(double, double)';
+    isa_ok my $pow = wrap( 'm', 'pow', [ Double, Double ], Double ), ['Affix'], 'double pow(double, double)';
     is $pow->( 5, 2 ), 25, '$pow->(5, 2)';
 };
 leaks 'return pointer' => sub {
@@ -48,6 +42,5 @@ void * test() {
     $string->free;
     is $string, U(), '->free() worked';
 };
-
 done_testing;
 exit;

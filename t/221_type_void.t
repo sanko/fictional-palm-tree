@@ -29,10 +29,8 @@ subtest 'affix' => sub {
 test_1();
 like capture_stderr { test_1() }, qr[^ok at .+$], 'test_1';
 test_2("Just random junk here\0");
-
 isa_ok my $ptr = test_3(), ['Affix::Pointer'], 'test_3()';
 is $ptr->raw(7), 'Testing', '->raw(7)';
-
 diag test_4();
 subtest 'malloc' => sub {
     isa_ok my $pointer = Affix::malloc(1024), ['Affix::Pointer'], 'malloc(1024)';

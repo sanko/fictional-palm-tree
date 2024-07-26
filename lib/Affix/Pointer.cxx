@@ -29,7 +29,7 @@ XS_INTERNAL(Affix_Pointer_raw) {
     pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
     if (pointer->address == nullptr)
         XSRETURN_EMPTY;
-        ST(0) = newSVpv((const char *)pointer->address, SvIV(ST(1)));
+    ST(0) = newSVpv((const char *)pointer->address, SvIV(ST(1)));
     XSRETURN(1);
 };
 
@@ -38,7 +38,7 @@ XS_INTERNAL(Affix_Pointer_free) {
     PERL_UNUSED_VAR(items);
     Affix_Pointer * pointer;
     pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(0))));
-    if(pointer->address!=nullptr) {
+    if (pointer->address != nullptr) {
         safefree(pointer->address);
     }
     pointer->address = nullptr;
@@ -56,8 +56,8 @@ XS_INTERNAL(Affix_Pointer_DESTROY) {
         // if (pointer->address != nullptr)
         // safefree(pointer->address);
         if (pointer->address != nullptr)
-        pointer->address = nullptr;
-        delete pointer;        
+            pointer->address = nullptr;
+        delete pointer;
     }
     pointer = nullptr;
     XSRETURN_EMPTY;
