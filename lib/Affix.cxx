@@ -33,10 +33,7 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
         croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->subtypes.size());
 
     size_t st_pos = 0;
-    // Affix_Type * type;
-    // for (size_t c = 0; c < affix->subtypes.size(); c++) {
-    // type = affix->subtypes[c];
-    ;
+
     for (const auto & type : affix->subtypes) {
         // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
         if (type->depth) {

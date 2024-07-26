@@ -26,16 +26,16 @@ languages (C, C++, Rust, etc.) without having to write or maintain XS.
 
 ## Features
 
-Affix supports the following features right out of the box:
+Affix includes the following features right out of the box:
 
-- Works on Windows, macOS, Linux, BSD, and more
+- Works on Windows, macOS, Linux, BSD, and more.
 - Callbacks
 - Pointers
 - Typedefs
 - Global/Exported variables
 - Libraries developed in C, C++, and Rust (and more to come!) even those with mangled symbol names
 - Aggregates such as structs, unions, and arrays
-- Passing aggregates by value
+- Passing aggregates by value on many platforms
 - Nested aggregates
 - 'Smart' [enums](https://metacpan.org/pod/Affix%3A%3AEnum)
 - Tested to work all the way down to Perl 5.026 (which is ancient in my book)
@@ -79,11 +79,11 @@ Expected parameters include:
 
     Optionally, you may provide an array reference with the symbol's name and the name of the wrapping subroutine.
 
-- `parameters`
+- `parameters` - required
 
     Provide the argument types in an array reference.
 
-- `return`
+- `return` - required
 
     A single return type for the function.
 
@@ -110,11 +110,11 @@ Parameters include:
 
     Name of the symbol to wrap.
 
-- `parameters`
+- `parameters` - required
 
     Provide the argument types in an array reference.
 
-- `return`
+- `return` - required
 
     A single return type for the function.
 
@@ -136,20 +136,20 @@ by the [libc](https://metacpan.org/pod/libc) library.
 
 Expected parameters include:
 
-- `var`
+- `var` - required
 
     Perl scalar that will be bound to the exported variable.
 
-- `lib`
+- `lib` - required
 
     File path or name of the library to load symbols from. Pass an explicit `undef` to pull functions from the main
     executable.
 
-- `symbol_name`
+- `symbol_name` - required
 
     Name of the exported variable to wrap.
 
-- `$type`
+- `$type` - required
 
     Indicate to Affix what type of data the variable contains.
 

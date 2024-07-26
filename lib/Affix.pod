@@ -26,11 +26,11 @@ languages (C, C++, Rust, etc.) without having to write or maintain XS.
 
 =head2 Features
 
-Affix supports the following features right out of the box:
+Affix includes the following features right out of the box:
 
 =over
 
-=item Works on Windows, macOS, Linux, BSD, and more
+=item Works on Windows, macOS, Linux, BSD, and more.
 
 =item Callbacks
 
@@ -44,7 +44,7 @@ Affix supports the following features right out of the box:
 
 =item Aggregates such as structs, unions, and arrays
 
-=item Passing aggregates by value
+=item Passing aggregates by value on many platforms
 
 =item Nested aggregates
 
@@ -93,11 +93,11 @@ Name of the symbol to wrap.
 
 Optionally, you may provide an array reference with the symbol's name and the name of the wrapping subroutine.
 
-=item C<parameters>
+=item C<parameters> - required
 
 Provide the argument types in an array reference.
 
-=item C<return>
+=item C<return> - required
 
 A single return type for the function.
 
@@ -126,11 +126,11 @@ executable.
 
 Name of the symbol to wrap.
 
-=item C<parameters>
+=item C<parameters> - required
 
 Provide the argument types in an array reference.
 
-=item C<return>
+=item C<return> - required
 
 A single return type for the function.
 
@@ -154,20 +154,20 @@ Expected parameters include:
 
 =over
 
-=item C<var>
+=item C<var> - required
 
 Perl scalar that will be bound to the exported variable.
 
-=item C<lib>
+=item C<lib> - required
 
 File path or name of the library to load symbols from. Pass an explicit C<undef> to pull functions from the main
 executable.
 
-=item C<symbol_name>
+=item C<symbol_name> - required
 
 Name of the exported variable to wrap.
 
-=item C<$type>
+=item C<$type> - required
 
 Indicate to Affix what type of data the variable contains.
 
