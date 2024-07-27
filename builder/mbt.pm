@@ -28,9 +28,9 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             :
 
             # $Config{osname} eq 'MSWin32' ? '' :
-            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
+            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize  -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
     }
-    sub LDFLAGS($) { ' -flto'; }
+    sub LDFLAGS($) { ' -flto '; }
     sub CPPVER     {'c++17'}       # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
 
     #
@@ -146,15 +146,15 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
                 $configure = '.\configure.bat /target-x64 /tool-' . $opt{config}->get('cc') . ' /make-';
                 if ( $exe eq 'nmake' ) {
                     $configure .= 'nmake';
-                    $make      .= ' -f Nmakefile';
+                    $make      .= ' -f Nmakefile'. ($opt{verbose}?'':' /S');
                 }
                 else {
                     $configure .= 'make';
-                    $make = 'gmake AS="gcc    -c " CC=gcc VPATH=. PREFIX="' . $pre->absolute . '"';
+                    $make = 'gmake AS="gcc -c " CC=gcc VPATH=. PREFIX="' . $pre->absolute . '"' . ( $opt{verbose} ? '' : ' -s' );
                 }
                 last;
             }
-            CORE::say($_) && system($_) for $configure, $make;
+            ( ( $opt{verbose} && CORE::say($_) ) || 1 ) && system($_) for $configure, $make;
 
             # TODO: use Path::Tiny to visit all headers instead
             my %libs = (
@@ -187,7 +187,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             $make = $opt{config}->get('make');
         }
         else {
-            $make = $opt{config}->get('make');
+            $make = $opt{config}->get('make') . ( $opt{verbose} ? '' : ' -s' );
             system($_) for $configure, $make, $make . ' install';
         }
         chdir $cwd->stringify;
@@ -200,6 +200,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         my @objs;
         require ExtUtils::CBuilder;
         my $builder = ExtUtils::CBuilder->new(
+            quiet  => !$opt{verbose},
             config => {
 
                 #~ (
@@ -237,6 +238,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
                     ( $source->stat->mtime >= path($obj)->stat->mtime ) ||
                     ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) ) ?
                 $builder->compile(
+
                 'C++'        => ( $source =~ /\.cxx$/ ? 1 : 0 ),
                 source       => $source->stringify,
                 defines      => { VERSION => qq/"$version"/, XS_VERSION => qq/"$version"/ },
