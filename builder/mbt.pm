@@ -28,7 +28,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             :
 
             # $Config{osname} eq 'MSWin32' ? '' :
-            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize  -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
+            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
     }
     sub LDFLAGS($) { ' -flto '; }
     sub CPPVER     {'c++17'}       # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
@@ -187,6 +187,7 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             $make = $opt{config}->get('make');
         }
         else {
+            warn $configure;
             $make = $opt{config}->get('make') . ( $opt{verbose} ? '' : ' -s' );
             system($_) for $configure, $make, $make . ' install';
         }
