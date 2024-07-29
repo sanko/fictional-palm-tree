@@ -125,7 +125,54 @@ package Affix::Builder {
 
     package Affix::Builder::D;
 
-    package Affix::Bulder::Fortran;
+    package Affix::Bulder::Fortran {
+        use Devel::CheckBin;
+        use Config;
+        use Path::Tiny;
 
-    package Affix::Builder::Rust;
+        my ( $compiler, $gnu );
+
+        # https://fortran-lang.org/learn/building_programs/managing_libraries/
+
+        # gfortran, ifort
+        sub locate_compiler() {
+            return $compiler if defined $compiler;
+            $compiler = can_run('gfortran');
+            $gnu      = !!$compiler;
+            $compiler = can_run('ifort') unless $compiler;    # intel
+        }
+
+        sub compile_test_lib ($;$$) {
+            my ( $name, $aggs, $keep ) = @_;
+
+            return !warn 'test requires GNUFortran' unless $compiler;
+            my $path = path($name);
+
+            my $lib =
+                ( $^O eq 'MSWin32' ? '' : 'lib' )
+              . 'affix_fortran.'
+              . $Config{so};
+            my $line =
+              sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s',
+              $compiler,
+              (
+                $gnu ? '-shared'
+                : (
+                      $^O eq 'MSWin32' ? '/libs:dll'
+                    : $^O eq 'darwin'  ? '-dynamiclib'
+                    :                    '-shared'
+                )
+              ), $lib;
+            warn $line;
+        }
+    }
+
+    package Affix::Builder::Rust {
+        use Devel::CheckBin;
+        use Config;
+        my $lib =
+          ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_rust.' . $Config{so};
+        system
+'cargo build --manifest-path=t/src/85_affix_mangle_rust/Cargo.toml --release --quiet';
+    }
 };
