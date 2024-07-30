@@ -1,19 +1,79 @@
 package Affix::Builder {
     use v5.32.0;
     use Path::Tiny;
+    use Config;
+
+    #
+    my $windows = $^O eq 'MSWin32';
 
     # use bless for now (until perl 5.40 (not 5.38!) is the min requirement)
     # TODO: Move C/CXX builder stuff from t::helper into ::C
     # TODO: Write a wrapper to build libs in Rust, Fortran, and D
     sub new ($%) {
         my ( $class, %args ) = @_;
+        my $output =
+          path( $args{output} // './'
+              . ( $windows ? '' : 'lib' )
+              . 'affix_build.'
+              . $Config{so} );
         bless {
-            lang => $args{language} // 'C',
-            path => path( $args{path} // '.' )
+            lang   => $args{language} // 'C',
+            path   => path( $args{path} // '.' ),
+            output => $output,
+            steps  => []
         }, $class;
     }
 
+    sub go {
+        $_ || system $_->run for @{ shift->{steps} };
+    }
+
+    package Affix::Builder::Step {
+        use overload bool => sub { shift->{status} };
+
+        sub new {
+            my ( $class, %args ) = @_;
+            bless {
+                %args,
+                output => undef,
+                status => 0
+            }, $class;
+        }
+    }
+
+    package Affix::Builder::Step::Perl {
+        use parent -norequire => 'Affix::Builder::Step';
+
+        sub new ($%) {
+            my ( $class, %args ) = @_;
+            my $self = __PACKAGE__->SUPER::new(%args);
+        }
+
+        sub run() {
+            shift->{execute}->();
+        }
+    }
+
+    package Affix::Builder::Step::Shell {
+        use parent -norequire => 'Affix::Builder::Step';
+
+        sub new ($%) {
+            my ( $class, %args ) = @_;
+            my $self = __PACKAGE__->SUPER::new(%args);
+        }
+
+        sub run() {
+            my $self = shift;
+            return $self->{output} if !!$self;
+
+            warn join ' ', @{ $self->{execute} };
+            $self->{status} = !system @{ $self->{execute} };
+            $self->{output};
+        }
+    }
+
     package Affix::Builder::C {
+        use parent -norequire => 'Affix::Builder';
         use Path::Tiny qw[path tempdir tempfile];
         use Config;
         #
@@ -22,6 +82,96 @@ package Affix::Builder {
 
         #~ Affix::Platform::OS();
         my @cleanup;
+
+        sub new ($%) {
+            my ( $class, %args ) = @_;
+            my $self = __PACKAGE__->SUPER::new(%args);
+
+            # use Data::Dump;
+            # ddx \%args;
+            my @objs;
+            for my $file ( map { path($_)->realpath } @{ $args{source} } ) {
+                $self->{output} = $file->sibling(
+                    $file->basename(qw[.cxx .cpp c++]) . $Config{_o} );
+                push @objs, $self->{output};
+                push @{ $self->{steps} },
+                  Affix::Builder::Step::Shell->new(
+                    execute => [
+                        'g++',
+                        (
+                            map { '-I' . path($_)->realpath->stringify }
+                              @{ $args{include} }
+                        ),
+                        (
+                            $args{libperl}
+                            ? '-I'
+                              . path( $Config{installarchlib} )->child('CORE')
+                              ->realpath->stringify
+                            : ()
+                        ),
+                        @{ $args{cxxflags} // () },
+                        '-o',
+                        $self->{output}->stringify,
+                        $file->stringify
+                    ]
+                  );
+            }
+            push @{ $self->{steps} }, Affix::Builder::Step::Shell->new(
+                execute => [
+                    'cc',
+                    '-shared',
+                    (
+                        map { '-L' . path($_)->realpath->stringify }
+                          @{ $args{libs} }
+                    ),
+                    (
+                        $args{libperl}
+                        ? '-L'
+                          . path( $Config{installarchlib} )->child('CORE')
+                          ->realpath->stringify
+                        : ()
+                    ),
+                    @objs,
+
+                    # @{ $args{ldflags} // () },
+                    '-L../dyncall/dyncall',
+                    '-L../dyncall/dyncallback',
+                    '-L../dyncall/dynload',
+
+                    qw'-lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s',
+                    '-o',
+                    path( $args{output} // 'output.' . $Config{so} )
+                      ->absolute->stringify
+                ]
+            );
+
+# cc -shared -O2 -L/usr/local/lib -fstack-protector-strong
+#-o blib/arch/auto/Affix/Affix.so
+#/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix.o
+# /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/Callback.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/Lib.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/Platform.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/Pointer.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/marshal.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/pin.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/type.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/utils.o
+#  /home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/wchar_t.o
+#  -flto -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/lib/Affix/
+#   -L/home/runner/work/fictional-palm-tree/fictional-palm-tree/blib/arch/auto/Affix/lib
+#   -lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s
+
+            $self;
+        }
 
         sub compile_test_lib ($;$$) {
 
@@ -121,9 +271,31 @@ package Affix::Builder {
         }
     }
 
-    package Affix::Builder::CXX;
+    package Affix::Builder::CXX {
+        use parent -norequire => 'Affix::Builder::C';
 
-    package Affix::Builder::D;
+    }
+
+    package Affix::Builder::CXX::MSVC {
+        use parent -norequire => 'Affix::Builder::CXX';
+
+    }
+
+    package Affix::Builder::CXX::GNU {
+        use parent -norequire => 'Affix::Builder::CXX';
+
+    }
+
+    package Affix::Builder::Go {
+        use parent -norequire => 'Affix::Builder';
+
+        # go build -buildmode=c-shared
+        # https://pkg.go.dev/cmd/go#hdr-Build_modes
+    }
+
+    package Affix::Builder::D {
+        use parent -norequire => 'Affix::Builder';
+    }
 
     package Affix::Bulder::Fortran {
         use Devel::CheckBin;
