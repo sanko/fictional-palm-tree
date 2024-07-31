@@ -19,13 +19,13 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     dAXMARK;
 
     Affix * affix = (Affix *)XSANY.any_ptr;
-    size_t items = (SP - MARK);
+    size_t items = (SP - MARK); 
 
     dMY_CXT;
     static DCCallVM * cvm = MY_CXT.cvm;
     dcReset(cvm);
 
-    // TODO: Generate aggregate in type constructor
+    // TODO: Generate aggregate in type constructor  
 
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
@@ -230,7 +230,7 @@ dcArgPointer(cvm, ptr);*/
             // sv_set_undef(affix->res);
             break;
         case BOOL_FLAG:
-            sv_setsv(affix->res, boolSV(dcCallBool(cvm, affix->entry_point)));
+            sv_setbool(affix->res, boolSV(dcCallBool(cvm, affix->entry_point)));
             break;
         case CHAR_FLAG:
         case SCHAR_FLAG:
@@ -240,7 +240,7 @@ dcArgPointer(cvm, ptr);*/
                 sv_setsv(affix->res, newSVpv(value, 1));
                 (void)SvUPGRADE(affix->res, SVt_PVIV);
                 SvIV_set(affix->res, ((IV)value[0]));
-                SvIOK_on(affix->res);
+                // SvIOK_on(affix->res);
             }
             break;
         case UCHAR_FLAG:
@@ -249,8 +249,8 @@ dcArgPointer(cvm, ptr);*/
                 value[0] = dcCallChar(cvm, affix->entry_point);
                 sv_setsv(affix->res, newSVpv(value, 1));
                 (void)SvUPGRADE(affix->res, SVt_PVIV);
-                SvIV_set(affix->res, ((UV)value[0]));
-                SvIOK_on(affix->res);
+                SvUV_set(affix->res, ((UV)value[0]));
+                // SvIOK_on(affix->res);
             }
             break;
         case WCHAR_FLAG:
@@ -265,34 +265,34 @@ dcArgPointer(cvm, ptr);*/
             }
             break;
         case SHORT_FLAG:
-            sv_setiv(affix->res, (short)dcCallShort(cvm, affix->entry_point));
+            SvIV_set(affix->res, (short)dcCallShort(cvm, affix->entry_point));
             break;
         case USHORT_FLAG:
-            sv_setuv(affix->res, (unsigned short)dcCallShort(cvm, affix->entry_point));
+            SvUV_set(affix->res, (unsigned short)dcCallShort(cvm, affix->entry_point));
             break;
         case INT_FLAG:
-            sv_setiv(affix->res, dcCallInt(cvm, affix->entry_point));
+            SvIV_set(affix->res, dcCallInt(cvm, affix->entry_point));
             break;
         case UINT_FLAG:
-            sv_setuv(affix->res, (unsigned int)dcCallInt(cvm, affix->entry_point));
+            SvUV_set(affix->res, (unsigned int)dcCallInt(cvm, affix->entry_point));
             break;
         case LONG_FLAG:
-            sv_setiv(affix->res, dcCallLong(cvm, affix->entry_point));
+            SvIV_set(affix->res, dcCallLong(cvm, affix->entry_point));
             break;
         case ULONG_FLAG:
-            sv_setuv(affix->res, dcCallLong(cvm, affix->entry_point));
+            SvUV_set(affix->res, dcCallLong(cvm, affix->entry_point));
             break;
         case LONGLONG_FLAG:
-            sv_setiv(affix->res, dcCallLongLong(cvm, affix->entry_point));
+            SvIV_set(affix->res, dcCallLongLong(cvm, affix->entry_point));
             break;
         case ULONGLONG_FLAG:
-            sv_setuv(affix->res, dcCallLongLong(cvm, affix->entry_point));
+            SvUV_set(affix->res, dcCallLongLong(cvm, affix->entry_point));
             break;
         case FLOAT_FLAG:
-            sv_setnv(affix->res, dcCallFloat(cvm, affix->entry_point));
+            SvNV_set(affix->res, dcCallFloat(cvm, affix->entry_point));
             break;
         case DOUBLE_FLAG:
-            sv_setnv(affix->res, dcCallDouble(cvm, affix->entry_point));
+            SvNV_set(affix->res, dcCallDouble(cvm, affix->entry_point));
             break;
 
             //~ #define STRING_FLAG 'z'
@@ -470,12 +470,37 @@ XS_INTERNAL(Affix_affix) {
         // ..., ..., ..., ret
         if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
             affix->restype = sv2type(aTHX_ ST(3));
-            if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->depth == 0))
-                affix->res = newSV(0);
+            if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->depth == 0)) {
+                switch (affix->restype->numeric) {
+                    case BOOL_FLAG:
+                        affix->res = newSVbool(0);
+                    break;                    
+                    case CHAR_FLAG:
+                    case SHORT_FLAG:
+                    case WCHAR_FLAG:
+                    case INT_FLAG:
+                    case LONG_FLAG:
+                    case LONGLONG_FLAG:
+                        affix->res = newSViv(0);
+                    case UCHAR_FLAG:
+                    case USHORT_FLAG:
+                    case UINT_FLAG:
+                    case ULONG_FLAG:
+                    case ULONGLONG_FLAG:
+                        affix->res = newSVuv(0);
+                    break;
+                    case FLOAT_FLAG:
+                    case DOUBLE_FLAG:
+                        affix->res = newSVnv(0);
+                    break;
+                    default:
+                        affix->res = newSV(0);
+                        break;
+                }
+            }
         } else
             croak("Unknown return type");
     }
-
 
     STMT_START {
         cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Affix_trigger, __FILE__, prototype.c_str());
@@ -584,7 +609,7 @@ XS_EXTERNAL(boot_Affix) {
     SV * vmsize = get_sv("Affix::VMSize", 0);
     MY_CXT.cvm = dcNewCallVM(vmsize == NULL ? 8192 : SvIV(vmsize));
     dcMode(MY_CXT.cvm, DC_CALL_C_DEFAULT);
-    dcReset(MY_CXT.cvm);
+    // dcReset(MY_CXT.cvm);
 
     // Start exposing API
     // Affix::affix( lib, symbol, [args], return )

@@ -25,7 +25,9 @@ package Affix::Builder {
     }
 
     sub go {
-        $_ || system $_->run for @{ shift->{steps} };
+        my $self = shift;
+        $_ || system $_->run for @{ $self->{steps} };
+        -s $self->{output} ? $self->{output} : ();
     }
 
     package Affix::Builder::Step {
@@ -118,12 +120,12 @@ package Affix::Builder {
             }
             push @{ $self->{steps} }, Affix::Builder::Step::Shell->new(
                 execute => [
-                    'cc',
+                    'g++',
                     '-shared',
                     (
                         map { '-L' . path($_)->realpath->stringify }
                           @{ $args{libs} }
-                    ),
+                    ),          
                     (
                         $args{libperl}
                         ? '-L'
@@ -131,14 +133,9 @@ package Affix::Builder {
                           ->realpath->stringify
                         : ()
                     ),
-                    @objs,
+                    @objs,            
+                                      @{ $args{ldflags} // () },
 
-                    # @{ $args{ldflags} // () },
-                    '-L../dyncall/dyncall',
-                    '-L../dyncall/dyncallback',
-                    '-L../dyncall/dynload',
-
-                    qw'-lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s',
                     '-o',
                     path( $args{output} // 'output.' . $Config{so} )
                       ->absolute->stringify
