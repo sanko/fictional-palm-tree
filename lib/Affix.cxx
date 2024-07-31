@@ -15,22 +15,23 @@ typedef struct {
 START_MY_CXT
 
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
-    dSP;
-    dAXMARK;
+    dXSARGS;
 
     Affix * affix = (Affix *)XSANY.any_ptr;
-    size_t items = (SP - MARK); 
 
     dMY_CXT;
-    static DCCallVM * cvm = MY_CXT.cvm;
+    DCCallVM * cvm = MY_CXT.cvm;
     dcReset(cvm);
 
-    // TODO: Generate aggregate in type constructor  
+    // TODO: Generate aggregate in type constructor
 
     if (affix->restype->aggregate != nullptr)
         dcBeginCallAggr(cvm, affix->restype->aggregate);
     if (items != affix->subtypes.size())
-        croak("Wrong number of arguments to %s; expected: %ld", affix->symbol.c_str(), affix->subtypes.size());
+        croak("Wrong number of arguments to %s; expected: %ld, found %d",
+              affix->symbol.c_str(),
+              affix->subtypes.size(),
+              items);
 
     size_t st_pos = 0;
 
@@ -49,7 +50,6 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
 
         switch (type->numeric) {
         case VOID_FLAG:
-
             break;  // ...skip?
         case BOOL_FLAG:
             dcArgBool(cvm, SvTRUE(ST(st_pos)));  // Anything can be a bool
@@ -163,9 +163,8 @@ dcArgPointer(cvm, ptr);*/
                 GV * gvp;
                 auto cb_ = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
                 if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
-                    croak("Type of arg %d to %s must be subroutine (not constant item)",
-                          (int)(st_pos + 1),
-                          GvNAME(CvGV(cv)));
+                    croak(
+                        "Type of arg %d to %s must be subroutine (not constant item)", (st_pos + 1), GvNAME(CvGV(cv)));
                 } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
                     IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
                     cb = INT2PTR(DCCallback *, ptr_iv);
@@ -255,10 +254,6 @@ dcArgPointer(cvm, ptr);*/
             break;
         case WCHAR_FLAG:
             {
-                warn(
-                    "RETURNING WIDE "
-                    "CHAR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 wchar_t src[1];
                 src[0] = (wchar_t)dcCallLongLong(cvm, affix->entry_point);
                 affix->res = wchar2utf(aTHX_ src, 1);
@@ -472,30 +467,30 @@ XS_INTERNAL(Affix_affix) {
             affix->restype = sv2type(aTHX_ ST(3));
             if (!(sv_derived_from(ST(3), "Affix::Type::Void") && affix->restype->depth == 0)) {
                 switch (affix->restype->numeric) {
-                    case BOOL_FLAG:
-                        affix->res = newSVbool(0);
-                    break;                    
-                    case CHAR_FLAG:
-                    case SHORT_FLAG:
-                    case WCHAR_FLAG:
-                    case INT_FLAG:
-                    case LONG_FLAG:
-                    case LONGLONG_FLAG:
-                        affix->res = newSViv(0);
-                    case UCHAR_FLAG:
-                    case USHORT_FLAG:
-                    case UINT_FLAG:
-                    case ULONG_FLAG:
-                    case ULONGLONG_FLAG:
-                        affix->res = newSVuv(0);
+                case BOOL_FLAG:
+                    affix->res = newSVbool(0);
                     break;
-                    case FLOAT_FLAG:
-                    case DOUBLE_FLAG:
-                        affix->res = newSVnv(0);
+                case CHAR_FLAG:
+                case SHORT_FLAG:
+                case WCHAR_FLAG:
+                case INT_FLAG:
+                case LONG_FLAG:
+                case LONGLONG_FLAG:
+                    affix->res = newSViv(0);
+                case UCHAR_FLAG:
+                case USHORT_FLAG:
+                case UINT_FLAG:
+                case ULONG_FLAG:
+                case ULONGLONG_FLAG:
+                    affix->res = newSVuv(0);
                     break;
-                    default:
-                        affix->res = newSV(0);
-                        break;
+                case FLOAT_FLAG:
+                case DOUBLE_FLAG:
+                    affix->res = newSVnv(0);
+                    break;
+                default:
+                    affix->res = newSV(0);
+                    break;
                 }
             }
         } else
@@ -609,6 +604,7 @@ XS_EXTERNAL(boot_Affix) {
     SV * vmsize = get_sv("Affix::VMSize", 0);
     MY_CXT.cvm = dcNewCallVM(vmsize == NULL ? 8192 : SvIV(vmsize));
     dcMode(MY_CXT.cvm, DC_CALL_C_DEFAULT);
+
     // dcReset(MY_CXT.cvm);
 
     // Start exposing API

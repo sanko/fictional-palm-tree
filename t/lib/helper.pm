@@ -145,7 +145,6 @@ package t::lib::helper {
     pass "generate valgrind suppressions";
     done_testing;
 
-
                 #~ use Data::Dump;
                 #~ ddx \@cmd;
                 my ( $out, $err, @res ) = Capture::Tiny::capture(
@@ -188,27 +187,6 @@ package t::lib::helper {
    fun:S_docatch
    fun:Perl_runops_standard
    fun:Perl_call_sv
-   fun:_ZL11Affix_affixP2cv
-   fun:Perl_pp_entersub
-   fun:Perl_runops_standard
-   fun:perl_run
-   fun:main
-}
-{
-   <insert_a_suppression_name_here>
-   Memcheck:Overlap
-   fun:__memcpy_chk
-   fun:XS_Cwd_abs_path
-   fun:Perl_pp_entersub
-   fun:Perl_runops_standard
-   fun:S_docatch
-   fun:Perl_runops_standard
-   fun:Perl_call_sv
-   fun:_ZL11Affix_affixP11interpreterP2cv
-   fun:Perl_pp_entersub
-   fun:Perl_runops_standard
-   fun:perl_run
-   fun:main
 }
 
                 $supp = Path::Tiny::tempfile( { realpath => 1 }, 'valgrind_suppression_XXXXXXXXXX' );

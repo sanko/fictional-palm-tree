@@ -67,8 +67,7 @@ package Affix::Builder {
         sub run() {
             my $self = shift;
             return $self->{output} if !!$self;
-
-            warn join ' ', @{ $self->{execute} };
+            CORE::say join ' ', @{ $self->{execute} };
             $self->{status} = !system @{ $self->{execute} };
             $self->{output};
         }

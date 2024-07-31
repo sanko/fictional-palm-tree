@@ -22,6 +22,9 @@ extern "C" {
 #ifndef newSVbool
 #define newSVbool(b) boolSV(b) /* new in perl 5.36 */
 #endif
+#ifndef sv_setbool
+#define sv_setbool sv_setsv     /* new in perl 5.38 */
+#endif
 
 #if __WIN32
 #include <cstdint>
