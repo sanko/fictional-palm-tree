@@ -14,8 +14,12 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
         PUSHMARK(SP);
         EXTEND(SP, (int)afxcb->type->subtypes.size());
 
-        for (const auto & type : afxcb->type->subtypes) {
-            // warn("%s [ptr:%d]", type->stringify.c_str(), type->depth);
+        for (const auto & type : afxcb->type->subtypes) {  
+            if (type->depth) {
+                mPUSHs(ptr2sv(aTHX_ type, dcbArgPointer(args)));
+                continue;
+            }
+
             switch (type->numeric) {
             case VOID_FLAG:
                 // ...skip?
@@ -98,11 +102,7 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
                 //~ #define UNION_FLAG 'u'
                 //~ #define ARRAY_FLAG '@'
                 //~ #define CODEREF_FLAG '&'
-                //~ #define POINTER_FLAG 'P'
 
-            case POINTER_FLAG:
-                mPUSHs(ptr2sv(aTHX_ type, dcbArgPointer(args)));
-                break;
 
             /*case DC_SIGCHAR_POINTER:
                 {
@@ -173,6 +173,13 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
 
             if (count != 1)
                 warn("Big trouble: callback returned %d items", count);
+
+                
+ if (afxcb->type->restype->depth) {
+                        result->p = sv2ptr(aTHX_ afxcb->type->restype, POPs);
+                    restype_c = DC_SIGCHAR_POINTER;
+ }
+ else
             switch (restype_c) {
             case BOOL_FLAG:
                 result->B = SvTRUEx(POPs);
@@ -256,13 +263,7 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
                 //~ #define UNION_FLAG 'u'
                 //~ #define ARRAY_FLAG '@'
                 //~ #define CODEREF_FLAG '&'
-                //~ #define POINTER_FLAG 'P'
-            case POINTER_FLAG:
-                {
-                    result->p = NULL;  // TODO: sv2ptr(aTHX_ AXT_TYPE_SUBTYPE(c->restype), NULL, POPs);
-                    restype_c = DC_SIGCHAR_POINTER;
-                }
-                break;
+          
                 //~ #define SV_FLAG '?'
             default:
                 croak("Attempt to return unknown or unhandled type from CodeRef: %s",

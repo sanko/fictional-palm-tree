@@ -51,6 +51,8 @@ int ** test_6( int rows, int cols){
 int test_10(int x){ return -x; }
 typedef int (*callback)(int, int);
 int test_11(callback cb, int a, int b){ return cb(a, b); }
+typedef int* (*ptr_callback)(int *);
+int * test_12(ptr_callback cb, int* a){ return cb(a); }
 
 #
 subtest 'affix' => sub {
@@ -65,6 +67,7 @@ subtest 'affix' => sub {
     ok affix( $lib, [ test_6 => 'test_9' ] => [ Int, Int ]            => Pointer [ Pointer [ Int, 1 ], 5 ] ), 'int ** test_8(int, int)';
     ok affix( $lib, 'test_10' => [ Int ]            => Int ), 'int test_10(int)';
     ok affix( $lib, 'test_11' => [ CodeRef[[Int, Int] => Int], Int, Int ]            => Int ), 'int test_11(callback, int, int)';
+    ok affix( $lib, 'test_12' => [ CodeRef[[Pointer[Int]] => Pointer[Int]], Pointer[Int] ]            => Pointer[Int ]), 'int* test_12(ptr_callback, int*)';
 };
 like capture_stderr { test_1(100) }, qr[^ok at .+$],     'test_1(100)';
 like capture_stderr { test_1(99) },  qr[^not ok at .+$], 'test_1(99)';
@@ -84,7 +87,18 @@ isa_ok test_8( 5, 3 ), ['Affix::Pointer'], 'test_8(5, 3)';
 is test_9( 5, 1 ), [ 0 .. 4 ], 'test_9(5, 1)';
 is test_10( -20), 20, 'test_10(-20)';
 is test_10(20), -20, 'test_10(20)';
-is test_11(sub { my ($one, $two) = @_; is \@_, [1, 999] , 'callback args'; $one + $two }, 1, 999), 1000, 'test_11( sub { ... }, 1, 999)';
-is test_11(sub { my ($one, $two) = @_; is \@_, [1, -999] , 'callback args'; $one + $two }, 1, -999), -998, 'test_11( sub { ... }, 1, -999)';
+is test_11(sub { my ($one, $two) = @_; is \@_, [1, 999] , 'callback args: 1, 999'; $one + $two }, 1, 999), 1000, 'test_11( sub { ... }, 1, 999)';
+is test_11(sub { my ($one, $two) = @_; is \@_, [1, -999] , 'callback args: 1, -999'; $one + $two }, 1, -999), -998, 'test_11( sub { ... }, 1, -999)';
+
+isa_ok my $ptr = test_12(sub { 
+use Data::Dump;
+ddx \@_;
+# my ($one, $two) = @_; is \@_, [1, -999] , 'callback args: 1, -999'; $one + $two 
+
+}, [1, 3, 5, 7, 9]
+), ['Affix::Pointer'], 'test_12( sub { ... },[...]])';
+
+
+
 #
 done_testing;
