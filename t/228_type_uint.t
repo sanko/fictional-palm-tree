@@ -48,6 +48,8 @@ unsigned int ** test_6( unsigned int rows, unsigned int cols){
   }
   return arr;
 }
+typedef unsigned int (*callback)( unsigned int, unsigned int);
+unsigned int test_10(callback cb,  unsigned int a,  unsigned int b){ return cb(a, b); }
 
 #
 subtest 'affix' => sub {
@@ -60,6 +62,7 @@ subtest 'affix' => sub {
     ok affix( $lib, [ test_6 => 'test_7' ] => [ UInt, UInt ]                => Pointer [ Pointer [UInt], 3 ] ),      'unsigned int ** test_7(unsigned int, unsigned int)';
     ok affix( $lib, [ test_6 => 'test_8' ] => [ UInt, UInt ]                => Pointer [ Pointer [UInt] ] ),         'unsigned int ** test_8(unsigned int, unsigned int)';
     ok affix( $lib, [ test_6 => 'test_9' ] => [ UInt, UInt ]                => Pointer [ Pointer [ UInt, 1 ], 5 ] ), 'unsigned int ** test_8(unsigned int, unsigned int)';
+    ok affix( $lib, test_10 => [ CodeRef[[UInt, Int] => UInt], UInt, UInt ]            => UInt ), 'int test_10(callback, unsigned int, unsigned int)';
 };
 like capture_stderr { test_1(100) }, qr[^ok at .+$],     'test_1(100)';
 like capture_stderr { test_1(99) },  qr[^not ok at .+$], 'test_1(99)';
@@ -77,5 +80,6 @@ like test_7( 5, 3 ), array {
 }, 'test_7(5, 3)';
 isa_ok test_8( 5, 3 ), ['Affix::Pointer'], 'test_8(5, 3)';
 is test_9( 5, 1 ), [ 0 .. 4 ], 'test_9(5, 1)';
+is test_10(sub { my ($one, $two) = @_; is \@_, [1, 999] , 'callback args'; $one + $two }, 1, 999), 1000, 'test_10( sub { ... }, 1, 999)';
 #
 done_testing;
