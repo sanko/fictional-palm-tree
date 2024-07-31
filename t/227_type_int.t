@@ -48,6 +48,7 @@ int ** test_6( int rows, int cols){
   }
   return arr;
 }
+int test_10(int x){ return -x; }
 
 #
 subtest 'affix' => sub {
@@ -60,6 +61,7 @@ subtest 'affix' => sub {
     ok affix( $lib, [ test_6 => 'test_7' ] => [ Int, Int ]            => Pointer [ Pointer [Int], 3 ] ),      'int ** test_7(int, int)';
     ok affix( $lib, [ test_6 => 'test_8' ] => [ Int, Int ]            => Pointer [ Pointer [Int] ] ),         'int ** test_8(int, int)';
     ok affix( $lib, [ test_6 => 'test_9' ] => [ Int, Int ]            => Pointer [ Pointer [ Int, 1 ], 5 ] ), 'int ** test_8(int, int)';
+    ok affix( $lib, 'test_10' => [ Int ]            => Int ), 'int test_10(int)';
 };
 like capture_stderr { test_1(100) }, qr[^ok at .+$],     'test_1(100)';
 like capture_stderr { test_1(99) },  qr[^not ok at .+$], 'test_1(99)';
@@ -77,5 +79,7 @@ like test_7( 5, 3 ), array {
 }, 'test_7(5, 3)';
 isa_ok test_8( 5, 3 ), ['Affix::Pointer'], 'test_8(5, 3)';
 is test_9( 5, 1 ), [ 0 .. 4 ], 'test_9(5, 1)';
+is test_10( -20), 20, 'test_10(-20)';
+is test_10(20), -20, 'test_10(20)';
 #
 done_testing;

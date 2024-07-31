@@ -75,8 +75,32 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         } else if (UNLIKELY(!SvOK(data)))
             warn("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         break;
+case UINT_FLAG:
+        if (LIKELY(SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVAV)) {
+            AV * list = MUTABLE_AV(SvRV(data));
+            size_t length = av_count(list);
+            if (target == nullptr)
+                Newxz(target, length + 1, int);
+            UV ptr_iv = PTR2UV(target);
+            unsigned int n;
+            SV ** _tmp;
+            for (size_t i = 0; i < length; i++) {
+                _tmp = av_fetch(list, i, 0);
+                if (UNLIKELY(_tmp == nullptr))
+                    break;
+                n = SvUV(*_tmp);
+                Copy(&n, INT2PTR(int *, ptr_iv + (i * SIZEOF_UINT)), 1, unsigned int);
+            }
+        } else if (UNLIKELY(SvUOK(data))) {
+            if (target == nullptr)
+                Newxz(target, 1, unsigned int);
+            unsigned int n = SvUV(data);
+            Copy(&n, target, 1, unsigned int);
+        } else if (UNLIKELY(!SvOK(data)))
+            warn("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
+        break;
+
         /*
-        #define UINT_FLAG 'j'
         #define LONG_FLAG 'l'
         #define ULONG_FLAG 'm'
         #define LONGLONG_FLAG 'x'
@@ -196,8 +220,22 @@ SV * ptr2sv(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
             sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
         }
         break;
+    case UINT_FLAG:
+        if (depth == type->depth && type->length.at(depth - 1) == 1)
+            return newSVuv(*(unsigned int *)target);
+        {
+            AV * ret_av = newAV_mortal();
+            for (auto n = 0; n < type->length.at(depth - 1); ++n) {
+                DCpointer now = INT2PTR(DCpointer, ptr_iv + (SIZEOF_UINT * n));
+                if (now == nullptr)
+                    return newSV(0);
+                av_push(MUTABLE_AV(ret_av), newSVuv(*(unsigned int *)now));
+            }
+            sv_setsv(ret, newRV_inc(MUTABLE_SV(ret_av)));
+        }
+        break;
     default:
-        croak("oh, okay...");
+        croak("oh, okay... I need to finish ptr2sv");
     };
     return ret;
 }
