@@ -125,6 +125,34 @@ XS_INTERNAL(Affix_Pointer_deref_hash) {
     XSRETURN(1);
 };
 
+XS_INTERNAL(Affix_Pointer_deref_list) {
+    dVAR;
+    dXSARGS;
+    if (items < 1)
+        croak_xs_usage(cv, "$pointer");
+    warn("DEREF LIST!!!!!!!!!!!!!!!!!!!!!!");
+
+    {
+        char * RETVAL;
+        dXSTARG;
+        Affix_Pointer * ptr;
+
+        if (sv_derived_from(ST(0), "Affix::Pointer")) {
+            IV tmp = SvIV((SV *)SvRV(ST(0)));
+            ptr = INT2PTR(Affix_Pointer *, tmp);
+        } else
+            croak("ptr is not of type Affix::Pointer");
+        //     RETVAL = (char *)ptr->address;
+        //     sv_setpv(TARG, RETVAL);
+        //     XSprePUSH;
+        //     PUSHTARG;
+        // if (ptr->type->numeric != STRUCT_FLAG)
+            // XSRETURN(1);  // Just toss back garbage
+        ST(0) = newRV(MUTABLE_SV(newAV_mortal()));
+    }
+    XSRETURN(1);
+};
+
 void boot_Affix_Pointer(pTHX_ CV * cv) {
     PERL_UNUSED_VAR(cv);
 
@@ -141,6 +169,7 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
     (void)newXSproto_portable("Affix::Pointer::(\"\"", Affix_Pointer_as_string, __FILE__, "$;@");
     (void)newXSproto_portable("Affix::Pointer::as_string", Affix_Pointer_as_string, __FILE__, "$;@");
     (void)newXSproto_portable("Affix::Pointer::(%{}", Affix_Pointer_deref_hash, __FILE__, "$;@");
+    (void)newXSproto_portable("Affix::Pointer::(@{}", Affix_Pointer_deref_list, __FILE__, "$;@");
     //  ${}  @{}  %{}  &{}  *{}
 
     (void)newXSproto_portable("Affix::malloc", Affix_malloc, __FILE__, "$");

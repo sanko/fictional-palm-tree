@@ -90,15 +90,27 @@ is test_10(20), -20, 'test_10(20)';
 is test_11(sub { my ($one, $two) = @_; is \@_, [1, 999] , 'callback args: 1, 999'; $one + $two }, 1, 999), 1000, 'test_11( sub { ... }, 1, 999)';
 is test_11(sub { my ($one, $two) = @_; is \@_, [1, -999] , 'callback args: 1, -999'; $one + $two }, 1, -999), -998, 'test_11( sub { ... }, 1, -999)';
 
-isa_ok my $ptr = test_12(sub { 
+
+
+
+isa_ok my $ptr = test_12(
+    sub {
+        my ($ptr) = shift;
+        $ptr->dump(32);
+        use Data::Dump;
+        # ddx $ptr->[1..3];
+        isa_ok $ptr, ['Affix::Pointer'], 'callback arg is a pointer';
+        $ptr;
+    },
+    [ 1, 3, 5, 7, 9 ]
+  ),
+  ['Affix::Pointer'], 'test_12( sub { ... },[...]])';
+
 use Data::Dump;
-ddx \@_;
-# my ($one, $two) = @_; is \@_, [1, -999] , 'callback args: 1, -999'; $one + $two 
-
-}, [1, 3, 5, 7, 9]
-), ['Affix::Pointer'], 'test_12( sub { ... },[...]])';
-
-
+warn $ptr;
+ddx $ptr->dump(32);
+print @$ptr;
+print $ptr->[0];
 
 #
 done_testing;
