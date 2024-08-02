@@ -98,7 +98,7 @@ package Affix::Builder {
                 push @{ $self->{steps} },
                   Affix::Builder::Step::Shell->new(
                     execute => [
-                        'g++',
+                        'c++',
                         (
                             map { '-I' . path($_)->realpath->stringify }
                               @{ $args{include} }
@@ -119,12 +119,12 @@ package Affix::Builder {
             }
             push @{ $self->{steps} }, Affix::Builder::Step::Shell->new(
                 execute => [
-                    'g++',
+                    'c++',
                     '-shared',
                     (
                         map { '-L' . path($_)->realpath->stringify }
                           @{ $args{libs} }
-                    ),          
+                    ),
                     (
                         $args{libperl}
                         ? '-L'
@@ -132,9 +132,8 @@ package Affix::Builder {
                           ->realpath->stringify
                         : ()
                     ),
-                    @objs,            
-                                      @{ $args{ldflags} // () },
-
+                    @objs,
+                    @{ $args{ldflags} // () },
                     '-o',
                     path( $args{output} // 'output.' . $Config{so} )
                       ->absolute->stringify

@@ -6,32 +6,35 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     use ExtUtils::InstallPaths 0.002;
     use File::Spec::Functions qw/catfile catdir rel2abs abs2rel/;
     use Getopt::Long 2.36     qw/GetOptionsFromArray/;
-    use JSON::Tiny            qw[encode_json decode_json];          # Not in CORE
-    use Path::Tiny            qw[path];                             # Not in CORE
+    use JSON::Tiny            qw[encode_json decode_json];         # Not in CORE
+    use Path::Tiny            qw[path];                            # Not in CORE
     use Config;
     my $cwd = path('.')->realpath;
     my $libver;
     my $DEBUG = 0;
 
     sub CFLAGS($) {
-        ( shift || $DEBUG ) ?
-            '-DDEBUG=' .
-            $DEBUG .
-            ' -g3 -pthread -gdwarf-4 -fPIC ' .
-            ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree ' .
-            ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference ' .
-            ' -Wswitch-enum  -Wduplicated-cond ' .
-            ' -Wduplicated-branches -Wsuggest-override'
+        ( shift || $DEBUG )
+          ? '-DDEBUG='
+          . $DEBUG
+          . ' -g3 -pthread -gdwarf-4 -fPIC '
+          . ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree '
+          . ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference '
+          . ' -Wswitch-enum  -Wduplicated-cond '
+          . ' -Wduplicated-branches -Wsuggest-override'
 
-            # .
-            # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
-            :
+          # .
+          # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
+          :
 
-            # $Config{osname} eq 'MSWin32' ? '' :
-            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
+          # $Config{osname} eq 'MSWin32' ? '' :
+' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto';
     }
     sub LDFLAGS($) { ' -flto '; }
-    sub CPPVER     {'c++17'}       # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
+
+    sub CPPVER {
+        'c++17';
+    }    # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
 
     #
     sub get_meta {
@@ -48,7 +51,8 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             $dir->visit(
                 sub {
                     my ( $path, $state ) = @_;
-                    $state->{$path} = $path if $path->is_file && $path =~ $pattern;
+                    $state->{$path} = $path
+                      if $path->is_file && $path =~ $pattern;
                 },
                 { recurse => 1 }
             )
@@ -58,15 +62,29 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
     %actions = (
         build => sub {
             my %opt     = @_;
-            my %modules = map { $_->relative => $cwd->child( 'blib', $_->relative )->relative } find( qr/\.pm$/,  $cwd->child('lib') );
-            my %docs    = map { $_->relative => $cwd->child( 'blib', $_->relative )->relative } find( qr/\.pod$/, $cwd->child('lib') );
-            my %scripts = map { $_->relative => $cwd->child( 'blib', $_->relative )->relative } find( qr/(?:)/,   $cwd->child('script') );
-            my %sdocs   = map { $_           => delete $scripts{$_} } grep {/.pod$/} keys %scripts;
+            my %modules = map {
+                $_->relative => $cwd->child( 'blib', $_->relative )->relative
+            } find( qr/\.pm$/, $cwd->child('lib') );
+            my %docs = map {
+                $_->relative => $cwd->child( 'blib', $_->relative )->relative
+            } find( qr/\.pod$/, $cwd->child('lib') );
+            my %scripts = map {
+                $_->relative => $cwd->child( 'blib', $_->relative )->relative
+            } find( qr/(?:)/, $cwd->child('script') );
+            my %sdocs =
+              map { $_ => delete $scripts{$_} } grep { /.pod$/ } keys %scripts;
             build_dyncall(%opt);
-            build_affix( [ find( qr/\.c(?:xx)?$/, $cwd->child('lib') ) ], %opt );
-            my %shared = map { $_->relative => $cwd->child( qw[blib lib auto share dist], $opt{meta}->name )->relative }
-                find( qr/(?:)/, $cwd->child('share') );
-            pm_to_blib( { %modules, %docs, %scripts, %shared }, $cwd->child(qw[blib lib auto]) );
+            build_affix( [ find( qr/\.c(?:xx)?$/, $cwd->child('lib') ) ],
+                %opt );
+            my %shared = map {
+                $_->relative =>
+                  $cwd->child( qw[blib lib auto share dist], $opt{meta}->name )
+                  ->relative
+            } find( qr/(?:)/, $cwd->child('share') );
+            pm_to_blib(
+                { %modules, %docs, %scripts, %shared },
+                $cwd->child(qw[blib lib auto])
+            );
             make_executable($_) for values %scripts;
             $cwd->child(qw[blib arch])->mkdir( { verbose => $opt{verbose} } );
             return 0;
@@ -76,22 +94,32 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             $actions{build}->(%opt) if not -d 'blib';
             require TAP::Harness::Env;
             TAP::Harness::Env->create(
-                {   verbosity => $opt{verbose},
+                {
+                    verbosity => $opt{verbose},
                     jobs      => $opt{jobs} // 1,
                     color     => !!-t STDOUT,
-                    lib       => [ map { $cwd->child( 'blib', $_ )->canonpath } qw[arch lib] ]
+                    lib       => [
+                        map { $cwd->child( 'blib', $_ )->canonpath }
+                          qw[arch lib]
+                    ]
                 }
-            )->runtests( map { $_->relative->stringify } find( qr/\.t$/, $cwd->child('t') ) )->has_errors;
+              )
+              ->runtests( map { $_->relative->stringify }
+                  find( qr/\.t$/, $cwd->child('t') ) )->has_errors;
         },
         install => sub {
             my %opt = @_;
             $actions{build}->(%opt) if not -d 'blib';
-            install( $opt{install_paths}->install_map, @opt{qw[verbose dry_run uninst]} );
+            install(
+                $opt{install_paths}->install_map,
+                @opt{qw[verbose dry_run uninst]}
+            );
             return 0;
         },
         clean => sub {
             my %opt = @_;
-            path($_)->remove_tree( { verbose => $opt{verbose}, safe => 0 } ) for qw[blib temp Build _build_params MYMETA.json];
+            path($_)->remove_tree( { verbose => $opt{verbose}, safe => 0 } )
+              for qw[blib temp Build _build_params MYMETA.json];
             return 0;
         },
     );
@@ -100,78 +128,107 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         my $action = @ARGV && $ARGV[0] =~ /\A\w+\z/ ? shift @ARGV : 'build';
         $actions{$action} // exit say "No such action: $action";
         my $build_params = path('_build_params');
-        my ( $env, $bargv ) = $build_params->is_file ? @{ decode_json( $build_params->slurp ) } : ();
+        my ( $env, $bargv ) =
+          $build_params->is_file
+          ? @{ decode_json( $build_params->slurp ) }
+          : ();
         GetOptionsFromArray(
             [ @ARGV, @$env, @$bargv ],
             \my %opt,
             qw[install_base=s install_path=s% installdirs=s destdir=s prefix=s config=s% uninst:1 verbose:1 dry_run:1 pureperl-only:1 create_packlist=i jobs=i force:1 debug=i]
         );
-        $_ = detildefy($_) for grep {defined} @opt{qw[install_base destdir prefix]}, values %{ $opt{install_path} };
-        @opt{qw[config meta]} = ( ExtUtils::Config->new( $opt{config} ), get_meta() );
-        exit $actions{$action}->( %opt, install_paths => ExtUtils::InstallPaths->new( %opt, dist_name => $opt{meta}->name ) );
+        $_ = detildefy($_)
+          for grep { defined } @opt{qw[install_base destdir prefix]},
+          values %{ $opt{install_path} };
+        @opt{qw[config meta]} =
+          ( ExtUtils::Config->new( $opt{config} ), get_meta() );
+        exit $actions{$action}->(
+            %opt,
+            install_paths => ExtUtils::InstallPaths->new(
+                %opt, dist_name => $opt{meta}->name
+            )
+        );
     }
 
     sub Build_PL {
         my $meta = get_meta();
-        printf "Creating new 'Build' script for '%s' version '%s'\n", $meta->name, $meta->version;
-        $cwd->child('Build')->spew( sprintf "#!%s\nuse lib '%s', '.';\nuse %s;\n%s::Build();\n", $^X, $cwd->canonpath, __PACKAGE__, __PACKAGE__ );
+        printf "Creating new 'Build' script for '%s' version '%s'\n",
+          $meta->name, $meta->version;
+        $cwd->child('Build')
+          ->spew( sprintf "#!%s\nuse lib '%s', '.';\nuse %s;\n%s::Build();\n",
+            $^X, $cwd->canonpath, __PACKAGE__, __PACKAGE__ );
         make_executable('Build');
-        my @env = defined $ENV{PERL_MB_OPT} ? split_like_shell( $ENV{PERL_MB_OPT} ) : ();
+        my @env =
+          defined $ENV{PERL_MB_OPT}
+          ? split_like_shell( $ENV{PERL_MB_OPT} )
+          : ();
         $cwd->child('_build_params')->spew( encode_json( [ \@env, \@ARGV ] ) );
         $meta->save('MYMETA.json');
     }
 
     sub build_dyncall {
         my (%opt) = @_;
-        my $pre = Path::Tiny->cwd->child( qw[blib arch auto], $opt{meta}->name )->absolute;
-        return                                             if !$opt{force} && -d $pre;
-        die "Can't build xs files under --pureperl-only\n" if $opt{'pureperl-only'};
+        my $pre = Path::Tiny->cwd->child( qw[blib arch auto], $opt{meta}->name )
+          ->absolute;
+        return if !$opt{force} && -d $pre;
+        die "Can't build xs files under --pureperl-only\n"
+          if $opt{'pureperl-only'};
         my ($kid) = Path::Tiny->cwd->child('dyncall');
         my $cwd = Path::Tiny->cwd->absolute;
         chdir $kid->absolute->stringify;
         my $make = $opt{config}->get('make');
-        my $configure
-            = 'sh ./configure --prefix=' .
-            $pre->absolute .
-            ' CFLAGS="-fPIC ' .
-            ( $opt{config}->get('osname') =~ /bsd/ ? '' : CFLAGS( $opt{debug} ) ) .
-            '" LDFLAGS="' .
-            ( $opt{config}->get('osname') =~ /bsd/ ? '' : LDFLAGS( $opt{debug} ) ) . '"';
+        my $configure =
+            'sh ./configure --prefix='
+          . $pre->absolute
+          . ' CFLAGS="-fPIC '
+          . (
+            $opt{config}->get('osname') =~ /bsd/ ? '' : CFLAGS( $opt{debug} ) )
+          . '" LDFLAGS="'
+          . (
+            $opt{config}->get('osname') =~ /bsd/ ? '' : LDFLAGS( $opt{debug} ) )
+          . '"';
 
         if ( $opt{config}->get('osname') eq 'MSWin32' ) {
             require Devel::CheckBin;
             for my $exe ( $make, qw[gmake nmake mingw32-make] ) {
                 next unless Devel::CheckBin::check_bin($exe);
-                $make      = $exe;
-                $configure = '.\configure.bat /target-x64 /tool-' . $opt{config}->get('cc') . ' /make-';
+                $make = $exe;
+                $configure =
+                    '.\configure.bat /target-x64 /tool-'
+                  . $opt{config}->get('cc')
+                  . ' /make-';
                 if ( $exe eq 'nmake' ) {
                     $configure .= 'nmake';
-                    $make      .= ' -f Nmakefile'. ($opt{verbose}?'':' /S');
+                    $make .= ' -f Nmakefile' . ( $opt{verbose} ? '' : ' /S' );
                 }
                 else {
                     $configure .= 'make';
-                    $make = 'gmake AS="gcc -c " CC=gcc VPATH=. PREFIX="' . $pre->absolute . '"' . ( $opt{verbose} ? '' : ' -s' );
+                    $make =
+                        'gmake AS="gcc -c " CC=gcc VPATH=. PREFIX="'
+                      . $pre->absolute . '"'
+                      . ( $opt{verbose} ? '' : ' -s' );
                 }
                 last;
             }
-            ( ( $opt{verbose} && CORE::say($_) ) || 1 ) && system($_) for $configure, $make;
+            ( ( $opt{verbose} && CORE::say($_) ) || 1 ) && system($_)
+              for $configure, $make;
 
             # TODO: use Path::Tiny to visit all headers instead
             my %libs = (
                 dyncall => [
                     qw[dyncall_version.h dyncall_macros.h dyncall_config.h
-                        dyncall_types.h dyncall.h dyncall_signature.h
-                        dyncall_value.h dyncall_callf.h dyncall_alloc.h
+                      dyncall_types.h dyncall.h dyncall_signature.h
+                      dyncall_value.h dyncall_callf.h dyncall_alloc.h
                     ]
                 ],
                 dyncallback => [
                     qw[dyncall_thunk.h dyncall_thunk_x86.h
-                        dyncall_thunk_ppc32.h dyncall_thunk_x64.h
-                        dyncall_thunk_arm32.h dyncall_thunk_arm64.h
-                        dyncall_thunk_mips.h dyncall_thunk_mips64.h
-                        dyncall_thunk_ppc64.h dyncall_thunk_sparc32.h
-                        dyncall_thunk_sparc64.h dyncall_args.h
-                        dyncall_callback.h
+                      dyncall_thunk_ppc32.h dyncall_thunk_x64.h
+                      dyncall_thunk_arm32.h dyncall_thunk_arm64.h
+                      dyncall_thunk_mips.h dyncall_thunk_mips64.h
+                      dyncall_thunk_ppc64.h dyncall_thunk_sparc32.h
+                      dyncall_thunk_sparc64.h dyncall_args.h
+                      dyncall_callback.h
                     ]
                 ],
                 dynload => [qw[dynload.h]],
@@ -179,9 +236,12 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             $pre->child('include')->mkdir;
             $pre->child('lib')->mkdir;
             for my $lib ( keys %libs ) {
-                $kid->child( $lib, 'lib' . $lib . '_s' . $opt{config}->get('_a') )->copy( $pre->child('lib')->absolute );
+                $kid->child( $lib,
+                    'lib' . $lib . '_s' . $opt{config}->get('_a') )
+                  ->copy( $pre->child('lib')->absolute );
                 for ( @{ $libs{$lib} } ) {
-                    $kid->child( $lib, $_ )->copy( $pre->child( 'include', $_ )->absolute );
+                    $kid->child( $lib, $_ )
+                      ->copy( $pre->child( 'include', $_ )->absolute );
                 }
             }
             $make = $opt{config}->get('make');
@@ -196,9 +256,54 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
 
     sub build_affix {
         my ( $sources, %opt ) = @_;
-        die "Can't build xs files under --pureperl-only\n" if $opt{'pureperl-only'};
-        warn $@                                            if $@;
+        die "Can't build xs files under --pureperl-only\n"
+          if $opt{'pureperl-only'};
+        warn $@ if $@;
         my @objs;
+
+        if(0){
+            use lib './lib';
+            require Affix::Builder;
+            my $builder = Affix::Builder::CXX->new(
+                include  => [ 'dyncall/', 'dyncall/dyncall' ],
+                libperl  => 1,
+                output   => 'blib/arch/auto/Affix/Affix.' . $Config{so},
+                cxxflags => [
+                    qw[
+                      -DVERSION="v0.0.1"
+                      -DXS_VERSION="v0.0.1"
+                      -DNDEBUG -DBOOST_DISABLE_ASSERTS
+                      -fPIC -std=c++17
+                      -Ofast -ftree-vectorize -ffast-math
+                      -fno-align-functions -fno-align-loops
+                      -fno-omit-frame-pointer -c
+                     
+                    ],
+#  -march=core-avx-i -mtune=core-avx-i # unsupported by clang
+
+                    0
+                    ? qw[
+                      -g3 -pthread -gdwarf-4 -fPIC
+                      -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree
+                      -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference
+                      -Wswitch-enum -Wduplicated-cond
+                      -Wduplicated-branches -Wsuggest-override]
+                    : ()
+                ],
+                ldflags => [
+                    qw[
+                      -Ofast -fPIC -s -w
+                      -Ldyncall/dyncall -Ldyncall/dyncallback -Ldyncall/dynload
+                      -lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s]
+                ],
+                source => $sources
+            );
+
+            # ddx $builder;
+            my $lib = $builder->go;
+            return $lib;
+        }
+
         require ExtUtils::CBuilder;
         my $builder = ExtUtils::CBuilder->new(
             quiet  => !$opt{verbose},
@@ -214,11 +319,15 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
         my $pre = Path::Tiny->cwd->child(qw[blib arch auto])->absolute;
         my $source;
         require DynaLoader;
-        my $mod2fname = defined &DynaLoader::mod2fname ? \&DynaLoader::mod2fname : sub { return $_[0][-1] };
-        my @parts     = ('Affix');
-        my $archdir   = catdir( qw/blib arch auto/, @parts );
+        my $mod2fname =
+          defined &DynaLoader::mod2fname
+          ? \&DynaLoader::mod2fname
+          : sub { return $_[0][-1] };
+        my @parts   = ('Affix');
+        my $archdir = catdir( qw/blib arch auto/, @parts );
         mkpath( $archdir, $opt{verbose}, oct '755' ) unless -d $archdir;
-        my $lib_file = catfile( $archdir, $mod2fname->( \@parts ) . '.' . $opt{config}->get('dlext') );
+        my $lib_file = catfile( $archdir,
+            $mod2fname->( \@parts ) . '.' . $opt{config}->get('dlext') );
         my @dirs;
 
         for my $source (@$sources) {
@@ -234,45 +343,64 @@ package builder::mbt v0.0.1 {    # inspired by Module::Build::Tiny 0.047
             #             $source->stat->mtime - path($obj)->stat->mtime
             #             ;
             push @objs,    # misses headers but that's okay
-                ( $opt{force} ||
-                    ( !-f $obj ) ||
-                    ( $source->stat->mtime >= path($obj)->stat->mtime ) ||
-                    ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) ) ?
-                $builder->compile(
+              (      $opt{force}
+                  || ( !-f $obj )
+                  || ( $source->stat->mtime >= path($obj)->stat->mtime )
+                  || ( path(__FILE__)->stat->mtime > path($obj)->stat->mtime ) )
+              ? $builder->compile(
 
-                'C++'        => ( $source =~ /\.cxx$/ ? 1 : 0 ),
-                source       => $source->stringify,
-                defines      => { VERSION => qq/"$version"/, XS_VERSION => qq/"$version"/ },
+                'C++'   => ( $source =~ /\.cxx$/ ? 1 : 0 ),
+                source  => $source->stringify,
+                defines =>
+                  { VERSION => qq/"$version"/, XS_VERSION => qq/"$version"/ },
                 include_dirs => [
-                    $cwd->stringify,  path('./dyncall')->realpath->stringify,
-                    $source->dirname, $pre->child( $opt{meta}->name, 'include' )->stringify
+                    $cwd->stringify,
+                    path('./dyncall')->realpath->stringify,
+                    $source->dirname,
+                    $pre->child( $opt{meta}->name, 'include' )->stringify
                 ],
                 extra_compiler_flags => (
-                    '-fPIC -std=' . CPPVER() . ' ' .    # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
-                        ( $opt{config}->get('osname') =~ /bsd/ ? '' : CFLAGS( $opt{debug} ) ) . ( $DEBUG ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
+                        '-fPIC -std='
+                      . CPPVER() . ' '
+                      . # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
+                      (
+                        $opt{config}->get('osname') =~ /bsd/
+                        ? ''
+                        : CFLAGS( $opt{debug} )
+                      )
+                      . ( $DEBUG ? ' -ggdb3 -g -Wall -Wextra -pedantic' : '' )
                 )
-                ) :
-                $obj;
+              )
+              : $obj;
         }
 
         #~ warn join ', ', @dirs;
         #~ warn join ', ', @parts;
         #~ warn $lib_file;
         return (
-            ( $opt{force} || ( !-f $lib_file ) || grep { path($_)->stat->mtime > path($lib_file)->stat->mtime } @objs ) ?
-                $builder->link(
+            (
+                     $opt{force}
+                  || ( !-f $lib_file )
+                  || grep { path($_)->stat->mtime > path($lib_file)->stat->mtime }
+                  @objs
+            )
+            ? $builder->link(
                 extra_linker_flags => (
-                    ( $opt{config}->get('osname') =~ /bsd/ ? '' : LDFLAGS( $opt{debug} ) ) .
-                        ( join ' ', map { ' -L' . $_ } @dirs ) . ' -L' .
-                        $pre->child( $opt{meta}->name, 'lib' )->stringify .
-                        ' -lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s'
+                    (
+                        $opt{config}->get('osname') =~ /bsd/
+                        ? ''
+                        : LDFLAGS( $opt{debug} )
+                    )
+                    . ( join ' ', map { ' -L' . $_ } @dirs ) . ' -L'
+                      . $pre->child( $opt{meta}->name, 'lib' )->stringify
+                      . ' -lstdc++ -ldyncall_s -ldyncallback_s -ldynload_s'
                 ),
                 objects     => [@objs],
                 lib_file    => $lib_file,
                 module_name => join '::',
                 @parts
-                ) :
-                $lib_file
+              )
+            : $lib_file
         );
     }
 }
