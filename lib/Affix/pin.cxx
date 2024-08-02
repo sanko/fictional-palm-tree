@@ -23,6 +23,11 @@ int set_pin(pTHX_ SV * sv, MAGIC * mg) {
     return 0;
 }
 
+U32 len_pin(pTHX_ SV * sv, MAGIC * mg) {
+    warn("len_pin");
+return 0;
+}
+
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {
     warn("free_pin");
     PERL_UNUSED_VAR(sv);
@@ -40,7 +45,7 @@ void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr) {
     MAGIC * mg_;
     Affix_Pin * pin;
     if (SvMAGICAL(sv)) {
-        mg_ = mg_findext(sv, PERL_MAGIC_ext, &pin_vtbl);
+        mg_ = mg_findext(sv, PERL_MAGIC_ext, &pin_vtbl_scalar);
         if (mg_ != nullptr) {
             pin = (Affix_Pin *)mg_->mg_ptr;
             if (pin->ptr->address == nullptr)
@@ -54,7 +59,7 @@ void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr) {
 
             // set_pin(aTHX_ sv, mg_);
             // sv_dump(sv);
-            // sv_unmagicext(sv, PERL_MAGIC_ext, &pin_vtbl);
+            // sv_unmagicext(sv, PERL_MAGIC_ext, &pin_vtbl_scalar);
             // int x = 99999;
             // sv2ptr(aTHX_ type, sv, 1, pin->ptr->address);
             // Copy( ptr, pin->ptr->address,1, int_ptr);
@@ -66,7 +71,7 @@ void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr) {
     pin = new Affix_Pin(NULL, (Affix_Pointer *)ptr, type);
     warn("[N] Set pointer from %p to %p", pin->ptr->address, ptr);
 
-    mg_ = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl, (char *)pin, 0);
+    mg_ = sv_magicext(sv, NULL, PERL_MAGIC_ext, &pin_vtbl_scalar, (char *)pin, 0);
     // SvREFCNT_dec(sv);              /* refcnt++ in sv_magicext */
     if (pin->type->depth == 0) {  // Easy to forget to pass a size to Pointer[...]
         pin->type->depth = 1;
@@ -127,7 +132,7 @@ XS_INTERNAL(Affix_unpin) {
     dXSARGS;
     if (items != 1)
         croak_xs_usage(cv, "var");
-    if (mg_findext(ST(0), PERL_MAGIC_ext, &pin_vtbl) && !sv_unmagicext(ST(0), PERL_MAGIC_ext, &pin_vtbl))
+    if (mg_findext(ST(0), PERL_MAGIC_ext, &pin_vtbl_scalar) && !sv_unmagicext(ST(0), PERL_MAGIC_ext, &pin_vtbl_scalar))
         XSRETURN_YES;
     XSRETURN_NO;
 }

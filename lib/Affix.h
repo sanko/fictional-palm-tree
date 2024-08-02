@@ -509,11 +509,33 @@ public:
 };
 int get_pin(pTHX_ SV *, MAGIC *);
 int set_pin(pTHX_ SV *, MAGIC *);
+U32 len_pin(pTHX_ SV *, MAGIC *);
 int free_pin(pTHX_ SV *, MAGIC *);
-static MGVTBL pin_vtbl = {
+
+    // int		(*svt_get)	(pTHX_ SV *sv, MAGIC* mg);
+    // int		(*svt_set)	(pTHX_ SV *sv, MAGIC* mg);
+    // U32		(*svt_len)	(pTHX_ SV *sv, MAGIC* mg);
+    // int		(*svt_clear)    (pTHX_ SV *sv, MAGIC* mg);
+    // int		(*svt_free)	(pTHX_ SV *sv, MAGIC* mg);
+    // int		(*svt_copy)	(pTHX_ SV *sv, MAGIC* mg,
+    //                                     SV *nsv, const char *name, I32 namlen);
+    // int		(*svt_dup)	(pTHX_ MAGIC *mg, CLONE_PARAMS *param);
+    // int		(*svt_local)(pTHX_ SV *nsv, MAGIC *mg);
+
+static MGVTBL pin_vtbl_scalar = {
     get_pin,   // get
     set_pin,   // set
-    NULL,      // len
+    len_pin,      // len
+    NULL,      // clear
+    free_pin,  // free
+    NULL,      // copy
+    NULL,      // dup
+    NULL       // local
+};
+static MGVTBL pin_vtbl_list = {
+    NULL,   // get
+    NULL,   // set
+    len_pin,      // len
     NULL,      // clear
     free_pin,  // free
     NULL,      // copy
@@ -521,7 +543,7 @@ static MGVTBL pin_vtbl = {
     NULL       // local
 };
 
-void _pin(pTHX_ SV * sv, Affix_Type * type, DCpointer ptr);  // pin.cxx
+void _pin(pTHX_ SV *, Affix_Type *, DCpointer);  // pin.cxx
 
 // Type system
 SV * bless_ptr(pTHX_ DCpointer, Affix_Type *, const char * = "Affix::Pointer::Unmanaged");
