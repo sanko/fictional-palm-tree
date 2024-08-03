@@ -153,6 +153,16 @@ XS_INTERNAL(Affix_Pointer_deref_list) {
     XSRETURN(1);
 };
 
+
+XS_INTERNAL(Affix_Pointer_FETCH) {
+    dVAR;
+    dXSARGS;
+    if (items != 2)
+        croak_xs_usage(cv, "$pointer, $index");
+    warn ("FETCH!!!!!!!!!!!!!!!! %d", SvIV(ST(1)));
+XSRETURN_EMPTY;
+}
+
 void boot_Affix_Pointer(pTHX_ CV * cv) {
     PERL_UNUSED_VAR(cv);
 
@@ -182,6 +192,12 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
 
     (void)newXSproto_portable("Affix::Pointer::DESTROY", Affix_Pointer_DESTROY, __FILE__, "$");
     (void)newXSproto_portable("Affix::Pointer::Unmanaged::DESTROY", Affix_Pointer_Unmanaged_DESTROY, __FILE__, "$");
+
+
+    (void)newXSproto_portable("Affix::Pointer::FETCH", Affix_Pointer_FETCH, __FILE__, "$$");
+
+
+
 
     set_isa("Affix::Pointer::Unmanaged", "Affix::Pointer");
 }

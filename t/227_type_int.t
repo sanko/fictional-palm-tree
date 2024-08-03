@@ -106,11 +106,35 @@ isa_ok my $ptr = test_12(
   ),
   ['Affix::Pointer'], 'test_12( sub { ... },[...]])';
 
+
+package Affix::Pointer{
+sub TIEARRAY {
+  my $class    = shift;
+  my $elemsize = shift;
+  if ( @_ || $elemsize =~ /\D/ ) {
+    # croak "usage: tie ARRAY, '" . __PACKAGE__ . "', elem_size";
+  }
+  return bless {
+    ELEMSIZE => $elemsize,
+    ARRAY    => [],
+  }, $class;
+}
+}
+
 use Data::Dump;
 warn $ptr;
 ddx $ptr->dump(32);
 print @$ptr;
 print $ptr->[0];
+
+
+
+tie my @array, 'Affix::Pointer', 3;
+
+warn $array[2];
+...;
+
+warn $ptr->FETCH(1);
 
 #
 done_testing;
