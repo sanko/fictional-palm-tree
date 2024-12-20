@@ -147,7 +147,7 @@ XS_INTERNAL(Affix_Pointer_deref_list) {
         //     XSprePUSH;
         //     PUSHTARG;
         // if (ptr->type->numeric != STRUCT_FLAG)
-            // XSRETURN(1);  // Just toss back garbage
+        // XSRETURN(1);  // Just toss back garbage
         ST(0) = newRV(MUTABLE_SV(newAV_mortal()));
     }
     XSRETURN(1);
@@ -159,8 +159,8 @@ XS_INTERNAL(Affix_Pointer_FETCH) {
     dXSARGS;
     if (items != 2)
         croak_xs_usage(cv, "$pointer, $index");
-    warn ("FETCH!!!!!!!!!!!!!!!! %d", SvIV(ST(1)));
-XSRETURN_EMPTY;
+    warn("FETCH!!!!!!!!!!!!!!!! %d", SvIV(ST(1)));
+    XSRETURN_EMPTY;
 }
 
 void boot_Affix_Pointer(pTHX_ CV * cv) {
@@ -195,8 +195,6 @@ void boot_Affix_Pointer(pTHX_ CV * cv) {
 
 
     (void)newXSproto_portable("Affix::Pointer::FETCH", Affix_Pointer_FETCH, __FILE__, "$$");
-
-
 
 
     set_isa("Affix::Pointer::Unmanaged", "Affix::Pointer");

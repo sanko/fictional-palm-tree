@@ -1,7 +1,7 @@
 ---
 jobs:
   etc:
-    name: 'Other Platforms/v${{matrix.perl}}'
+    name: 'FreeBSD/v${{matrix.perl}}'
     needs:
       - setup
     strategy:
@@ -29,7 +29,7 @@ jobs:
             pkg: pkg install -y
             version: 14.1
         perl:
-          - 5.38
+          - "5.40"
       max-parallel: 5
     uses: sanko/actions/.github/workflows/affix-cross.yml@main
     with:
@@ -127,7 +127,7 @@ jobs:
       - env:
           DATA: |
             {
-              "perl":  ["5.40.0", "5.38.2", "5.36.3", "5.34.3", "5.32.1"],
+              "perl":  ["5.40.0"],
               "flags": ["", "-Dusethreads", "-Duselongdouble", "-Dusequadmath"]
             }
         id: matrix
@@ -140,8 +140,6 @@ jobs:
       fail-fast: false
       matrix:
         exclude:
-          - perl: 5.40.0
-          - perl: 5.34.3
           - flags: -Duselongdouble
           - flags: -Dusequadmath
         flags:

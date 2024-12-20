@@ -25,7 +25,7 @@ int set_pin(pTHX_ SV * sv, MAGIC * mg) {
 
 U32 len_pin(pTHX_ SV * sv, MAGIC * mg) {
     warn("len_pin");
-return 0;
+    return 0;
 }
 
 int free_pin(pTHX_ SV * sv, MAGIC * mg) {

@@ -75,7 +75,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         } else if (UNLIKELY(!SvOK(data)))
             warn("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
         break;
-case UINT_FLAG:
+    case UINT_FLAG:
         if (LIKELY(SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVAV)) {
             AV * list = MUTABLE_AV(SvRV(data));
             size_t length = av_count(list);

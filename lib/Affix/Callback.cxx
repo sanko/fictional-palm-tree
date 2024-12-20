@@ -14,7 +14,7 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
         PUSHMARK(SP);
         EXTEND(SP, (int)afxcb->type->subtypes.size());
 
-        for (const auto & type : afxcb->type->subtypes) {  
+        for (const auto & type : afxcb->type->subtypes) {
             if (type->depth) {
                 mPUSHs(ptr2sv(aTHX_ type, dcbArgPointer(args)));
                 continue;
@@ -174,102 +174,101 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
             if (count != 1)
                 warn("Big trouble: callback returned %d items", count);
 
-                
- if (afxcb->type->restype->depth) {
-                        result->p = sv2ptr(aTHX_ afxcb->type->restype, POPs);
-                    restype_c = DC_SIGCHAR_POINTER;
- }
- else
-            switch (restype_c) {
-            case BOOL_FLAG:
-                result->B = SvTRUEx(POPs);
-                restype_c = DC_SIGCHAR_BOOL;
-                break;
-            case CHAR_FLAG:
-            case SCHAR_FLAG:
-                {
-                    SV * sv = POPs;
-                    result->c = SvIOK(sv) ? SvIV(sv) : (char)*SvPV_nolen(sv);
-                    restype_c = DC_SIGCHAR_CHAR;
-                }
-                break;
-            case UCHAR_FLAG:
-                {
-                    SV * sv = POPs;
-                    result->C = SvIOK(sv) ? SvUV(sv) : (unsigned char)*SvPV_nolen(sv);
-                    restype_c = DC_SIGCHAR_UCHAR;
-                }
-                break;
-            case WCHAR_FLAG:
-                {
-                    SV * sv = POPs;
-                    if (SvPOK(sv)) {
-                        STRLEN len;
-                        (void)SvPVutf8x(sv, len);
-                        wchar_t * wc = utf2wchar(aTHX_ sv, len);
-                        result->j = wc[0];
-                        safefree(wc);
-                    } else {
-                        result->j = 0;
+
+            if (afxcb->type->restype->depth) {
+                result->p = sv2ptr(aTHX_ afxcb->type->restype, POPs);
+                restype_c = DC_SIGCHAR_POINTER;
+            } else
+                switch (restype_c) {
+                case BOOL_FLAG:
+                    result->B = SvTRUEx(POPs);
+                    restype_c = DC_SIGCHAR_BOOL;
+                    break;
+                case CHAR_FLAG:
+                case SCHAR_FLAG:
+                    {
+                        SV * sv = POPs;
+                        result->c = SvIOK(sv) ? SvIV(sv) : (char)*SvPV_nolen(sv);
+                        restype_c = DC_SIGCHAR_CHAR;
                     }
-                    restype_c = DC_SIGCHAR_LONG;  // Fake it
+                    break;
+                case UCHAR_FLAG:
+                    {
+                        SV * sv = POPs;
+                        result->C = SvIOK(sv) ? SvUV(sv) : (unsigned char)*SvPV_nolen(sv);
+                        restype_c = DC_SIGCHAR_UCHAR;
+                    }
+                    break;
+                case WCHAR_FLAG:
+                    {
+                        SV * sv = POPs;
+                        if (SvPOK(sv)) {
+                            STRLEN len;
+                            (void)SvPVutf8x(sv, len);
+                            wchar_t * wc = utf2wchar(aTHX_ sv, len);
+                            result->j = wc[0];
+                            safefree(wc);
+                        } else {
+                            result->j = 0;
+                        }
+                        restype_c = DC_SIGCHAR_LONG;  // Fake it
+                    }
+                    break;
+                case SHORT_FLAG:
+                    result->s = POPi;
+                    restype_c = DC_SIGCHAR_SHORT;
+                    break;
+                case USHORT_FLAG:
+                    result->S = POPi;
+                    restype_c = DC_SIGCHAR_USHORT;
+                    break;
+                case INT_FLAG:
+                    result->i = POPi;
+                    restype_c = DC_SIGCHAR_INT;
+                    break;
+                case UINT_FLAG:
+                    result->I = POPi;
+                    restype_c = DC_SIGCHAR_UINT;
+                    break;
+                case LONG_FLAG:
+                    result->j = POPl;
+                    restype_c = DC_SIGCHAR_LONG;
+                    break;
+                case ULONG_FLAG:
+                    result->J = POPi;
+                    restype_c = DC_SIGCHAR_ULONG;
+                    break;
+                case LONGLONG_FLAG:
+                    result->l = POPl;
+                    restype_c = DC_SIGCHAR_LONGLONG;
+                    break;
+                case ULONGLONG_FLAG:
+                    result->L = POPi;
+                    restype_c = DC_SIGCHAR_ULONGLONG;
+                    break;
+                case FLOAT_FLAG:
+                    result->f = POPn;
+                    restype_c = DC_SIGCHAR_FLOAT;
+                    break;
+                case DOUBLE_FLAG:
+                    result->d = POPn;
+                    restype_c = DC_SIGCHAR_DOUBLE;
+                    break;
+                    //~ #define STRING_FLAG 'z'
+                    //~ #define WSTRING_FLAG '<'
+                    //~ #define STDSTRING_FLAG 'Y'
+                    //~ #define STRUCT_FLAG 'A'
+                    //~ #define CPPSTRUCT_FLAG 'B'
+                    //~ #define UNION_FLAG 'u'
+                    //~ #define ARRAY_FLAG '@'
+                    //~ #define CODEREF_FLAG '&'
+
+                    //~ #define SV_FLAG '?'
+                default:
+                    croak("Attempt to return unknown or unhandled type from CodeRef: %s",
+                          afxcb->type->restype->stringify.c_str());
+                    break;
                 }
-                break;
-            case SHORT_FLAG:
-                result->s = POPi;
-                restype_c = DC_SIGCHAR_SHORT;
-                break;
-            case USHORT_FLAG:
-                result->S = POPi;
-                restype_c = DC_SIGCHAR_USHORT;
-                break;
-            case INT_FLAG:
-                result->i = POPi;
-                restype_c = DC_SIGCHAR_INT;
-                break;
-            case UINT_FLAG:
-                result->I = POPi;
-                restype_c = DC_SIGCHAR_UINT;
-                break;
-            case LONG_FLAG:
-                result->j = POPl;
-                restype_c = DC_SIGCHAR_LONG;
-                break;
-            case ULONG_FLAG:
-                result->J = POPi;
-                restype_c = DC_SIGCHAR_ULONG;
-                break;
-            case LONGLONG_FLAG:
-                result->l = POPl;
-                restype_c = DC_SIGCHAR_LONGLONG;
-                break;
-            case ULONGLONG_FLAG:
-                result->L = POPi;
-                restype_c = DC_SIGCHAR_ULONGLONG;
-                break;
-            case FLOAT_FLAG:
-                result->f = POPn;
-                restype_c = DC_SIGCHAR_FLOAT;
-                break;
-            case DOUBLE_FLAG:
-                result->d = POPn;
-                restype_c = DC_SIGCHAR_DOUBLE;
-                break;
-                //~ #define STRING_FLAG 'z'
-                //~ #define WSTRING_FLAG '<'
-                //~ #define STDSTRING_FLAG 'Y'
-                //~ #define STRUCT_FLAG 'A'
-                //~ #define CPPSTRUCT_FLAG 'B'
-                //~ #define UNION_FLAG 'u'
-                //~ #define ARRAY_FLAG '@'
-                //~ #define CODEREF_FLAG '&'
-          
-                //~ #define SV_FLAG '?'
-            default:
-                croak("Attempt to return unknown or unhandled type from CodeRef: %s",
-                      afxcb->type->restype->stringify.c_str());
-                break;
-            }
         }
         PING;
 

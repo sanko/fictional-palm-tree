@@ -1,9 +1,11 @@
 {
    "abstract" : "A Foreign Function Interface eXtension",
-   "author" : "Sanko Robinson <sanko@cpan.org>",
+   "author" : [
+      "Sanko Robinson <sanko@cpan.org>"
+   ],
    "description" : "Affix is a foreign function interface for perl 5 backed by dyncall",
    "dynamic_config" : 1,
-   "generated_by" : "App::mii v0.0.1",
+   "generated_by" : "App::mii v1.0.0",
    "keywords" : [
       "ffi",
       "dll",
@@ -33,7 +35,7 @@
          "prereqs" : {
             "runtime" : {
                "requires" : {
-                  "Data::Dump" : 0
+                  "Data::Dump" : "0"
                }
             }
          }
@@ -86,6 +88,42 @@
       "Affix" : {
          "file" : "lib/Affix.pm",
          "version" : "v0.0.1"
+      },
+      "Affix::Builder" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::C" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::CXX" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::CXX::GNU" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::CXX::MSVC" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::D" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::Go" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::Rust" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::Step" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::Step::Perl" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Builder::Step::Shell" : {
+         "file" : "lib/Affix/Builder.pm"
+      },
+      "Affix::Bulder::Fortran" : {
+         "file" : "lib/Affix/Builder.pm"
       },
       "Affix::Platform" : {
          "file" : "lib/Affix/Platform.pm",

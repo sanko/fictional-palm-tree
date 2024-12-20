@@ -23,7 +23,7 @@ extern "C" {
 #define newSVbool(b) boolSV(b) /* new in perl 5.36 */
 #endif
 #ifndef sv_setbool
-#define sv_setbool sv_setsv     /* new in perl 5.38 */
+#define sv_setbool sv_setsv /* new in perl 5.38 */
 #endif
 
 #if __WIN32
@@ -512,20 +512,20 @@ int set_pin(pTHX_ SV *, MAGIC *);
 U32 len_pin(pTHX_ SV *, MAGIC *);
 int free_pin(pTHX_ SV *, MAGIC *);
 
-    // int		(*svt_get)	(pTHX_ SV *sv, MAGIC* mg);
-    // int		(*svt_set)	(pTHX_ SV *sv, MAGIC* mg);
-    // U32		(*svt_len)	(pTHX_ SV *sv, MAGIC* mg);
-    // int		(*svt_clear)    (pTHX_ SV *sv, MAGIC* mg);
-    // int		(*svt_free)	(pTHX_ SV *sv, MAGIC* mg);
-    // int		(*svt_copy)	(pTHX_ SV *sv, MAGIC* mg,
-    //                                     SV *nsv, const char *name, I32 namlen);
-    // int		(*svt_dup)	(pTHX_ MAGIC *mg, CLONE_PARAMS *param);
-    // int		(*svt_local)(pTHX_ SV *nsv, MAGIC *mg);
+// int		(*svt_get)	(pTHX_ SV *sv, MAGIC* mg);
+// int		(*svt_set)	(pTHX_ SV *sv, MAGIC* mg);
+// U32		(*svt_len)	(pTHX_ SV *sv, MAGIC* mg);
+// int		(*svt_clear)(pTHX_ SV *sv, MAGIC* mg);
+// int		(*svt_free)	(pTHX_ SV *sv, MAGIC* mg);
+// int		(*svt_copy)	(pTHX_ SV *sv, MAGIC* mg,
+//                                     SV *nsv, const char *name, I32 namlen);
+// int		(*svt_dup)	(pTHX_ MAGIC *mg, CLONE_PARAMS *param);
+// int		(*svt_local)(pTHX_ SV *nsv, MAGIC *mg);
 
 static MGVTBL pin_vtbl_scalar = {
     get_pin,   // get
     set_pin,   // set
-    len_pin,      // len
+    len_pin,   // len
     NULL,      // clear
     free_pin,  // free
     NULL,      // copy
@@ -533,9 +533,9 @@ static MGVTBL pin_vtbl_scalar = {
     NULL       // local
 };
 static MGVTBL pin_vtbl_list = {
-    NULL,   // get
-    NULL,   // set
-    len_pin,      // len
+    NULL,      // get
+    NULL,      // set
+    len_pin,   // len
     NULL,      // clear
     free_pin,  // free
     NULL,      // copy
