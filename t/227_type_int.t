@@ -16,17 +16,17 @@ void test_1( int i ) { if (i == 100){ warn("ok"); }else {warn("not ok");}}
 int test_2( ) {return 700;}
 int test_3( int * in, int x ) { return in[x];}
 int test_4( int ** in, int x, int y ) { return in[x][y]; }
-int * test_5( int size ) { 
+int * test_5( int size ) {
     int* ret = (int*)malloc(size * sizeof(int));
     if (ret != NULL)
-    for (int i = 0; i < size; ++i) 
+    for (int i = 0; i < size; ++i)
         ret[i] = i * 2;
   return ret;
 }
 int ** test_6( int rows, int cols){
   // Allocate memory for the rows of pointers
   int** arr = (int**)malloc(rows * sizeof(int*));
-  if (arr == NULL) 
+  if (arr == NULL)
     return NULL; // Error handling: malloc failed
   // Allocate memory for each row (inner array)
   for (int i = 0; i < rows; ++i) {
@@ -43,7 +43,7 @@ int ** test_6( int rows, int cols){
   // Initialize all elements of the array
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
-      arr[i][j] = i * cols + j; 
+      arr[i][j] = i * cols + j;
     }
   }
   return arr;
@@ -124,7 +124,7 @@ print @$ptr;
 print $ptr->[0];
 tie my @array, 'Affix::Pointer', 3;
 warn $array[2];
-...;
+#~ ...;
 warn $ptr->FETCH(1);
 #
 done_testing;
