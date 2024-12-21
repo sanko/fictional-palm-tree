@@ -124,6 +124,7 @@ print @$ptr;
 print $ptr->[0];
 tie my @array, 'Affix::Pointer', 3;
 warn $array[2];
+
 #~ ...;
 warn $ptr->FETCH(1);
 #
