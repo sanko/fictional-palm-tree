@@ -490,6 +490,27 @@ bool push_stdstring(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_pointer(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_struct(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 
+typedef bool (*ret)(pTHX_ Affix *, DCCallVM *);
+bool pop_void(pTHX_ Affix *, DCCallVM *);
+bool pop_bool(pTHX_ Affix *, DCCallVM *);
+bool pop_char(pTHX_ Affix *, DCCallVM *);
+bool pop_uchar(pTHX_ Affix *, DCCallVM *);
+bool pop_wchar(pTHX_ Affix *, DCCallVM *);
+bool pop_short(pTHX_ Affix *, DCCallVM *);
+bool pop_ushort(pTHX_ Affix *, DCCallVM *);
+bool pop_int(pTHX_ Affix *, DCCallVM *);
+bool pop_uint(pTHX_ Affix *, DCCallVM *);
+bool pop_long(pTHX_ Affix *, DCCallVM *);
+bool pop_ulong(pTHX_ Affix *, DCCallVM *);
+bool pop_longlong(pTHX_ Affix *, DCCallVM *);
+bool pop_ulonglong(pTHX_ Affix *, DCCallVM *);
+bool pop_float(pTHX_ Affix *, DCCallVM *);
+bool pop_double(pTHX_ Affix *, DCCallVM *);
+bool pop_wstring(pTHX_ Affix *, DCCallVM *);
+bool pop_stdstring(pTHX_ Affix *, DCCallVM *);
+bool pop_pointer(pTHX_ Affix *, DCCallVM *);
+bool pop_struct(pTHX_ Affix *, DCCallVM *);
+
 // Affix::affix(...) and Affix::wrap(...) System
 class Affix {
 public:  // for now
@@ -513,6 +534,7 @@ public:  // for now
     SV * res = nullptr;  // time over ram
     // std::vector<Affix_Pointer *> pointers;
     std::vector<arg> push_pointers;
+    ret pop_pointer;
 };
 
 // var pin system
