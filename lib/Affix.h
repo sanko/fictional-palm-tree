@@ -430,7 +430,7 @@ public:  // for now...
 class Affix_Pointer {
 public:
     // Affix_Pointer(Affix_Type * type) : type(type) {};
-    Affix_Pointer(Affix_Type * type, DCpointer address) : address(address), type(type) {};
+    Affix_Pointer(Affix_Type * type, DCpointer address) : address(address), type(type) {}
     ~Affix_Pointer() = default;
     DCpointer address = nullptr;
     Affix_Type * type;
@@ -440,7 +440,7 @@ public:
 
 class Affix_Callback {
 public:
-    Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {};
+    Affix_Callback(Affix_Type * type, SV * cv) : type(type), cv(cv) {}
     // Affix_Callback(const std::string & signature, SV * cv) : signature(signature) {};
     ~Affix_Callback() {
         // dTHXa(perl);
@@ -456,7 +456,7 @@ public:
         if (retval != nullptr)
             sv_2mortal(retval);
         safefree(retval);*/
-    };
+    }
 
 public:  // for now
     std::string signature;
@@ -487,7 +487,6 @@ bool push_float(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_double(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_wstring(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_stdstring(pTHX_ Affix *, DCCallVM *, SV *, size_t);
-bool push_coderef(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_pointer(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_struct(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 

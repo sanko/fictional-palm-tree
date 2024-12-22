@@ -116,9 +116,6 @@ bool push_ulong(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
 bool push_longlong(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
     //~ dSP;
     //~ dAXMARK;
-    PING;
-    sv_dump(sv);
-    warn("LONGLONG!");
     dcArgLongLong(cvm, SvIV(sv));
     return true;
 }
@@ -156,34 +153,7 @@ bool push_stdstring(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos)
     dcArgPointer(cvm, static_cast<void *>(&tmp));
     return true;
 }
-bool push_coderef(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
-    PING;
-    sv_dump(sv);
 
-    //~ dSP;
-    //~ dAXMARK;
-    /*
-    SvGETMAGIC(sv);
-    DCpointer cb = nullptr;
-    HV * st;
-    GV * gvp;
-    auto cb_ = sv_2cv(sv, &st, &gvp, 0);
-    if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
-        croak("Type of arg %d to %s must be subroutine (not constant item)", (st_pos + 1), GvNAME(CvGV(cv)));
-    } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
-        IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
-        cb = INT2PTR(DCCallback *, ptr_iv);
-    } else {
-        cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
-        if (!SvREADONLY(sv)) {
-            sv_2mortal(sv_bless(newRV_noinc(MUTABLE_SV(sv)), gv_stashpv("Affix::Callback", GV_ADD)));
-            CvXSUBANY(MUTABLE_SV(sv)).any_iv = PTR2IV(cb);
-        }
-    }
-    dcArgPointer(cvm, cb);
-    */
-    return true;
-}
 bool push_pointer(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
     //~ dSP;
     //~ dAXMARK;
@@ -200,7 +170,6 @@ bool push_struct(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
     // dcArgAggr(cvm, _aggregate(aTHX_ type), sv2ptr(aTHX_ type, ST(st_pos)));
     return true;
 }
-
 
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
     dXSARGS;
@@ -521,12 +490,8 @@ XS_INTERNAL(Affix_affix) {
                                 case STDSTRING_FLAG:
                                     affix->push_pointers.push_back(push_stdstring);
                                     break;
-                                case CODEREF_FLAG:
-                                    affix->push_pointers.push_back(push_coderef);
-                                    break;
-
-                                case POINTER_FLAG:
-                                    // Should be handled way up there based on depth
+                                case CODEREF_FLAG:  // Should be a CV* stuffed in a wrapper
+                                case POINTER_FLAG:  // Should be handled way up there based on depth
                                     affix->push_pointers.push_back(push_pointer);
                                     break;
                                 case STRUCT_FLAG:

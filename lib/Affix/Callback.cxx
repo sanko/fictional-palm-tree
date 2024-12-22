@@ -163,19 +163,22 @@ DCsigchar cbHandler(DCCallback * cb, DCArgs * args, DCValue * result, DCpointer 
         PUTBACK;
         PING;
 
-
         if (restype_c == DC_SIGCHAR_VOID) {
-            call_sv(afxcb->cv, G_DISCARD);
+            call_sv(afxcb->cv, G_VOID | G_EVAL);
             restype_c = DC_SIGCHAR_VOID;
+            SV * err_tmp = ERRSV;
+            if (SvTRUE(ERRSV))
+                warn(SvPV_nolen(err_tmp));
         } else {
-            int count = call_sv(afxcb->cv, G_SCALAR);
+            int count = call_sv(afxcb->cv, G_SCALAR | G_EVAL);
             SPAGAIN;
-
-            if (count != 1)
+            SV * err_tmp = ERRSV;
+            if (SvTRUE(err_tmp)) {
+                warn(SvPV_nolen(err_tmp));
+                restype_c = DC_SIGCHAR_VOID;
+            } else if (count != 1)
                 warn("Big trouble: callback returned %d items", count);
-
-
-            if (afxcb->type->restype->depth) {
+            else if (afxcb->type->restype->depth) {
                 result->p = sv2ptr(aTHX_ afxcb->type->restype, POPs);
                 restype_c = DC_SIGCHAR_POINTER;
             } else

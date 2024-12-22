@@ -102,7 +102,7 @@
       "test" : {
          "requires" : {
             "Capture::Tiny" : "0",
-            "Data::Dump" : "0",
+            "Data::Printer" : "0",
             "TAP::Harness::Env" : "0",
             "Test2::Plugin::UTF8" : "0",
             "Test2::Tools::Compare" : "0",
@@ -222,5 +222,5 @@
       ".clang-format"
    ],
    "x_serialization_backend" : "JSON::PP version 4.16",
-   "x_static_install" : 1
+   "x_static_install" : 0
 }
