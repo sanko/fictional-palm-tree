@@ -1,10 +1,11 @@
 {
+   "X_No_Archive" : "Yes",
    "abstract" : "A Foreign Function Interface eXtension",
    "author" : [
       "Sanko Robinson <sanko@cpan.org>"
    ],
    "description" : "Affix is a foreign function interface for perl 5 backed by dyncall",
-   "dynamic_config" : 1,
+   "dynamic_config" : 0,
    "generated_by" : "App::mii v1.0.0",
    "keywords" : [
       "ffi",
@@ -24,10 +25,13 @@
    },
    "name" : "Affix",
    "no_index" : {
-      "directory" : [],
-      "file" : [],
-      "namespace" : [],
-      "package" : []
+      "directory" : [
+         "t",
+         "xt",
+         "share",
+         "eg",
+         "dyncall"
+      ]
    },
    "optional_features" : {
       "DD" : {
@@ -35,49 +39,71 @@
          "prereqs" : {
             "runtime" : {
                "requires" : {
-                  "Data::Dump" : "0"
+                  "Data::Printer" : "0"
                }
             }
          }
       }
    },
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "DynaLoader" : "0",
+            "ExtUtils::CBuilder" : "0"
+         }
+      },
       "configure" : {
          "requires" : {
+            "CPAN::Meta" : "0",
+            "CPAN::Requirements::Dynamic" : "0",
             "Config" : "0",
-            "Devel::CheckBin" : "0",
-            "ExtUtils::Helpers" : "0.02",
+            "ExtUtils::Helpers" : "0.028",
             "ExtUtils::Install" : "0",
             "ExtUtils::InstallPaths" : "0.002",
+            "File::Basename" : "0",
+            "File::Path" : "0",
             "File::Spec::Functions" : "0",
             "Getopt::Long" : "2.36",
-            "JSON::Tiny" : "0",
-            "Path::Tiny" : "0"
+            "JSON::PP" : "2",
+            "Path::Tiny" : "0.144"
          }
       },
       "develop" : {
+         "recommends" : {
+            "App::mii" : "v1.0.0",
+            "CPAN::Uploader" : "0"
+         },
          "requires" : {
-            "CPAN::Uploader" : "0",
             "Code::TidyAll" : "0",
             "Code::TidyAll::Plugin::ClangFormat" : "0",
+            "Code::TidyAll::Plugin::JSON" : "0",
+            "Code::TidyAll::Plugin::PodChecker" : "0",
+            "Code::TidyAll::Plugin::PodSpell" : "0",
             "Code::TidyAll::Plugin::PodTidy" : "0",
             "Perl::Tidy" : "0",
+            "Pod::Markdown::Github" : "0",
             "Pod::Tidy" : "0",
             "Software::License::Artistic_2_0" : "0",
             "Test::CPAN::Meta" : "0",
-            "Test::MinimumVersion::Fast" : "0",
-            "Test::PAUSE::Permissions" : "0"
+            "Test::MinimumVersion::Fast" : "0.04",
+            "Test::PAUSE::Permissions" : "0.07",
+            "Test::Pod" : "1.41",
+            "Test::Spellunker" : "v0.2.7",
+            "Version::Next" : "0"
          }
       },
       "runtime" : {
          "requires" : {
-            "perl" : "v5.32.0"
+            "Carp" : "0",
+            "XSLoader" : "0",
+            "perl" : "v5.40.0"
          }
       },
       "test" : {
          "requires" : {
             "Capture::Tiny" : "0",
             "Data::Dump" : "0",
+            "TAP::Harness::Env" : "0",
             "Test2::Plugin::UTF8" : "0",
             "Test2::Tools::Compare" : "0",
             "Test2::V0" : "0"
@@ -185,5 +211,16 @@
          "web" : "https://github.com/sanko/Affix.pm"
       }
    },
-   "version" : "v0.0.1"
+   "version" : "v0.0.1",
+   "x_help_wanted" : [
+      "Tester",
+      "Documenter"
+   ],
+   "x_ignore" : [
+      ".tidyallrc",
+      ".gitignore",
+      ".clang-format"
+   ],
+   "x_serialization_backend" : "JSON::PP version 4.16",
+   "x_static_install" : 1
 }
