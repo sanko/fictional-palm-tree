@@ -14,6 +14,194 @@ typedef struct {
 
 START_MY_CXT
 
+bool push_void(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    // Nothing to do here...
+    return true;
+}
+bool push_bool(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgBool(cvm, SvTRUE(sv));  // Anything can be a bool
+    return true;
+}
+bool push_char(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    if (SvIOK(sv)) {
+        dcArgChar(cvm, (I8)SvIV(sv));
+    } else {
+        STRLEN len;
+        char * value = SvPVbyte(sv, len);
+        if (len > 1) {
+            warn("Expected a single character; found %ld", len);
+        }
+        dcArgChar(cvm, (I8)value[0]);
+    }
+
+    return true;
+}
+bool push_uchar(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    if (SvIOK(sv)) {
+        dcArgChar(cvm, (U8)SvIV(sv));
+    } else {
+        STRLEN len;
+        char * value = SvPVbyte(sv, len);
+        if (len > 1) {
+            warn("Expected a single unsigned character; found %ld", len);
+        }
+        dcArgChar(cvm, (U8)value[0]);
+    }
+    return true;
+}
+bool push_wchar(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    if (SvOK(sv)) {
+        wchar_t * str = utf2wchar(aTHX_ sv, 1);
+#if WCHAR_MAX == LONG_MAX
+        // dcArgLong(cvm, str[0]);
+#elif WCHAR_MAX == INT_MAX
+        // dcArgInt(cvm, str[0]);
+#elif WCHAR_MAX == SHORT_MAX
+        // dcArgShort(cvm, str[0]);
+#else
+        // dcArgChar(cvm, str[0]);
+#endif
+        dcArgLongLong(cvm, str[0]);
+        safefree(str);
+    } else
+        dcArgLongLong(cvm, 0);
+    return true;
+}
+bool push_short(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgShort(cvm, SvIV(sv));
+    return true;
+}
+bool push_ushort(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgShort(cvm, SvUV(sv));
+    return true;
+}
+bool push_int(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgInt(cvm, SvIV(sv));
+    return true;
+}
+bool push_uint(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgInt(cvm, SvUV(sv));
+    return true;
+}
+bool push_long(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgLong(cvm, SvIV(sv));
+    return true;
+}
+bool push_ulong(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgLong(cvm, SvUV(sv));
+    return true;
+}
+bool push_longlong(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    PING;
+    sv_dump(sv);
+    warn("LONGLONG!");
+    dcArgLongLong(cvm, SvIV(sv));
+    return true;
+}
+bool push_ulonglong(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgLongLong(cvm, SvUV(sv));
+    return true;
+}
+bool push_float(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+
+    dcArgFloat(cvm, SvNV(sv));
+    return true;
+}
+bool push_double(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+
+    dcArgDouble(cvm, SvNV(sv));
+    return true;
+}
+bool push_wstring(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    PING;
+    sv_dump(sv);
+    return true;
+}
+bool push_stdstring(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    std::string tmp = SvOK(sv) ? SvPV_nolen(sv) : NULL;
+    dcArgPointer(cvm, static_cast<void *>(&tmp));
+    return true;
+}
+bool push_coderef(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    PING;
+    sv_dump(sv);
+
+    //~ dSP;
+    //~ dAXMARK;
+    /*
+    SvGETMAGIC(sv);
+    DCpointer cb = nullptr;
+    HV * st;
+    GV * gvp;
+    auto cb_ = sv_2cv(sv, &st, &gvp, 0);
+    if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
+        croak("Type of arg %d to %s must be subroutine (not constant item)", (st_pos + 1), GvNAME(CvGV(cv)));
+    } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
+        IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
+        cb = INT2PTR(DCCallback *, ptr_iv);
+    } else {
+        cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
+        if (!SvREADONLY(sv)) {
+            sv_2mortal(sv_bless(newRV_noinc(MUTABLE_SV(sv)), gv_stashpv("Affix::Callback", GV_ADD)));
+            CvXSUBANY(MUTABLE_SV(sv)).any_iv = PTR2IV(cb);
+        }
+    }
+    dcArgPointer(cvm, cb);
+    */
+    return true;
+}
+bool push_pointer(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    dcArgPointer(cvm, sv2ptr(aTHX_ affix->subtypes[st_pos], sv));
+    return true;
+}
+bool push_struct(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    //~ dSP;
+    //~ dAXMARK;
+    PING;
+    sv_dump(sv);
+    //~ SV *type = *av_fetch(affix->subtypes, st_pos, 0);
+    //~ Affix_Type * type = affix->subtypes[st_pos];
+    // dcArgAggr(cvm, _aggregate(aTHX_ type), sv2ptr(aTHX_ type, ST(st_pos)));
+    return true;
+}
+
+
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
     dXSARGS;
 
@@ -34,188 +222,31 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
               items);
 
     size_t st_pos = 0;
-
-    for (const auto & type : affix->subtypes) {
-        // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
-        if (type->depth) {
-            if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
-                Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
-                dcArgPointer(cvm, pointer->address);  // Even if it's NULL
-            } else {
-                dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos)));
-            }
-            ++st_pos;
-            continue;
-        }
-
-        switch (type->numeric) {
-        case VOID_FLAG:
-            break;  // ...skip?
-        case BOOL_FLAG:
-            dcArgBool(cvm, SvTRUE(ST(st_pos)));  // Anything can be a bool
-            break;
-        case CHAR_FLAG:
-            {
-                SV * arg = ST(st_pos);
-                if (SvIOK(arg)) {
-                    dcArgChar(cvm, (I8)SvIV(arg));
-                } else {
-                    STRLEN len;
-                    char * value = SvPVbyte(arg, len);
-                    if (len > 1) {
-                        warn("Expected a single character; found %ld", len);
-                    }
-                    dcArgChar(cvm, (I8)value[0]);
-                }
-                break;
-            }
-        case UCHAR_FLAG:
-            {
-                SV * arg = ST(st_pos);
-                if (SvIOK(arg)) {
-                    dcArgChar(cvm, (U8)SvIV(arg));
-                } else {
-                    STRLEN len;
-                    char * value = SvPVbyte(arg, len);
-                    if (len > 1) {
-                        warn("Expected a single unsigned character; found %ld", len);
-                    }
-                    dcArgChar(cvm, (U8)value[0]);
-                }
-                break;
-            }
-        case WCHAR_FLAG:
-            {
-                SV * arg = ST(st_pos);
-                if (SvOK(arg)) {
-                    wchar_t * str = utf2wchar(aTHX_ ST(st_pos), 1);
-#if WCHAR_MAX == LONG_MAX
-                    // dcArgLong(cvm, str[0]);
-#elif WCHAR_MAX == INT_MAX
-                    // dcArgInt(cvm, str[0]);
-#elif WCHAR_MAX == SHORT_MAX
-                    // dcArgShort(cvm, str[0]);
-#else
-                    // dcArgChar(cvm, str[0]);
-#endif
-                    dcArgLongLong(cvm, str[0]);
-                    safefree(str);
-                } else
-                    dcArgLongLong(cvm, 0);
-                break;
-            }
-        case SHORT_FLAG:
-            dcArgShort(cvm, SvIV(ST(st_pos)));
-            break;
-        case USHORT_FLAG:
-            dcArgShort(cvm, SvUV(ST(st_pos)));
-            break;
-        case INT_FLAG:
-            dcArgInt(cvm, SvIV(ST(st_pos)));
-            break;
-        case UINT_FLAG:
-            dcArgInt(cvm, SvUV(ST(st_pos)));
-            break;
-        case LONG_FLAG:
-            dcArgLong(cvm, SvIV(ST(st_pos)));
-            break;
-        case ULONG_FLAG:
-            dcArgLong(cvm, SvUV(ST(st_pos)));
-            break;
-        case LONGLONG_FLAG:
-            dcArgLongLong(cvm, SvIV(ST(st_pos)));
-            break;
-        case ULONGLONG_FLAG:
-            dcArgLongLong(cvm, SvUV(ST(st_pos)));
-            break;
-        case FLOAT_FLAG:
-            dcArgFloat(cvm, SvNV(ST(st_pos)));
-            break;
-        case DOUBLE_FLAG:
-            dcArgDouble(cvm, SvNV(ST(st_pos)));
-            break;
-        case WSTRING_FLAG:
-            { /*
-DCpointer ptr = NULL;
-SV *arg = ST(st_pos);
-if (SvOK(arg)) {
-  if (a->temp_ptrs == NULL) Newxz(affix->temp_ptrs, num_args, DCpointer);
-  affix->temp_ptrs[st_pos] =
-      sv2ptr(aTHX_ MUTABLE_SV(affix->arg_info[arg_pos]), arg);
-  ptr = *(DCpointer *)(affix->temp_ptrs[st_pos]);
-}
-dcArgPointer(cvm, ptr);*/
-            }
-            break;
-        case STDSTRING_FLAG:
-            {
-                SV * arg = ST(st_pos);
-                std::string tmp = SvOK(arg) ? SvPV_nolen(arg) : NULL;
-                dcArgPointer(cvm, static_cast<void *>(&tmp));
-            }
-            break;
-        case CODEREF_FLAG:
-            {
-                SV * xsub_tmp_sv = ST(st_pos);
-                SvGETMAGIC(xsub_tmp_sv);
-                DCpointer cb = nullptr;
-                HV * st;
-                GV * gvp;
-                auto cb_ = sv_2cv(xsub_tmp_sv, &st, &gvp, 0);
-                if (!cb_ || UNLIKELY(!SvROK(ST(st_pos)) && SvTYPE(SvRV(ST(st_pos))) == SVt_PVCV)) {
-                    croak(
-                        "Type of arg %d to %s must be subroutine (not constant item)", (st_pos + 1), GvNAME(CvGV(cv)));
-                } else if (sv_derived_from(newRV_noinc((ST(st_pos))), "Affix::Callback")) {
-                    IV ptr_iv = CvXSUBANY(ST(st_pos)).any_iv;
-                    cb = INT2PTR(DCCallback *, ptr_iv);
-                } else {
-                    cb = (DCCallback *)sv2ptr(aTHX_ type, ST(st_pos));
-                    if (!SvREADONLY(xsub_tmp_sv)) {
-                        sv_2mortal(
-                            sv_bless(newRV_noinc(MUTABLE_SV(xsub_tmp_sv)), gv_stashpv("Affix::Callback", GV_ADD)));
-                        CvXSUBANY(MUTABLE_SV(xsub_tmp_sv)).any_iv = PTR2IV(cb);
-                    }
-                }
-                dcArgPointer(cvm, cb);
-            }
-            break;
-
-            //~ #define STRING_FLAG 'z'
-            //~ #define WSTRING_FLAG '<'
-            //~ #define STDSTRING_FLAG 'Y'
-            //~ #define STRUCT_FLAG 'A'
-            //~ #define CPPSTRUCT_FLAG 'B'
-            //~ #define UNION_FLAG 'u'
-            //~ #define ARRAY_FLAG '@'
-            //~ #define CODEREF_FLAG '&'
-        case POINTER_FLAG:
-            {
-                //~ sv_dump(*av_fetch(affix->subtypes, st_pos, 0));
-                //~ sv_dump(AXT_TYPE_SUBTYPE(*av_fetch(affix->subtypes, st_pos, 0)));
-
-                SV * const xsub_tmp_sv = ST(st_pos);
-                SvGETMAGIC(xsub_tmp_sv);
-
-
-                // dcArgPointer(cvm, sv2ptr(aTHX_ AXT_TYPE_SUBTYPE(*av_fetch(affix->subtypes, st_pos, 0)),
-                //                          xsub_tmp_sv));
-                break;
-            }
-        case STRUCT_FLAG:
-            {
-                //~ SV *type = *av_fetch(affix->subtypes, st_pos, 0);
-                Affix_Type * type = affix->subtypes[st_pos];
-                // dcArgAggr(cvm, _aggregate(aTHX_ type), sv2ptr(aTHX_ type, ST(st_pos)));
-                break;
-            }
-        default:
-            //~ sv_dump(*av_fetch(affix->subtypes, st_pos, 0));
-            croak("Unhandled argument type: %s", type->stringify.c_str());
-        }
-        ++st_pos;
+    for (auto && fn : affix->push_pointers) {
+        if (fn(aTHX_ affix, cvm, ST(st_pos), st_pos))
+            st_pos++;
     }
 
+
+    /*
+        for (const auto & type : affix->subtypes) {
+            // warn("[%d] %s [ptr:%d]", st_pos, type->stringify.c_str(), type->depth);
+            if (type->depth) {
+                if (SvROK(ST(st_pos)) && sv_derived_from(ST(st_pos), "Affix::Pointer")) {
+                    Affix_Pointer * pointer = INT2PTR(Affix_Pointer *, SvIV(SvRV(ST(st_pos))));
+                    dcArgPointer(cvm, pointer->address);  // Even if it's NULL
+                } else {
+                    dcArgPointer(cvm, sv2ptr(aTHX_ type, ST(st_pos)));
+                }
+                ++st_pos;
+                continue;
+            }
+        }*/
+
+
     if (affix->restype->depth) {
+        warn("Here at line %d", __LINE__);
+
         DCpointer __ptr = dcCallPointer(cvm, affix->entry_point);
         // DumpHex(__ptr, 16);
         // if(*(DCpointer*)__ptr!=NULL)
@@ -344,10 +375,8 @@ dcArgPointer(cvm, ptr);*/
 
     // if (affix->res == nullptr)
     //     XSRETURN_EMPTY;
-
     ST(0) = affix->res;
-
-    // XSRETURN(1);
+    //~ XSRETURN(1);
     PL_stack_sp = PL_stack_base + ax;
     return;
 }
@@ -437,6 +466,77 @@ XS_INTERNAL(Affix_affix) {
                                 prototype += '$';
                             afx_type = sv2type(aTHX_ * sv_type);
                             affix->subtypes.push_back(afx_type);
+                            if (afx_type->depth)
+                                affix->push_pointers.push_back(push_pointer);
+                            else
+                                switch (afx_type->numeric) {
+                                case VOID_FLAG:
+                                    affix->push_pointers.push_back(push_void);
+                                    break;
+                                case BOOL_FLAG:
+                                    affix->push_pointers.push_back(push_bool);
+                                    break;
+                                case CHAR_FLAG:
+                                    affix->push_pointers.push_back(push_char);
+                                    break;
+                                case UCHAR_FLAG:
+                                    affix->push_pointers.push_back(push_uchar);
+                                    break;
+                                case WCHAR_FLAG:
+                                    affix->push_pointers.push_back(push_wchar);
+                                    break;
+                                case SHORT_FLAG:
+                                    affix->push_pointers.push_back(push_short);
+                                    break;
+                                case USHORT_FLAG:
+                                    affix->push_pointers.push_back(push_ushort);
+                                    break;
+                                case INT_FLAG:
+                                    affix->push_pointers.push_back(push_int);
+                                    break;
+                                case UINT_FLAG:
+                                    affix->push_pointers.push_back(push_uint);
+                                    break;
+                                case LONG_FLAG:
+                                    affix->push_pointers.push_back(push_long);
+                                    break;
+                                case ULONG_FLAG:
+                                    affix->push_pointers.push_back(push_ulong);
+                                    break;
+                                case LONGLONG_FLAG:
+                                    affix->push_pointers.push_back(push_longlong);
+                                    break;
+                                case ULONGLONG_FLAG:
+                                    affix->push_pointers.push_back(push_ulonglong);
+                                    break;
+                                case FLOAT_FLAG:
+                                    affix->push_pointers.push_back(push_float);
+                                    break;
+                                case DOUBLE_FLAG:
+                                    affix->push_pointers.push_back(push_double);
+                                    break;
+                                case WSTRING_FLAG:
+                                    affix->push_pointers.push_back(push_wstring);
+                                    break;
+                                case STDSTRING_FLAG:
+                                    affix->push_pointers.push_back(push_stdstring);
+                                    break;
+                                case CODEREF_FLAG:
+                                    affix->push_pointers.push_back(push_coderef);
+                                    break;
+
+                                case POINTER_FLAG:
+                                    // Should be handled way up there based on depth
+                                    affix->push_pointers.push_back(push_pointer);
+                                    break;
+                                case STRUCT_FLAG:
+                                    affix->push_pointers.push_back(push_struct);
+                                    break;
+                                case CPPSTRUCT_FLAG:
+                                case UNION_FLAG:
+                                default:
+                                    croak("Unhandled argument type: %s", afx_type->stringify.c_str());
+                                }
                         }
                     }
                 } else {  // Expect named pairs

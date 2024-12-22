@@ -95,7 +95,7 @@ isa_ok my $ptr = test_12(
     sub {
         my ($ptr) = shift;
         $ptr->dump(32);
-        use Data::Dump;
+        use Data::Printer;
 
         # ddx $ptr->[1..3];
         isa_ok $ptr, ['Affix::Pointer'], 'callback arg is a pointer';
@@ -117,13 +117,14 @@ package Affix::Pointer {
         return bless { ELEMSIZE => $elemsize, ARRAY => [], }, $class;
     }
 }
-use Data::Dump;
+use Data::Printer;
 warn $ptr;
-ddx $ptr->dump(32);
+p $ptr->dump(32);
 print @$ptr;
 print $ptr->[0];
 tie my @array, 'Affix::Pointer', 3;
 warn $array[2];
+
 #~ ...;
 warn $ptr->FETCH(1);
 #

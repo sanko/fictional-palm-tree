@@ -44,8 +44,33 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         /*
 #define VOID_FLAG 'v'
 #define BOOL_FLAG 'b'
-#define SCHAR_FLAG 'a'
-#define CHAR_FLAG 'c'
+#define SCHAR_FLAG 'a'*/
+    case CHAR_FLAG:
+        if (SvOK(data)) {
+            /*
+            SV * const xsub_tmp_sv = data;
+            SvGETMAGIC(xsub_tmp_sv);
+            if ((SvROK(xsub_tmp_sv) && SvTYPE(SvRV(xsub_tmp_sv)) == SVt_PVAV &&
+                 sv_derived_from(xsub_tmp_sv, "Affix::Pointer"))) {
+                SV * ptr_sv = AXT_POINTER_ADDR(xsub_tmp_sv);
+                if (SvOK(ptr_sv)) {
+                    IV tmp = SvIV(MUTABLE_SV(SvRV(ptr_sv)));
+                    target = INT2PTR(DCpointer, tmp);
+                }
+            } else if (SvTYPE(data) != SVt_NULL) {
+            */
+            size_t len = 0;
+            DCpointer ptr_ = SvPVbyte(data, len);
+            if (target == NULL)
+                Newxz(target, len + 1, char);
+            Copy(ptr_, target, len, char);
+            /*
+        } else
+            croak("Data type mismatch for %s [%d]", type->stringify.c_str(), SvTYPE(data));
+        */
+        }
+        break;
+        /*
 #define UCHAR_FLAG 'h'
 #define WCHAR_FLAG 'w'
 #define SHORT_FLAG 's'
@@ -157,7 +182,7 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         #define SV_FLAG '?'
         */
     default:
-        croak("TODO: sv2ptr for everything else");
+        croak("TODO: sv2ptr for everything else [%c]", type->numeric);
     }
     return target;
 }

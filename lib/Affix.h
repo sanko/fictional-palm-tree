@@ -346,7 +346,7 @@ public:
           depth(depth),
           offset(offset),
           length(length),
-          stringify(stringify) {};
+          stringify(stringify) {}
 
     // Struct, Union
     Affix_Type(const std::string & stringify,
@@ -366,7 +366,7 @@ public:
 
           length(length),
           stringify(stringify),
-          subtypes(subtypes) {};
+          subtypes(subtypes) {}
     // Callbacks
     Affix_Type(const std::string & stringify,
                char numeric,
@@ -385,8 +385,7 @@ public:
           length(length),
           stringify(stringify),
           subtypes(subtypes),
-          restype(restype) {};
-
+          restype(restype) {}
 
     ~Affix_Type() {
         std::for_each(subtypes.begin(), subtypes.end(), [](auto argtype) { delete argtype; });
@@ -468,6 +467,30 @@ public:  // for now
     dTHXfield(perl)
 };
 
+class Affix;
+
+typedef bool (*arg)(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_void(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_bool(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_char(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_uchar(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_wchar(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_short(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_ushort(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_int(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_uint(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_long(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_ulong(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_longlong(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_ulonglong(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_float(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_double(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_wstring(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_stdstring(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_coderef(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_pointer(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool push_struct(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+
 // Affix::affix(...) and Affix::wrap(...) System
 class Affix {
 public:  // for now
@@ -490,6 +513,7 @@ public:  // for now
     Affix_Type * restype = nullptr;
     SV * res = nullptr;  // time over ram
     // std::vector<Affix_Pointer *> pointers;
+    std::vector<arg> push_pointers;
 };
 
 // var pin system

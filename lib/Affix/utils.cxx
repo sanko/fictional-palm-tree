@@ -88,8 +88,8 @@ void _DumpHex(pTHX_ const void * addr, size_t len, const char * file, int line) 
 
 #define DD(scalar) _DD(aTHX_ scalar, __FILE__, __LINE__)
 void _DD(pTHX_ SV * scalar, const char * file, int line) {
-    Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Data::Dump"), NULL, NULL, NULL);
-    if (!get_cvs("Data::Dump::dump", GV_NOADD_NOINIT | GV_NO_SVGMAGIC))
+    Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Data::Printer"), NULL, NULL, NULL);
+    if (!get_cvs("Data::Printer::p", GV_NOADD_NOINIT | GV_NO_SVGMAGIC))
         return;
 
     fflush(stdout);
@@ -104,7 +104,7 @@ void _DD(pTHX_ SV * scalar, const char * file, int line) {
     PUSHs(scalar);
     PUTBACK;
 
-    count = call_pv("Data::Dump::dump", G_SCALAR);
+    count = call_pv("Data::Printer::p", G_SCALAR);
 
     SPAGAIN;
 
