@@ -18,6 +18,7 @@ on configure => sub {
 on build => sub {
     requires 'DynaLoader';
     requires 'ExtUtils::CBuilder';
+    requires 'Getopt::Long', '2.36';
 };
 on test => sub {
     requires 'Capture::Tiny';

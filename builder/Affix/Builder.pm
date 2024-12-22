@@ -49,16 +49,16 @@ class    #
     field $meta : reader = CPAN::Meta->load_file('META.json');
 
     # Params to Build script
-    field $install_base : param  //= '';
-    field $installdirs : param   //= '';
-    field $uninst : param        //= 0;               # Make more sense to have a ./Build uninstall command but...
-    field $install_paths : param //= ExtUtils::InstallPaths->new( dist_name => $meta->name );
-    field $verbose : param(v)    //= 0;
-    field $dry_run : param       //= 0;
-    field $pureperl : param      //= 0;
-    field $jobs : param          //= 1;
-    field $destdir : param       //= '';
-    field $prefix : param        //= '';
+    field $install_base : param     //= '';
+    field $installdirs : param      //= '';
+    field $uninst : param           //= 0;            # Make more sense to have a ./Build uninstall command but...
+    field $install_paths : param    //= ExtUtils::InstallPaths->new( dist_name => $meta->name );
+    field $verbose : param(verbose) //= 0;
+    field $dry_run : param          //= 0;
+    field $pureperl : param         //= 0;
+    field $jobs : param             //= 1;
+    field $destdir : param          //= '';
+    field $prefix : param           //= '';
     #
     ADJUST {
         -e 'META.json' or die "No META information provided\n";
@@ -91,7 +91,15 @@ class    #
 
     method step_install() {
         $self->step_build() unless -d 'blib';
-        install( $install_paths->install_map, $verbose, $dry_run, $uninst );
+        install(
+            [   from_to           => $install_paths->install_map,
+                verbose           => $verbose,
+                dry_run           => $dry_run,
+                uninstall_shadows => $uninst,
+                skip              => undef,
+                always_copy       => 1
+            ]
+        );
         0;
     }
     method step_realclean () { rmtree( $_, $verbose ) for qw[blib temp Build _build_params MYMETA.yml MYMETA.json]; 0 }
@@ -127,8 +135,10 @@ class    #
 #!%s
 use lib 'builder';
 use %s;
-%s->new( @ARGV && $ARGV[0] =~ /\A\w+\z/ ? ( action => shift @ARGV ) : (),
-    map { /^--/ ? ( shift(@ARGV) =~ s[^--][]r => 1 ) : /^-/ ? ( shift(@ARGV) =~ s[^-][]r => shift @ARGV ) : () } @ARGV )->Build();
+use Getopt::Long qw[GetOptionsFromArray];
+my %%opts = ( @ARGV && $ARGV[0] =~ /\A\w+\z/ ? ( action => shift @ARGV ) : () );
+GetOptionsFromArray \@ARGV, \%%opts, qw[install_base=s install_path=s%% installdirs=s destdir=s prefix=s config=s%% uninst:1 verbose:1 dry_run:1 jobs=i];
+%s->new(%%opts)->Build();
 
         make_executable('Build');
         my @env = defined $ENV{PERL_MB_OPT} ? split_like_shell( $ENV{PERL_MB_OPT} ) : ();
