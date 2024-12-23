@@ -1,94 +1,113 @@
 package Affix::Builder {
-    use v5.32.0;
-    use Path::Tiny;
-    use Config;
-    #
-    my $windows = $^O eq 'MSWin32';
+    use v5.40;
+    use Path::Tiny qw[];
+    use Config     qw[%Config];
 
-    # use bless for now (until perl 5.40 (not 5.38!) is the min requirement)
-    # TODO: Move C/CXX builder stuff from t::helper into ::C
-    # TODO: Write a wrapper to build libs in Rust, Fortran, and D
-    sub new ($%) {
-        my ( $class, %args ) = @_;
-        my $output = path( $args{output} // './' . ( $windows ? '' : 'lib' ) . 'affix_build.' . $Config{so} );
-        bless { lang => $args{language} // 'C', path => path( $args{path} // '.' ), output => $output, steps => [] }, $class;
-    }
+    #~ use Test2::V0 '!subtest';
+    #~ use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
+    use feature 'class';
+    no warnings 'experimental::class';
 
-    sub go {
-        my $self = shift;
-        $_ || system $_->run for @{ $self->{steps} };
-        -s $self->{output} ? $self->{output} : ();
-    }
+    class Affix::Builder {
 
-    package Affix::Builder::Step {
-        use overload bool => sub { shift->{status} };
+        # use bless for now (until perl 5.40 (not 5.38!) is the min requirement)
+        # TODO: Move C/CXX builder stuff from t::helper into ::C
+        # TODO: Write a wrapper to build libs in Rust, Fortran, and D
+        field $verbose : reader //= 0;
+        field $os : reader = $^O;
+        field $path : reader : param   //= '.';
+        field $output : reader : param //= Path::Tiny->tempfile( { realpath => 1 },
+            TEMPLATE => ( $os eq 'MSWin32' ? '' : 'lib' ) . 'affix_lib.' . $Config{so} . '.XXXX' );
+        field @steps : reader;
+        ADJUST {
+            $output = Path::Tiny::path($output) unless builtin::blessed $output;
+            $path   = Path::Tiny::path($path)   unless builtin::blessed $path;
+        }
 
-        sub new {
-            my ( $class, %args ) = @_;
-            bless { %args, output => undef, status => 0 }, $class;
+        method go () {
+            $_ || $_->run for @steps;
+            -s $output ? $output : ();
+        }
+        method push_step($step) { push @steps, $step }
+        method config ($key)    { $Config{$key} }
+
+        method run_command( $cmd, @etc ) {
+            system $cmd, @etc, '&';
+            if ( $? == 0 ) {
+                return 1;
+                last;
+            }
+            elsif ( $? == -1 ) {
+                warn 'failed to execute: ' . $!;
+            }
+            elsif ( $? & 127 ) {
+                warn sprintf "child died with signal %d, %s coredump\n", ( $? & 127 ), ( $? & 128 ) ? 'with' : 'without';
+            }
+            else {
+                warn 'child exited with value ' . ( $? >> 8 );
+            }
+            0;
         }
     }
 
-    package Affix::Builder::Step::Perl {
-        use parent -norequire => 'Affix::Builder::Step';
+    class Affix::Builder::Step {
+        field $status : reader //= 0;
+        field $output : reader;
+        use overload bool => sub { shift->status };
+        method run()           {...}
+        method _set_status($s) { $status = $s }
+    }
 
-        sub new ($%) {
-            my ( $class, %args ) = @_;
-            my $self = __PACKAGE__->SUPER::new(%args);
+    class Affix::Builder::Step::Perl : isa(Affix::Builder::Step) {
+        field $execute : param;
+        method run() { $execute->(); }
+    }
+
+    class Affix::Builder::Step::Shell : isa(Affix::Builder::Step) {
+        field $execute : param;
+        ADJUST {
+            $execute = join ' ', @$execute if ref $execute;
         }
 
-        sub run() {
-            shift->{execute}->();
+        method run() {
+            return $self->output if !!$self;
+            CORE::say $execute;
+            $self->_set_status( !system $execute );
+            $self->status ? $self->output : ();
         }
     }
 
-    package Affix::Builder::Step::Shell {
-        use parent -norequire => 'Affix::Builder::Step';
-
-        sub new ($%) {
-            my ( $class, %args ) = @_;
-            my $self = __PACKAGE__->SUPER::new(%args);
-        }
-
-        sub run() {
-            my $self = shift;
-            return $self->{output} if !!$self;
-            CORE::say join ' ', @{ $self->{execute} };
-            $self->{status} = !system @{ $self->{execute} };
-            $self->{output};
-        }
-    }
-
-    package Affix::Builder::C {
-        use parent -norequire => 'Affix::Builder';
-        use Path::Tiny qw[path tempdir tempfile];
-        use Config;
+    class Affix::Builder::C : isa(Affix::Builder) {
+        field $Inc = Path::Tiny::cwd->parent->parent->child('src')->absolute;
         #
-        my $OS  = $^O;
-        my $Inc = path(__FILE__)->parent->parent->child('src')->absolute;
+        field $source : param;
+        field $output : reader;
+        field $include : reader          //= [];
+        field $libperl : param : reader  //= 0;    # Links with perl if true
+        field $cxxflags : param : reader //= [];
+        field $ldflags : param : reader  //= [];
+        field $libs : param : reader     //= [];
+        #
+        field @cleanup;
+        field @objs;
 
         #~ Affix::Platform::OS();
-        my @cleanup;
-
-        sub new ($%) {
-            my ( $class, %args ) = @_;
-            my $self = __PACKAGE__->SUPER::new(%args);
-
+        ADJUST {
             # use Data::Dump;
             # ddx \%args;
             my @objs;
-            for my $file ( map { path($_)->realpath } @{ $args{source} } ) {
-                $self->{output} = $file->sibling( $file->basename(qw[.cxx .cpp c++]) . $Config{_o} );
+            for my $file ( map { Path::Tiny::path($_)->realpath } @$source ) {
+                $output = $file->sibling( $file->basename(qw[.cxx .cpp c++]) . $self->config('_o') );
                 push @objs, $self->{output};
                 push @{ $self->{steps} },
                     Affix::Builder::Step::Shell->new(
                     execute => [
                         'c++',
-                        ( map { '-I' . path($_)->realpath->stringify } @{ $args{include} } ),
-                        ( $args{libperl} ? '-I' . path( $Config{installarchlib} )->child('CORE')->realpath->stringify : () ),
-                        @{ $args{cxxflags} // () },
+                        ( map { '-I' . Path::Tiny::path($_)->realpath->stringify } @$include ),
+                        ( $libperl ? '-I' . Path::Tiny::path( $self->config('installarchlib') )->child('CORE')->realpath->stringify : () ),
+                        @$cxxflags,
                         '-o',
-                        $self->{output}->stringify,
+                        $output->stringify,
                         $file->stringify
                     ]
                     );
@@ -98,12 +117,12 @@ package Affix::Builder {
                 execute => [
                     'c++',
                     '-shared',
-                    ( map { '-L' . path($_)->realpath->stringify } @{ $args{libs} } ),
-                    ( $args{libperl} ? '-L' . path( $Config{installarchlib} )->child('CORE')->realpath->stringify : () ),
+                    ( map { '-L' . Path::Tiny::path($_)->realpath->stringify } @$libs ),
+                    ( $libperl ? '-L' . Path::Tiny::path( $self->config('installarchlib') )->child('CORE')->realpath->stringify : () ),
                     @objs,
-                    @{ $args{ldflags} // () },
+                    @{ $ldflags // () },
                     '-o',
-                    path( $args{output} // 'output.' . $Config{so} )->absolute->stringify
+                    Path::Tiny::path( $output // 'output.' . $self->config('so') )->absolute->stringify
                 ]
                 );
 
@@ -134,25 +153,22 @@ package Affix::Builder {
             $self;
         }
 
-        sub compile_test_lib ($;$$) {
+        method compile_test_lib ( $name, $aggs //= '', $keep //= 0 ) {
 
             # TODO: generalize this beyond building test libs
             # TODO: allow libperl to be linked so I could even use this to build Affix itself
-            my ( $name, $aggs, $keep ) = @_;
-            $aggs //= '';
-            $keep //= 0;
             my ($opt) = grep { -f $_ } "t/src/$name.cxx", "t/src/$name.c";
             if ($opt) {
-                $opt = path($opt)->absolute;
+                $opt = Path::Tiny::path($opt)->absolute;
             }
             else {
                 $opt = tempfile(
                     UNLINK => !$keep,
-                    SUFFIX => '_' . path( [ caller() ]->[1] )->basename . ( $name =~ m[^\s*//\s*ext:\s*\.c$]ms ? '.c' : '.cxx' )
+                    SUFFIX => '_' . Path::Tiny::path( [ caller() ]->[1] )->basename . ( $name =~ m[^\s*//\s*ext:\s*\.c$]ms ? '.c' : '.cxx' )
                 )->absolute;
                 push @cleanup, $opt unless $keep;
                 my ( $package, $filename, $line ) = caller;
-                $filename = path($filename)->canonpath;
+                $filename = Path::Tiny::path($filename)->canonpath;
                 $line++;
                 $filename =~ s[\\][\\\\]g;    # Windows...
                 $opt->spew_utf8(qq[#line $line "$filename"\r\n$name]);
@@ -163,12 +179,12 @@ package Affix::Builder {
                 return ();
             }
             my $c_file = $opt->canonpath;
-            my $o_file = tempfile( UNLINK => !$keep, SUFFIX => $Config{_o} )->absolute;
-            my $l_file = tempfile( UNLINK => !$keep, SUFFIX => $opt->basename(qr/\.cx*/) . '.' . $Config{so} )->absolute;
+            my $o_file = tempfile( UNLINK => !$keep, SUFFIX => $self->config('_o') )->absolute;
+            my $l_file = tempfile( UNLINK => !$keep, SUFFIX => $opt->basename(qr/\.cx*/) . '.' . $self->config('so') )->absolute;
             push @cleanup, $o_file, $l_file unless $keep;
 
             # note sprintf 'Building %s into %s', $opt, $l_file;
-            my $compiler = $Config{cc};
+            my $compiler = $self->config('cc');
             if ( $opt =~ /\.cxx$/ ) {
                 if ( Affix::Platform::Compiler() eq 'Clang' ) {
                     $compiler = 'c++';
@@ -192,7 +208,7 @@ package Affix::Builder {
             my ( @fails, $succeeded );
             my $ok;
             for my $cmd (@cmds) {
-                note $cmd;
+                warn $cmd;
                 system $cmd;
                 if ( $? == 0 ) {
                     $ok++;
@@ -215,7 +231,7 @@ package Affix::Builder {
             $l_file;
         }
 
-        END {
+        method DESTROY {
             for my $file ( grep {-f} @cleanup ) {
 
                 # note 'Removing ' . $file;
@@ -224,59 +240,78 @@ package Affix::Builder {
         }
     }
 
-    package Affix::Builder::CXX {
-        use parent -norequire => 'Affix::Builder::C';
+    class Affix::Builder::CXX : isa(Affix::Builder::C) {
     }
 
-    package Affix::Builder::CXX::MSVC {
-        use parent -norequire => 'Affix::Builder::CXX';
+    class Affix::Builder::CXX::MSVC : isa(Affix::Builder::CXX) {
     }
 
-    package Affix::Builder::CXX::GNU {
-        use parent -norequire => 'Affix::Builder::CXX';
+    class Affix::Builder::CXX::GNU : isa(Affix::Builder::CXX) {
     }
 
-    package Affix::Builder::Go {
-        use parent -norequire => 'Affix::Builder';
+    class Affix::Builder::Go : isa(Affix::Builder) {
 
         # go build -buildmode=c-shared
         # https://pkg.go.dev/cmd/go#hdr-Build_modes
     }
 
-    package Affix::Builder::D {
-        use parent -norequire => 'Affix::Builder';
+    class Affix::Builder::D : isa(Affix::Builder) {
     }
 
-    package Affix::Bulder::Fortran {
-        use Devel::CheckBin;
-        use Config;
-        use Path::Tiny;
-        my ( $compiler, $gnu );
+    class Affix::Builder::Fortran : isa(Affix::Builder) {
+        field $compiler : reader : param //= ();
+        field $gnu = 0;
+        field $source : param;
 
         # https://fortran-lang.org/learn/building_programs/managing_libraries/
-        # gfortran, ifort
-        sub locate_compiler() {
-            return $compiler if defined $compiler;
-            $compiler = can_run('gfortran');
-            $gnu      = !!$compiler;
-            $compiler = can_run('ifort') unless $compiler;    # intel
+        ADJUST {
+            # locate_compiler
+            if ( !defined $compiler ) {
+                for my $exe (qw[gfortran ifort]) {    # gnu, intel
+                    if ( $self->run_command( $exe, '--version' ) ) {
+                        $compiler = $exe;
+                        last;
+                    }
+                }
+                $gnu = $compiler eq 'gfortran';
+            }
+
+            #~ $self->compile_test_lib();
+            $self->push_step(
+                Affix::Builder::Step::Shell->new(
+                    execute => [
+                        $compiler,
+
+                        #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
+                        ( ref $source ? @$source : $source ), '-fPIC',
+                        ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), '-o', $self->output
+                    ]
+                )
+            ) if $compiler;
         }
 
-        sub compile_test_lib ($;$$) {
-            my ( $name, $aggs, $keep ) = @_;
-            return !warn 'test requires GNUFortran' unless $compiler;
-            my $path = path($name);
-            my $lib  = ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_fortran.' . $Config{so};
-            my $line = sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s', $compiler,
-                ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
-            warn $line;
-        }
+        #~ method go() {    ...    }
+        #~ method add_source(@files) {...        }
+        #~ method compile_test_lib ( $name //= 'affix_fortran', $aggs //= (), $keep //= 0 ) {
+        #~ return !warn 'test requires GNUFortran' unless $compiler;
+        #~ my $path = Path::Tiny::path($name);
+        #~ my $lib  = ( $^O eq 'MSWin32' ? '' : 'lib' ) . $name . '.' . $self->config('so');
+        #~ my $line = sprintf '%s  -fPIC %s -o %s', $compiler,
+        #~ ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
+        #~ system $line;
+        #~ }
     }
 
-    package Affix::Builder::Rust {
-        use Devel::CheckBin;
-        use Config;
-        my $lib = ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_rust.' . $Config{so};
-        system 'cargo build --manifest-path=t/src/85_affix_mangle_rust/Cargo.toml --release --quiet';
+    class Affix::Builder::Rust : isa(Affix::Builder) {
+        field $quiet : param //= 0;
+        field $manifest : param;
+        ADJUST {
+            $self->push_step(
+                Affix::Builder::Step::Shell->new(
+                    execute => 'cargo build --manifest-path=' . $manifest . ' --release ' . ( $quiet ? '--quiet' : '' )
+                )
+            );
+        }
     }
 };
+1;

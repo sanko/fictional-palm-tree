@@ -525,7 +525,7 @@ public:  // for now
         if (restype != nullptr)
             delete restype;
         // pointers.clear();
-    };
+    }
     DLLib * lib = nullptr;            // safefree
     DCpointer entry_point = nullptr;  // not malloc'd
     std::string symbol;
@@ -543,14 +543,14 @@ public:
     Affix_Pointer * ptr;
     Affix_Type * type;
     DLLib * lib;
-    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {};
+    Affix_Pin(DLLib * lib, Affix_Pointer * ptr, Affix_Type * type) : ptr(ptr), type(type), lib(lib) {}
     ~Affix_Pin() {
         ptr = nullptr;  // DO NOT FREE
         delete type;
         type = NULL;
         dlFreeLibrary(lib);
         lib = NULL;
-    };
+    }
 };
 int get_pin(pTHX_ SV *, MAGIC *);
 int set_pin(pTHX_ SV *, MAGIC *);
