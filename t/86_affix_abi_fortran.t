@@ -14,11 +14,10 @@ $|++;
 #~ plan tests => 6;
 # https://fortran-lang.org/learn/building_programs/managing_libraries/
 SKIP: {
-    my $fortran = Affix::Builder::Fortran->new( source => 't/src/86_affix_abi_fortran/hello.f90' );
-    skip 'test requires GNUFortran', 6 unless $fortran->compiler;
-    my $lib = $fortran->go();
+    my $fortran = Affix::Builder::Fortran->new(  source => ['t/src/86_affix_abi_fortran/hello.f90'] );
+    skip_all 'test requires GNU or Intel Fortran' unless $fortran->build;
+    my $lib = $fortran->libname();
     if ($lib) {
-        diag $lib->absolute;
 
         #~ diag system 'nm', $lib->absolute;
         subtest 'function func(i) result(j)' => sub {
@@ -30,6 +29,33 @@ SKIP: {
     #~ p $fortran->output->absolute;
 
 =cut
+
+
+my $compiler = Affix::Builder->new();
+my @links
+
+
+Write a modern OO perl module that can compile to obj and link a given list of objs to a shared library. It should find and correctly call c, cpp, fortran, D, and Rust compilers.
+
+The api looks like this:
+
+my $builder = My::Builder->new();
+my $obj = $builder->fortran('path/to/fortran.f90');
+my $obj2 = $builder->cpp('path/to/test.cxx');
+my $obj3 = $builder->rust('/rustpath/');
+my $lib = $builder->link($obj, $obj2);
+
+
+
+
+
+
+
+
+
+
+
+
 
     my $compiler = can_run('gfortran');
     my $gnu      = !!$compiler;

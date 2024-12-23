@@ -117,40 +117,8 @@
          "version" : "v0.0.1"
       },
       "Affix::Builder" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::C" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::CXX" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::CXX::GNU" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::CXX::MSVC" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::D" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::Go" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::Rust" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::Step" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::Step::Perl" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Builder::Step::Shell" : {
-         "file" : "lib/Affix/Builder.pm"
-      },
-      "Affix::Bulder::Fortran" : {
-         "file" : "lib/Affix/Builder.pm"
+         "file" : "lib/Affix/Builder.pm",
+         "version" : "1.00"
       },
       "Affix::Platform" : {
          "file" : "lib/Affix/Platform.pm",

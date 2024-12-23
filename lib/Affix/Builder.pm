@@ -1,3 +1,225 @@
+use v5.40;
+use feature qw[class];
+no warnings qw[experimental::class];
+
+class Affix::Builder 1.00 {
+    use Carp       qw[confess];
+    use Config     qw[%Config];
+    use Path::Tiny qw[tempdir path];
+    $Carp::Internal{ (__PACKAGE__) }++;
+    field $source : reader : param;
+    field $name : param //= ();
+    field $version : reader : param //= ();
+    #
+    field $test = __CLASS__->can('test') ? __CLASS__->test : ();
+    #
+    field $os : reader : param        //= $^O;
+    field $cleanup : param            //= 0;
+    field $build_dir : reader : param //= tempdir( CLEANUP => $cleanup );
+    field $verbose : param            //= 0;
+    field $libname : reader : param   //= ();
+    #
+    field $compiler = __CLASS__->can('find_compiler') ? __CLASS__->find_compiler : ();
+    #
+    #~ method build() {...}
+    method build() {
+        return $self->libname if $self->libname->exists && !grep { $self->libname->stat->mtime < $_->stat->mtime } @{ $self->source };
+        $self->$compiler;
+    }
+    ADJUST {
+        confess 'subclass ' . __PACKAGE__ if __CLASS__ eq __PACKAGE__;
+        $source = [$source] unless ref $source eq 'ARRAY';
+        $source = [ map { builtin::blessed($_) ? $_ : path($_) } @$source ];
+        $name //= $source->[0]->basename(qr[\..*?$]);
+        $build_dir = path($build_dir)->absolute unless builtin::blessed $build_dir;
+        $libname
+            //= $build_dir->child( ( $os ne 'MSWin32' && $name !~ /^lib/ ? 'lib' : '' ) .
+                $name . '.' .
+                $Config{so} .
+                ( $os ne 'MSWin32' && defined $version ? '.' . $version : '' ) );
+    }
+    method DESTROY { }
+}
+
+class Affix::Builder::C 1.00 : isa(Affix::Builder) {
+    use Config qw[%Config];
+    use Carp   qw[confess];
+    $Carp::Internal{ (__PACKAGE__) }++;
+    field $cflags : reader : param  //= $Config{cccdlflags} // '';
+    field $ldflags : reader : param //= $Config{ccdlflags}  // '';
+
+    sub find_compiler($pkg) {
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj
+                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                    $obj->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname
+                if !system grep { length $_ && /\w/ } $Config{cc}, $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname,
+                @objs
+        };
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj
+                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                    $obj->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname
+                if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
+                @objs,    # twice
+                $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
+        }
+        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /?` =~ /Microsoft/ ) ||
+            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version` =~ /Intel/ ) ||
+            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v`       =~ /Mars/ ) );
+        method() { confess 'Failed to locate C compiler' };
+    }
+}
+
+class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
+    use Config qw[%Config];
+    use Carp   qw[confess];
+    $Carp::Internal{ (__PACKAGE__) }++;
+
+    sub find_compiler($pkg) {
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj
+                    if !system grep { length $_ && /\w/ } 'g++', $self->cflags, '-fPIC', '-c', $source->absolute->stringify, '-o',
+                    $obj->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname
+                if !system grep { length $_ && /\w/ } 'g++', $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
+        };
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj
+                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                    $obj->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname
+                if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
+                @objs,    # twice
+                $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
+        }
+        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /?` =~ /Microsoft/ ) ||
+            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version` =~ /Intel/ ) ||
+            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v`       =~ /Mars/ ) );
+        method() { confess 'Failed to locate C compiler' };
+    }
+}
+
+class Affix::Builder::Crystal 1.00 : isa(Affix::Builder) { }
+
+class Affix::Builder::D 1.00 : isa(Affix::Builder) { }
+
+class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-lang.org/learn/building_programs/managing_libraries/
+    use Config qw[%Config];
+    use Carp   qw[confess];
+    $Carp::Internal{ (__PACKAGE__) }++;
+
+    sub find_compiler($pkg) {                                 # GNU
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj if !system grep { length $_ && /\w/ } 'gfortran', '-c', $source->absolute->stringify,
+
+                    #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
+                    ( $self->os eq 'darwin' ? '-dynamiclib' : '-shared' ), '-o', $obj->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname
+                if !system grep { length $_ && /\w/ } 'gfortran', '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
+        }
+        if `gfortran --version` =~ /GNU Fortran/;
+        return method() {
+            my @objs;
+
+            # compile
+            for my $source ( @{ $self->source } ) {
+                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                push @objs, $obj
+                    if !system grep { length $_ && /\w/ } 'ifx', '-c', $source->absolute->stringify, qw[/compile-only /nologo /Fo],
+                    ( $self->os eq 'MSWin32' ? '/dll' : '-shared' ), '-o', $obj->absolute->stringify, $source->absolute->stringify;
+            }
+
+            # link/archive
+            return $self->libname if !system grep { length $_ && /\w/ } 'ifx', '/dll', '-o', map { $_->absolute->stringify } $self->libname, @objs
+        }
+        if `ifx /QV` =~ /Intel/;    # Intel's latest
+
+        # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
+        return method() { confess 'Failed to locate Fortran compiler' };
+    }
+}
+
+class Affix::Builder::Go 1.00 : isa(Affix::Builder 1.00) { }
+
+class Affix::Builder::Rust 1.00 : isa(Affix::Builder 1.00) { }
+
+class Affix::Builder::Julia 1.00 : isa(Affix::Builder 1.00) { }
+
+class Affix::Builder::Nim 1.00 : isa(Affix::Builder 1.00) { }
+1;
+__END__
+use Data::Printer;
+
+use Affix::Builder;
+my $c   = Affix::Builder::C->new( version => '1.0', source => '..\t\src\236_types_struct.c' );
+my $cxx = Affix::Builder::CPP->new(
+
+    #~ version => '1.0',
+    source => '..\t\src\99_preview.cxx'
+);
+my $fortran = Affix::Builder::Fortran->new( source => ['../t/src/86_affix_abi_fortran/hello.f90'] );
+
+#~ warn $b->libname;
+my $lib_c       = $c->build;
+my $lib_cxx     = $cxx->build;
+my $lib_fortran = $fortran->build;
+
+#~ system 'nm', $lib_c;
+#~ warn $lib;
+#~ p $b;
+use Affix;
+affix $lib_c,       'offsetof_dob_d',                 [],    Size_t;
+affix $lib_cxx,     [ '_Z8negativei' => 'negative' ], [Int], Int;
+affix $lib_fortran, 'func',                           [Int], Int;
+warn offsetof_dob_d();
+warn negative(-4);
+warn negative(4);
+warn func(3);
+
+__END__
 package Affix::Builder {
     use v5.40;
     use Path::Tiny qw[];
@@ -7,6 +229,8 @@ package Affix::Builder {
     #~ use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
     use feature 'class';
     no warnings 'experimental::class';
+
+
 
     class Affix::Builder {
 
@@ -24,7 +248,7 @@ package Affix::Builder {
             $path   = Path::Tiny::path($path)   unless builtin::blessed $path;
         }
 
-        method go () {
+        method lib () {
             $_ || $_->run for @steps;
             -s $output ? $output : ();
         }
@@ -290,7 +514,7 @@ package Affix::Builder {
             ) if $compiler;
         }
 
-        #~ method go() {    ...    }
+        #~ method lib() {    ...    }
         #~ method add_source(@files) {...        }
         #~ method compile_test_lib ( $name //= 'affix_fortran', $aggs //= (), $keep //= 0 ) {
         #~ return !warn 'test requires GNUFortran' unless $compiler;
@@ -308,7 +532,8 @@ package Affix::Builder {
         ADJUST {
             $self->push_step(
                 Affix::Builder::Step::Shell->new(
-                    execute => 'cargo build --manifest-path=' . $manifest . ' --release ' . ( $quiet ? '--quiet' : '' )
+                    execute =>
+                    'cargo build --manifest-path=' . $manifest . ' --release ' . ( $quiet ? '--quiet' : '' )
                 )
             );
         }
