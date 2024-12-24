@@ -14,6 +14,14 @@ typedef struct {
 
 START_MY_CXT
 
+bool init_resetvm(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    dcReset(cvm);
+    return false;
+}
+bool init_aggregate(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
+    dcBeginCallAggr(cvm, affix->restype->aggregate);
+    return false;
+}
 bool push_void(pTHX_ Affix * affix, DCCallVM * cvm, SV * sv, size_t st_pos) {
     // Nothing to do here...
     return true;
@@ -230,30 +238,25 @@ bool pop_struct(pTHX_ Affix * affix, DCCallVM * cvm) {
        }*/
     return false;
 }
+
+
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
     dXSARGS;
-
     Affix * affix = (Affix *)XSANY.any_ptr;
 
-    dMY_CXT;
-    DCCallVM * cvm = MY_CXT.cvm;
-    dcReset(cvm);
-
-    // TODO: Generate aggregate in type constructor
-
-    if (affix->restype->aggregate != nullptr)
-        dcBeginCallAggr(cvm, affix->restype->aggregate);
     if (items != affix->subtypes.size())
         croak("Wrong number of arguments to %s; expected: %ld, found %d",
               affix->symbol.c_str(),
               affix->subtypes.size(),
               items);
 
+    dMY_CXT;
+    DCCallVM * cvm = MY_CXT.cvm;
+
     size_t st_pos = 0;
-    for (auto && fn : affix->push_pointers) {
+    for (auto && fn : affix->push_pointers)
         if (fn(aTHX_ affix, cvm, ST(st_pos), st_pos))
             st_pos++;
-    }
 
     /*
         for (const auto & type : affix->subtypes) {
@@ -276,16 +279,8 @@ extern "C" void Affix_trigger(pTHX_ CV * cv) {
     if (!affix->pop_pointer(aTHX_ affix, cvm))
         XSRETURN_EMPTY;
     ST(0) = affix->res;
-    //~ XSRETURN(1);
-    PL_stack_sp = PL_stack_base + ax;
+    PL_stack_sp = PL_stack_base + ax;  //~ XSRETURN(1);
     return;
-
-
-    // if (affix->res == nullptr)
-    //     XSRETURN_EMPTY;
-    //~ ST(0) = affix->res;
-    //~ XSRETURN(1);
-    //~ PL_stack_sp = PL_stack_base + ax;
 }
 
 XS_INTERNAL(Affix_affix) {
@@ -294,6 +289,9 @@ XS_INTERNAL(Affix_affix) {
     dXSARGS;
     dXSI32;
     Affix * affix = new Affix();
+
+    affix->push_pointers.push_back(init_resetvm);
+
     std::string prototype;
     std::string rename;  // affix(...) allows you to change the name of the perlsub
 
@@ -355,10 +353,109 @@ XS_INTERNAL(Affix_affix) {
             delete affix;
         }
     }
+    {
+        // ..., ..., ..., ret
+        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
+            affix->restype = sv2type(aTHX_ ST(3));
+            if (affix->restype->aggregate != nullptr)
+                affix->push_pointers.push_back(init_aggregate);
+            if (affix->restype->depth != 0) {
+                affix->pop_pointer = pop_pointer;
+                affix->res = newSV(0);
+            } else
+                switch (affix->restype->numeric) {
+                case VOID_FLAG:
+                    affix->pop_pointer = pop_void;
+                    affix->res = newSV(0);
+                    break;
+                case BOOL_FLAG:
+                    affix->pop_pointer = pop_bool;
+                    affix->res = newSVbool(0);
+                    break;
+                case CHAR_FLAG:
+                case SCHAR_FLAG:
+                    affix->pop_pointer = pop_char;
+                    affix->res = newSViv(0);
+                    break;
+                case UCHAR_FLAG:
+                    affix->pop_pointer = pop_uchar;
+                    affix->res = newSVuv(0);
+                    break;
+                case WCHAR_FLAG:
+                    affix->pop_pointer = pop_wchar;
+                    affix->res = newSViv(0);
+                    break;
+                case SHORT_FLAG:
+                    affix->pop_pointer = pop_short;
+                    affix->res = newSViv(0);
+                    break;
+                case USHORT_FLAG:
+                    affix->pop_pointer = pop_ushort;
+                    affix->res = newSVuv(0);
+                    break;
+                case INT_FLAG:
+                    affix->pop_pointer = pop_int;
+                    affix->res = newSViv(0);
+                    break;
+                case UINT_FLAG:
+                    affix->pop_pointer = pop_uint;
+                    affix->res = newSVuv(0);
+                    break;
+                case LONG_FLAG:
+                    affix->pop_pointer = pop_long;
+                    affix->res = newSViv(0);
+                    break;
+                case ULONG_FLAG:
+                    affix->pop_pointer = pop_ulong;
+                    affix->res = newSVuv(0);
+                    break;
+                case LONGLONG_FLAG:
+                    affix->pop_pointer = pop_longlong;
+                    affix->res = newSViv(0);
+                    break;
+                case ULONGLONG_FLAG:
+                    affix->pop_pointer = pop_ulonglong;
+                    affix->res = newSVuv(0);
+                    break;
+                case FLOAT_FLAG:
+                    affix->pop_pointer = pop_float;
+                    affix->res = newSVnv(0);
+                    break;
+                case DOUBLE_FLAG:
+                    affix->pop_pointer = pop_double;
+                    affix->res = newSVnv(0);
+                    break;
+                case WSTRING_FLAG:
+                    affix->pop_pointer = pop_wstring;
+                    affix->res = newSV(0);
+                    break;
+                case STDSTRING_FLAG:
+                    affix->pop_pointer = pop_stdstring;
+                    affix->res = newSV(0);
+                    break;
+                case POINTER_FLAG:  // Actually handled above but...
+                    affix->pop_pointer = pop_pointer;
+                    affix->res = newSV(0);
+                    break;
+                case STRUCT_FLAG:
+                    affix->pop_pointer = pop_struct;
+                    affix->res = newSV(0);
+                    break;
+                default:
+                    croak("Unknown or unhandled return type: %s", affix->restype->stringify.c_str());
+                    // XXX: This should be a fatal error?
+                    //~ affix->pop_pointer = pop_int;
+                    //~ affix->res = newSV(0);
+                    break;
+                }
+        } else
+            croak("Unknown return type");
+    }
     {  // ..., ..., args, ...
         if (LIKELY(SvROK(ST(2)) && SvTYPE(SvRV(ST(2))) == SVt_PVAV)) {
             AV * av_args = MUTABLE_AV(SvRV(ST(2)));
             size_t num_args = av_count(av_args);
+
             if (num_args) {
                 SV ** sv_type = av_fetch(av_args, 0, 0);
                 Affix_Type * afx_type;
@@ -464,102 +561,7 @@ XS_INTERNAL(Affix_affix) {
         } else
             croak("Malformed argument list");
     }
-    {
-        // ..., ..., ..., ret
-        if (LIKELY((ST(3)) && SvROK(ST(3)) && sv_derived_from(ST(3), "Affix::Type"))) {
-            affix->restype = sv2type(aTHX_ ST(3));
-            if (affix->restype->depth != 0) {
-                affix->pop_pointer = pop_pointer;
-                affix->res = newSV(0);
-            } else
-                switch (affix->restype->numeric) {
-                case VOID_FLAG:
-                    affix->pop_pointer = pop_void;
-                    affix->res = newSV(0);
-                    break;
-                case BOOL_FLAG:
-                    affix->pop_pointer = pop_bool;
-                    affix->res = newSVbool(0);
-                    break;
-                case CHAR_FLAG:
-                case SCHAR_FLAG:
-                    affix->pop_pointer = pop_char;
-                    affix->res = newSViv(0);
-                    break;
-                case UCHAR_FLAG:
-                    affix->pop_pointer = pop_uchar;
-                    affix->res = newSVuv(0);
-                    break;
-                case WCHAR_FLAG:
-                    affix->pop_pointer = pop_wchar;
-                    affix->res = newSViv(0);
-                    break;
-                case SHORT_FLAG:
-                    affix->pop_pointer = pop_short;
-                    affix->res = newSViv(0);
-                    break;
-                case USHORT_FLAG:
-                    affix->pop_pointer = pop_ushort;
-                    affix->res = newSVuv(0);
-                    break;
-                case INT_FLAG:
-                    affix->pop_pointer = pop_int;
-                    affix->res = newSViv(0);
-                    break;
-                case UINT_FLAG:
-                    affix->pop_pointer = pop_uint;
-                    affix->res = newSVuv(0);
-                    break;
-                case LONG_FLAG:
-                    affix->pop_pointer = pop_long;
-                    affix->res = newSViv(0);
-                    break;
-                case ULONG_FLAG:
-                    affix->pop_pointer = pop_ulong;
-                    affix->res = newSVuv(0);
-                    break;
-                case LONGLONG_FLAG:
-                    affix->pop_pointer = pop_longlong;
-                    affix->res = newSViv(0);
-                    break;
-                case ULONGLONG_FLAG:
-                    affix->pop_pointer = pop_ulonglong;
-                    affix->res = newSVuv(0);
-                    break;
-                case FLOAT_FLAG:
-                    affix->pop_pointer = pop_float;
-                    affix->res = newSVnv(0);
-                    break;
-                case DOUBLE_FLAG:
-                    affix->pop_pointer = pop_double;
-                    affix->res = newSVnv(0);
-                    break;
-                case WSTRING_FLAG:
-                    affix->pop_pointer = pop_wstring;
-                    affix->res = newSV(0);
-                    break;
-                case STDSTRING_FLAG:
-                    affix->pop_pointer = pop_stdstring;
-                    affix->res = newSV(0);
-                    break;
-                case POINTER_FLAG:  // Actually handled above but...
-                    affix->pop_pointer = pop_pointer;
-                    affix->res = newSV(0);
-                    break;
-                case STRUCT_FLAG:
-                    affix->pop_pointer = pop_struct;
-                    affix->res = newSV(0);
-                    break;
-                default:
-                    croak("Unknown or unhandled return type: %s", affix->restype->stringify.c_str());
-                    // XXX: This should be a fatal error?
-                    //~ affix->pop_pointer = pop_int;
-                    //~ affix->res = newSV(0);
-                    break;
-                }
-        } else
-            croak("Unknown return type");
-    }
+
 
     STMT_START {
         cv = newXSproto_portable(ix == 0 ? rename.c_str() : NULL, Affix_trigger, __FILE__, prototype.c_str());

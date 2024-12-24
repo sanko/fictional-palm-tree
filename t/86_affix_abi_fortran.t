@@ -5,64 +5,17 @@ use Affix qw[:all];
 use t::lib::helper;
 use Affix::Builder;
 use Config;
+use Path::Tiny qw[path];
 $|++;
 
 # Tests taken from Affix::ABI::Fortran
 #~ plan tests => 6;
 # https://fortran-lang.org/learn/building_programs/managing_libraries/
 SKIP: {
-    my $fortran = Affix::Builder::Fortran->new( source => ['t/src/86_affix_abi_fortran/hello.f90'] );
-    skip_all 'test requires GNU or Intel Fortran' unless $fortran->build;
-    my $lib = $fortran->libname();
-    if ($lib) {
+    my $fortran = Affix::Builder::Fortran->new( source => [ path(__FILE__)->parent->child(qw[src 86_affix_abi_fortran hello.f90]) ] );
+    skip_all 'test requires GNU or Intel Fortran' unless my $lib = $fortran->build;
 
-        #~ diag system 'nm', $lib->absolute;
-        subtest 'function func(i) result(j)' => sub {
-            ok affix( $lib, 'func', [Int], Int ), 'affix ..., "func", [Int], Int';
-            is func(3), 36, 'func( 3 ) == 36';
-        };
-    }
-
-    #~ p $fortran->output->absolute;
-
-=cut
-
-
-my $compiler = Affix::Builder->new();
-my @links
-
-
-Write a modern OO perl module that can compile to obj and link a given list of objs to a shared library. It should find and correctly call c, cpp, fortran, D, and Rust compilers.
-
-The api looks like this:
-
-my $builder = My::Builder->new();
-my $obj = $builder->fortran('path/to/fortran.f90');
-my $obj2 = $builder->cpp('path/to/test.cxx');
-my $obj3 = $builder->rust('/rustpath/');
-my $lib = $builder->link($obj, $obj2);
-
-
-
-
-
-
-
-
-
-
-
-
-
-    my $compiler = can_run('gfortran');
-    my $gnu      = !!$compiler;
-    $compiler = can_run('ifort') unless $compiler;    # intel
-    skip 'test requires GNUFortran', 6 unless $compiler;
-    my $lib  = './t/src/86_affix_abi_fortran/' . ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_fortran.' . $Config{so};
-    my $line = sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s', $compiler,
-        ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
-    diag $line;
-    diag `$line`;
+    #~ diag system 'nm', $lib->absolute;
     subtest 'function func(i) result(j)' => sub {
         ok affix( $lib, 'func', [Int], Int ), 'affix ..., "func", [Int], Int';
         is func(3), 36, 'func( 3 ) == 36';
@@ -82,6 +35,7 @@ my $lib = $builder->link($obj, $obj2);
         is sum_r( 5, 10 ), 15, 'sum_r( 5, 10 ) == 15';
     };
     subtest 'subroutine square_cube(i, isquare, icube)' => sub {
+        skip_all 'Pointers are back on my TODO list';
         ok affix( $lib, 'square_cube', [ Pointer [Int], Pointer [Int], Pointer [Int] ], Void ),
             'affix ..., "square_cube", [Pointer[Int], Pointer[Int], Pointer[Int]], Void';
         diag 'square_cube( 4, \my $square, \my $cube );';
@@ -102,15 +56,16 @@ my $lib = $builder->link($obj, $obj2);
         is f3(0), 3, 'f3(0)';
         is f4(0), 4, 'f4(0)';
     };
+
     #~ subtest 'optional arguments' => sub {
-        #~ ok affix( $lib, 'tester', [ Varargs, Pointer [Float] ], Float ), 'affix ..., "tester", [ Varargs, Pointer[Float] ], Float';
-        #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
-        #~ is sprintf( '%1.2f', tester(1.0) ), '1.00', 'tester(1.0) == 1.00';
-        #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
-        #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
-        #~ use Data::Dump;
-        #~ ddx( ( Pointer [Float] )->cast(5) );
-        #~ tester( ( Pointer [Float] )->cast(5) );
+    #~ ok affix( $lib, 'tester', [ Varargs, Pointer [Float] ], Float ), 'affix ..., "tester", [ Varargs, Pointer[Float] ], Float';
+    #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
+    #~ is sprintf( '%1.2f', tester(1.0) ), '1.00', 'tester(1.0) == 1.00';
+    #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
+    #~ is sprintf( '%1.2f', tester() ),    '0.00', 'tester() == 0.00';
+    #~ use Data::Dump;
+    #~ ddx( ( Pointer [Float] )->cast(5) );
+    #~ tester( ( Pointer [Float] )->cast(5) );
     #~ };
     done_testing;
     exit;
@@ -150,6 +105,7 @@ my $lib = $builder->link($obj, $obj2);
     is math::add( 5, 4 ), 9, 'math::add(5, 4) == 9';
     ok affix( $lib, 'add', [ Int, Int ] => Int ), 'bound fortran function `add` (top level namespace)';
     is add( 5, 4 ), 9, 'add(5, 4) == 9';
+
     #~ ok affix( $lib, 'sum_arr', [ Array [ Int, 3 ], Int ] => Int ), 'bound fortran function `sum_arr`';
     #~ my $type = Array [ Int, 3 ];
     #~ warn ref $type;
@@ -168,9 +124,6 @@ my $lib = $builder->link($obj, $obj2);
     }
     diag 'might fail to clean up on Win32 because we have not released the lib yet... this is fine' if $^O eq 'MSWin32';
     unlink $lib;
-
-=cut
-
 }
 #
 done_testing;

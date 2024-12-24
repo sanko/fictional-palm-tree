@@ -470,6 +470,8 @@ public:  // for now
 class Affix;
 
 typedef bool (*arg)(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool init_resetvm(pTHX_ Affix *, DCCallVM *, SV *, size_t);
+bool init_aggregate(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_void(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_bool(pTHX_ Affix *, DCCallVM *, SV *, size_t);
 bool push_char(pTHX_ Affix *, DCCallVM *, SV *, size_t);

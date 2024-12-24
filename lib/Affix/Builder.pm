@@ -91,8 +91,9 @@ class Affix::Builder::C 1.00 : isa(Affix::Builder) {
 }
 
 class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
-    use Config qw[%Config];
-    use Carp   qw[confess];
+    use Config   qw[%Config];
+    use Carp     qw[confess];
+    use IPC::Cmd qw[can_run run];
     $Carp::Internal{ (__PACKAGE__) }++;
 
     sub find_compiler($pkg) {
@@ -111,7 +112,7 @@ class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
             return $self->libname
                 if !system grep { length $_ && /\w/ } 'g++', $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
         }
-        if $Config{cc} =~ /gcc/ && `g++ -v 2>&1` =~ /GNU/;
+        if $Config{cc} =~ /gcc/ && can_run( $Config{cc} ) && `g++ -v 2>&1` =~ /GNU/;
         return method() {
             my @objs;
 
@@ -129,9 +130,9 @@ class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
                 @objs,    # twice
                 $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
         }
-        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
-            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
-            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
+        if ( ( $Config{cc} =~ /cl/ && can_run( $Config{cc} ) && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
+            ( $Config{cc} =~ /icl|icc/ && can_run( $Config{cc} ) && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
+            ( $Config{cc} =~ /dmc/     && can_run( $Config{cc} ) && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
         method() { confess 'Failed to locate C compiler' };
     }
 }
@@ -141,28 +142,29 @@ class Affix::Builder::Crystal 1.00 : isa(Affix::Builder) { }
 class Affix::Builder::D 1.00 : isa(Affix::Builder) { }
 
 class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-lang.org/learn/building_programs/managing_libraries/
-    use Config qw[%Config];
-    use Carp   qw[carp];
+    use Config   qw[%Config];
+    use Carp     qw[carp];
+    use IPC::Cmd qw[can_run];
     $Carp::Internal{ (__PACKAGE__) }++;
 
     sub find_compiler($pkg) {
+        my $compiler = can_run('gfortran');
         return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj if !system grep { length $_ && /\w/ } 'gfortran', '-c', $source->absolute->stringify,
-
-                    #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
-                    ( $self->os eq 'darwin' ? '-dynamiclib' : '-shared' ), '-o', $obj->absolute->stringify;
+            {
+                my $gnu = !!$compiler;
+                $compiler = can_run('ifort') unless $compiler;    # intel
+                my $lib  = './t/src/86_affix_abi_fortran/' . ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_fortran.' . $Config{so};
+                my $line = sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s', $compiler,
+                    ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
             }
-
-            # link/archive
             return $self->libname
-                if !system grep { length $_ && /\w/ } 'gfortran', '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
+                if !system $compiler, ( map { $_->absolute->stringify } @{ $self->source } ), '-fPIC',
+                ( $self->os eq 'darwin' ? '-dynamiclib' : '-shared' ),
+
+                #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
+                '-o', $self->libname;
         }
-        if `gfortran --version 2>&1` =~ /GNU Fortran/;
+        if $compiler;
         return method() {
             my @objs;
 
@@ -177,7 +179,7 @@ class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-
             # link/archive
             return $self->libname if !system grep { length $_ && /\w/ } 'ifx', '/dll', '-o', map { $_->absolute->stringify } $self->libname, @objs
         }
-        if `ifx /QV 2>&1` =~ /Intel/;    # Intel's latest
+        if can_run('ifx') && `ifx /QV 2>&1` =~ /Intel/;    # Intel's latest
 
         # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
         return method() { carp 'Failed to locate Fortran compiler'; () };

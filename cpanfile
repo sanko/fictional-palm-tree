@@ -23,6 +23,7 @@ on build => sub {
 on test => sub {
     requires 'Capture::Tiny';
     requires 'Data::Printer';
+    requires 'IPC::Cmd';
     requires 'TAP::Harness::Env';
     requires 'Test2::Plugin::UTF8';
     requires 'Test2::Tools::Compare';

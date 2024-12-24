@@ -104,6 +104,7 @@
          "requires" : {
             "Capture::Tiny" : "0",
             "Data::Printer" : "0",
+            "IPC::Cmd" : "0",
             "TAP::Harness::Env" : "0",
             "Test2::Plugin::UTF8" : "0",
             "Test2::Tools::Compare" : "0",

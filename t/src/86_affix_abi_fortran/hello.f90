@@ -8,7 +8,7 @@ function func(i) result(j) bind(C)
     j = i**2 + i**3
 end function
 
-recursive function fact(i) result(j)
+recursive function fact(i) result(j) bind(C)
     integer, intent (in) :: i
     integer :: j
     if (i==1) then
@@ -19,7 +19,7 @@ recursive function fact(i) result(j)
 end function fact
 
     ! fortran with by-value parameter
-    function sum_v( x, y ) result(z)
+    function sum_v( x, y ) result(z) bind(C)
         integer, intent (in), value :: x
         integer, intent (in), value :: y
         integer                     :: z
@@ -28,7 +28,7 @@ end function fact
     end function
 
     ! fortran with by-reference parameter
-    function sum_r( x, y ) result(z)
+    function sum_r( x, y ) result(z) bind(C)
         integer, intent (in) :: x
         integer, intent (in) :: y
         integer              :: z
@@ -37,7 +37,7 @@ end function fact
     end function
 
     ! fortran subroutine
-    subroutine square_cube(i, isquare, icube)
+    subroutine square_cube(i, isquare, icube) bind(C)
         integer, intent (in)  :: i
         integer, intent (out) :: isquare, icube
 
@@ -46,7 +46,7 @@ end function fact
     end subroutine
 
     !four forms for fortran functions
-    function f1(i) result (j)
+    function f1(i) result (j) bind(C)
       !! result's variable:  separately specified
       !! result's data type: separately specified
       integer, intent (in) :: i
@@ -54,21 +54,21 @@ end function fact
       j = i + 1
     end function
 
-    integer function f2(i) result (j)
+    integer function f2(i) result (j) bind(C)
       !! result's variable:  separately specified
       !! result's data type: by prefix
       integer, intent (in) :: i
       j = i + 2
     end function
 
-    integer function f3(i)
+    integer function f3(i) bind(C)
       !! result's variable:  by function name
       !! result's data type: by prefix
       integer, intent(in) :: i
       f3 = i + 3
     end function
 
-    function f4(i)
+    function f4(i) bind(C)
       !! result's variable:  by function name
       !! result's data type: separately specified
       integer, intent (in) :: i
@@ -76,8 +76,7 @@ end function fact
       f4 = i + 4
     end function
 
-
-    real function tester(a)
+    real function tester(a) bind(C)
         real, intent (in), optional :: a
         if (present(a)) then
             tester = a
@@ -86,30 +85,16 @@ end function fact
         end if
     end function
 
-
-
-
-    integer function f_add(x, y)
+    integer function f_add(x, y) bind(C)
         implicit none
         integer, intent(in), value :: x
         integer, intent(in), value :: y
         f_add = x + y
     end
 
-    subroutine s_add(res, x, y)
+    subroutine s_add(res, x, y) bind(C)
         res = x + y
     end
-
-
-
-
-
-
-
-
-
-
-
 
 integer(kind=c_int) function getString(instr) bind(C,name='fstringlen')
     use, intrinsic :: iso_c_binding
@@ -140,11 +125,7 @@ contains
     end function
 end module math
 
-
-
-
-
-integer function sum_arr(arr, n)
+integer function sum_arr(arr, n) bind(C)
   integer, intent(in), value :: n
   integer, dimension(n), intent(in) :: arr
   sum_arr = sum(arr)
