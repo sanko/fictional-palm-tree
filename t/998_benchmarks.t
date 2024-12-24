@@ -21,8 +21,8 @@ subtest verify => sub {
 };
 my $depth = 20;
 subtest benchmarks => sub {
-    my $todo = todo 'these are fun but not important; we will not be beating perl opcodes';
-    is fastest(
+    my $todo = todo 'these are fun but not important; we will not be beating opcodes';
+    isnt fastest(
         -5,
         pure => sub {
             my $x = 0;
@@ -37,7 +37,7 @@ subtest benchmarks => sub {
             while ( $x < $depth ) { my $n = affix_sin($x); $x++ }
         }
         ),
-        'affix', '[Int]';
+        'pure', '[Int]';
 };
 
 # Cribbed from Test::Benchmark

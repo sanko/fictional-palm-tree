@@ -23,22 +23,21 @@ class    #
     field $force : param //= 0;
     field $debug : param = 0;
     field $libver;
-    field $cflags = $^O =~ /bsd/ ? '' : '-fPIC ' . (
-        $debug > 0 ?
+    field $cflags
+        = $^O =~ /bsd/ ? '' :
+        '-fPIC ' .
+        ( $debug > 0 ?
             '-DDEBUG=' .
             $debug .
-            ' -g3 -pthread -gdwarf-4 -fPIC ' .
+            ' -g3 -pthread -gdwarf-4 ' .
             ' -Wno-deprecated -pipe -fno-elide-type -fdiagnostics-show-template-tree ' .
             ' -Wall -Wextra -Wpedantic -Wvla -Wextra-semi -Wnull-dereference ' .
             ' -Wswitch-enum  -Wduplicated-cond ' .
-            ' -Wduplicated-branches -Wsuggest-override'
-
-        # .
-        # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
-        :
-            $Config{osname} eq 'MSWin32' ? '' :
-            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto'
-    );
+            ' -Wduplicated-branches -Wsuggest-override' .
+            ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' ) :
+            ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -ftree-vectorize ' .
+            ' -fno-align-functions -fno-align-loops -fno-omit-frame-pointer ' .
+            ( $Config{osname} eq 'MSWin32' ? '' : ' -flto -fuse-linker-plugin ' ) );
     field $ldflags = $^O =~ /bsd/ ? '' : ' -flto ';
     field $cppver  = 'c++17';                         # https://en.wikipedia.org/wiki/C%2B%2B20#Compiler_support
     field $cver    = 'c17';                           # https://en.wikipedia.org/wiki/C17_(C_standard_revision)
@@ -195,7 +194,13 @@ GetOptionsFromArray \@ARGV, \%%opts, qw[install_base=s install_path=s%% installd
                 }
                 else {
                     $configure .= 'make';
-                    $make = 'gmake AS="gcc -c " CC=gcc VPATH=. PREFIX="' . $pre . '"' . ( $verbose ? '' : ' -s' );
+                    $ENV{CFLAGS} = (
+                        join ' ', '-fPIC',            '-DNDEBUG',             '-DBOOST_DISABLE_ASSERTS',
+                        '-Ofast', '-ftree-vectorize', '-fno-align-functions', '-fno-align-loops',
+                        '-fno-omit-frame-pointer', '-falign-functions=16', '-falign-loops=16'
+                    );
+                    $make = $exe . ( $verbose ? ' V=1' : ' -s' ) . ' AS="gcc -c " CC=gcc VPATH=. PREFIX="' . $pre . '"';
+                    warn $make;
                 }
                 last;
             }
