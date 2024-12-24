@@ -11,7 +11,7 @@ $|++;
 #~ plan tests => 6;
 # https://fortran-lang.org/learn/building_programs/managing_libraries/
 SKIP: {
-    my $fortran = Affix::Builder::Fortran->new(  source => ['t/src/86_affix_abi_fortran/hello.f90'] );
+    my $fortran = Affix::Builder::Fortran->new( source => ['t/src/86_affix_abi_fortran/hello.f90'] );
     skip_all 'test requires GNU or Intel Fortran' unless $fortran->build;
     my $lib = $fortran->libname();
     if ($lib) {

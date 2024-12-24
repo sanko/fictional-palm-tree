@@ -36,8 +36,7 @@ class    #
         # .
         # ( $Config{osname} eq 'darwin' ? '' : ' -fvar-tracking-assignments' )
         :
-
-            # $Config{osname} eq 'MSWin32' ? '' :
+            $Config{osname} eq 'MSWin32' ? '' :
             ' -DNDEBUG -DBOOST_DISABLE_ASSERTS -Ofast -fPIC -ftree-vectorize -ffast-math -fno-align-functions -fno-align-loops -fno-omit-frame-pointer -flto'
     );
     field $ldflags = $^O =~ /bsd/ ? '' : ' -flto ';

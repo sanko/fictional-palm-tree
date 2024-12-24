@@ -64,7 +64,8 @@ class Affix::Builder::C 1.00 : isa(Affix::Builder) {
             return $self->libname
                 if !system grep { length $_ && /\w/ } $Config{cc}, $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname,
                 @objs
-        };
+        }
+        if ( $Config{cc} =~ /gcc/ && `$Config{cc} -v 2>&1` =~ /GNU/ );
         return method() {
             my @objs;
 
@@ -82,9 +83,9 @@ class Affix::Builder::C 1.00 : isa(Affix::Builder) {
                 @objs,    # twice
                 $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
         }
-        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /?` =~ /Microsoft/ ) ||
-            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version` =~ /Intel/ ) ||
-            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v`       =~ /Mars/ ) );
+        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
+            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
+            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
         method() { confess 'Failed to locate C compiler' };
     }
 }
@@ -109,7 +110,8 @@ class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
             # link/archive
             return $self->libname
                 if !system grep { length $_ && /\w/ } 'g++', $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
-        };
+        }
+        if $Config{cc} =~ /gcc/ && `g++ -v 2>&1` =~ /GNU/;
         return method() {
             my @objs;
 
@@ -127,9 +129,9 @@ class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
                 @objs,    # twice
                 $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
         }
-        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /?` =~ /Microsoft/ ) ||
-            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version` =~ /Intel/ ) ||
-            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v`       =~ /Mars/ ) );
+        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
+            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
+            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
         method() { confess 'Failed to locate C compiler' };
     }
 }
@@ -160,7 +162,7 @@ class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-
             return $self->libname
                 if !system grep { length $_ && /\w/ } 'gfortran', '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
         }
-        if `gfortran --version` =~ /GNU Fortran/;
+        if `gfortran --version 2>&1` =~ /GNU Fortran/;
         return method() {
             my @objs;
 
@@ -175,10 +177,10 @@ class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-
             # link/archive
             return $self->libname if !system grep { length $_ && /\w/ } 'ifx', '/dll', '-o', map { $_->absolute->stringify } $self->libname, @objs
         }
-        if `ifx /QV` =~ /Intel/;    # Intel's latest
+        if `ifx /QV 2>&1` =~ /Intel/;    # Intel's latest
 
         # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
-        return method() { carp 'Failed to locate Fortran compiler' };
+        return method() { carp 'Failed to locate Fortran compiler'; () };
     }
 }
 
