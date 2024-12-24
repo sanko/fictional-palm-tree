@@ -1,9 +1,9 @@
-use Test2::V0 '!subtest';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix         qw[:all];
-use Capture::Tiny qw[/capture/];
+use Affix qw[:all];
 use t::lib::helper;
+use Capture::Tiny qw[/capture/];
 $|++;
 #
 isa_ok Void,           ['Affix::Type'];
@@ -13,7 +13,7 @@ ok my $lib = compile_test_lib(<<''), 'build test lib';
 #include "std.h"
 // ext: .c
 void test_1( void ) { warn("ok");}
-void test_2( void * in ) { 
+void test_2( void * in ) {
     if(memcmp(in, "Just random junk here", 22) == 0) { warn( "ok" ); }
     else{ warn ("not ok"); }
 }

@@ -1,12 +1,9 @@
-BEGIN { chdir '../' if !-d 't'; }
-use lib '../lib', 'lib', '../blib/arch', '../blib/lib', 'blib/arch', 'blib/lib', '../../', '.';
-use Test2::V0 '!subtest';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
+use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
 use Affix qw[:all];
 use t::lib::helper;
 use Affix::Builder;
-
-#~ use experimental 'signatures';
 use Config;
 $|++;
 

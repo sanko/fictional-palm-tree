@@ -1,13 +1,11 @@
-use strict;
-use warnings;
-use Config;
-use Test2::V0 '!subtest';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
+use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
+use Affix qw[wrap affix libm Double];
+use t::lib::helper;
+use Config;
 
 # use Test2::Require::AuthorTesting;
-use lib '../lib', 'lib', '../blib/arch', '../blib/lib', 'blib/arch', 'blib/lib', '../../', '.';
-use Affix qw[wrap affix libm Double];
-BEGIN { chdir '../' if !-d 't'; }
 use Benchmark qw[:all];
 $|++;
 #

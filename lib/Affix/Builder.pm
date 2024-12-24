@@ -140,10 +140,10 @@ class Affix::Builder::D 1.00 : isa(Affix::Builder) { }
 
 class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-lang.org/learn/building_programs/managing_libraries/
     use Config qw[%Config];
-    use Carp   qw[confess];
+    use Carp   qw[carp];
     $Carp::Internal{ (__PACKAGE__) }++;
 
-    sub find_compiler($pkg) {                                 # GNU
+    sub find_compiler($pkg) {
         return method() {
             my @objs;
 
@@ -178,7 +178,7 @@ class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-
         if `ifx /QV` =~ /Intel/;    # Intel's latest
 
         # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
-        return method() { confess 'Failed to locate Fortran compiler' };
+        return method() { carp 'Failed to locate Fortran compiler' };
     }
 }
 

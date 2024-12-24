@@ -1,10 +1,10 @@
-use v5.40;
-use Test2::V0 '!subtest', 'array';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix         qw[:all];
-use Capture::Tiny qw[/capture/];
+use Affix qw[:all];
 use t::lib::helper;
+use Capture::Tiny qw[/capture/];
+use v5.40;
 $|++;
 #
 my $lib = compile_test_lib <<'';

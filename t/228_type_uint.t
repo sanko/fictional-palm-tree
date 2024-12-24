@@ -1,9 +1,9 @@
-use Test2::V0 '!subtest', 'array';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
-use Affix         qw[:all];
-use Capture::Tiny qw[/capture/];
+use Affix qw[:all];
 use t::lib::helper;
+use Capture::Tiny qw[/capture/];
 $|++;
 #
 isa_ok UInt,           ['Affix::Type'];
@@ -16,17 +16,17 @@ void test_1( unsigned int i ) { if (i == 100){ warn("ok"); }else {warn("not ok")
 unsigned int test_2( ) {return 700;}
 unsigned int test_3( unsigned int * in, unsigned int x ) { return in[x];}
 unsigned int test_4( unsigned int ** in, unsigned int x, int y ) { return in[x][y]; }
-unsigned int * test_5( unsigned int size ) { 
+unsigned int * test_5( unsigned int size ) {
     unsigned int* ret = (unsigned int*)malloc(size * sizeof(unsigned int));
     if (ret != NULL)
-    for (unsigned int i = 0; i < size; ++i) 
+    for (unsigned int i = 0; i < size; ++i)
         ret[i] = i * 2;
   return ret;
 }
 unsigned int ** test_6( unsigned int rows, unsigned int cols){
   // Allocate memory for the rows of pointers
   unsigned int** arr = (unsigned int**)malloc(rows * sizeof(unsigned int*));
-  if (arr == NULL) 
+  if (arr == NULL)
     return NULL; // Error handling: malloc failed
   // Allocate memory for each row (inner array)
   for (unsigned int i = 0; i < rows; ++i) {
@@ -43,7 +43,7 @@ unsigned int ** test_6( unsigned int rows, unsigned int cols){
   // Initialize all elements of the array
   for (unsigned int i = 0; i < rows; ++i) {
     for (unsigned int j = 0; j < cols; ++j) {
-      arr[i][j] = i * cols + j; 
+      arr[i][j] = i * cols + j;
     }
   }
   return arr;

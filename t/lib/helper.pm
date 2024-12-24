@@ -1,5 +1,5 @@
 package t::lib::helper {
-    use Test2::V0 '!subtest';
+    use Test2::V0 -no_srand => 1, '!subtest';
     use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
     use Test2::Plugin::UTF8;
     use Path::Tiny qw[path tempdir tempfile];
@@ -294,7 +294,7 @@ package t::lib::helper {
             my $source = sprintf
                 <<'', ( join ', ', map {"'$_'"} sort { length $a <=> length $b } grep {defined} map { my $dir = path($_); $dir->exists ? $dir->absolute->realpath : () } @INC, 't/lib' ), Test2::API::test2_stack()->top->{count}, $deparse->coderef2text($code_ref);
 use lib %s;
-use Test2::V0 '!subtest', -no_srand => 1;
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use Test2::Plugin::UTF8;
 no Test2::Plugin::ExitSummary; # I wish

@@ -1,11 +1,10 @@
-use Test2::V0 '!subtest';
+use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
 use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
+use Affix qw[:all];
 use t::lib::helper;
 
-# Run code very close to the synopsis
-use Affix qw[:all];
-
+# Run code very similar to the synopsis
 # bind to exported function
 isa_ok affix( libm, 'floor', [Double], Double ), ['Affix'];
 is floor(3.14159), 3, 'floor( 3.14159 )';
