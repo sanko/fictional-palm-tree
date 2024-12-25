@@ -115,7 +115,7 @@
    "provides" : {
       "Affix" : {
          "file" : "lib/Affix.pm",
-         "version" : "v0.0.1"
+         "version" : "1.00"
       },
       "Affix::Builder" : {
          "file" : "lib/Affix/Builder.pm",
@@ -181,7 +181,7 @@
          "web" : "https://github.com/sanko/Affix.pm"
       }
    },
-   "version" : "v0.0.1",
+   "version" : "1.00",
    "x_help_wanted" : [
       "Tester",
       "Documenter"
