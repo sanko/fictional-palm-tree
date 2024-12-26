@@ -24,7 +24,7 @@ package t::lib::helper {
         my ( $name, $aggs, $keep ) = @_;
         $aggs //= '';
         $keep //= 0;
-        my ($opt) = grep { -f $_ } "t/src/$name.cxx", "t/src/$name.c";
+        my ($opt) = grep { -f $_ } "t/src/$name.cxx", "t/src/$name.c", "src/$name.cxx", "src/$name.c";
         if ($opt) {
             $opt = path($opt)->absolute;
         }

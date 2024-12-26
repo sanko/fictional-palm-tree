@@ -1,5 +1,17 @@
 #include "../Affix.h"
 
+
+DCpointer int2ptr(pTHX_ Affix_Type * type, SV * sv, size_t depth, DCpointer target) {
+
+    return target;
+}
+
+SV * ptr2int(pTHX_ Affix_Type * type, DCpointer target, size_t depth) {
+
+    return newSV(0);
+}
+
+
 DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer target) {
     // Do I really need the Affix_Pointer here? I'm really only after ptr->count
     // DD(data);

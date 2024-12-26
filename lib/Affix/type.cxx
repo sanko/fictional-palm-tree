@@ -2,6 +2,7 @@
 
 Affix_Type * sv2type(pTHX_ SV * perl_type) {
     Affix_Type * retval;
+
     // This is it until we get to parameterized types
     SV ** ptr_stringify = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "stringify", 9, 0);
     SV ** ptr_numeric = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "numeric", 7, 0);
@@ -62,12 +63,9 @@ Affix_Type * sv2type(pTHX_ SV * perl_type) {
                                 SvIV(*ptr_alignment),
                                 ptr_depth != nullptr ? SvIV(*ptr_depth) : 0,
                                 SvIV(*ptr_offset),
-
                                 lengths);
-
-
     if (ptr_field != nullptr) {
-        DD(*ptr_field);
+        //~ DD(*ptr_field);
         retval->field = std::string(SvPV_nolen(*ptr_field));
     }
 

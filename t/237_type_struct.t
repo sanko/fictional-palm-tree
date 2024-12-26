@@ -1,17 +1,27 @@
 use Test2::V0 -no_srand => 1, '!subtest';
 use Test2::Util::Importer 'Test2::Tools::Subtest' => ( subtest_streamed => { -as => 'subtest' } );
-use lib './lib', '../lib', '../blib/arch/', 'blib/arch', '../', '.';
+use lib '../';
+use blib;
 use Affix qw[:types wrap affix];
 use t::lib::helper;
 $|++;
 #
-ok my $lib = compile_test_lib('236_types_struct'), 'build test lib';
+ok my $lib = compile_test_lib('237_types_struct'), 'build test lib';
+{
+    my $s = Struct [ first => String, second => String, third => Int ];
+    warn;
+    use Data::Printer;
+    p $s;
+    warn;
 
-# my $s = Struct [ first => String, second => String, third => Int ];
-# use Data::Dump;
-# ddx $s;
-# done_testing;
-# exit;
+    #~ ddx
+    warn Affix::Test::Struct($s);
+    warn;
+
+    #~ ddx $s;
+    done_testing;
+    exit;
+}
 subtest offsetof => sub {
     isa_ok my $type = Struct [
         name => Struct [ first => String, last => String, middle => Char ],

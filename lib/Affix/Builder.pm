@@ -1,198 +1,205 @@
-use v5.40;
-use feature qw[class];
-no warnings qw[experimental::class];
+package Affix::Builder {
+    use v5.40;
+    use feature qw[class];
+    no warnings qw[experimental::class];
 
-class Affix::Builder 1.00 {
-    use Carp       qw[confess];
-    use Config     qw[%Config];
-    use Path::Tiny qw[tempdir path];
-    $Carp::Internal{ (__PACKAGE__) }++;
-    field $source : reader : param;
-    field $name : param //= ();
-    field $version : reader : param //= ();
-    #
-    field $test = __CLASS__->can('test') ? __CLASS__->test : ();
-    #
-    field $os : reader : param        //= $^O;
-    field $cleanup : param            //= 0;
-    field $build_dir : reader : param //= tempdir( CLEANUP => $cleanup );
-    field $verbose : param            //= 0;
-    field $libname : reader : param   //= ();
-    #
-    field $compiler = __CLASS__->can('find_compiler') ? __CLASS__->find_compiler : ();
-    #
-    #~ method build() {...}
-    method build() {
-        return $self->libname if $self->libname->exists && !grep { $self->libname->stat->mtime < $_->stat->mtime } @{ $self->source };
-        $self->$compiler;
+    class Affix::Builder 1.00 {
+        use Carp       qw[confess];
+        use Config     qw[%Config];
+        use Path::Tiny qw[tempdir path];
+        $Carp::Internal{ (__PACKAGE__) }++;
+        field $source : reader : param;
+        field $name : param //= ();
+        field $version : reader : param //= ();
+        #
+        field $test = __CLASS__->can('test') ? __CLASS__->test : ();
+        #
+        field $os : reader : param        //= $^O;
+        field $cleanup : param            //= 0;
+        field $build_dir : reader : param //= tempdir( CLEANUP => $cleanup );
+        field $verbose : param            //= 0;
+        field $libname : reader : param   //= ();
+        #
+        field $compiler = __CLASS__->can('find_compiler') ? __CLASS__->find_compiler : ();
+        #
+        #~ method build() {...}
+        method build() {
+            return $self->libname if $self->libname->exists && !grep { $self->libname->stat->mtime < $_->stat->mtime } @{ $self->source };
+            $self->$compiler;
+        }
+        ADJUST {
+            confess 'subclass ' . __PACKAGE__ if __CLASS__ eq __PACKAGE__;
+            $source = [$source] unless ref $source eq 'ARRAY';
+            $source = [ map { builtin::blessed($_) ? $_ : path($_) } @$source ];
+            $name //= $source->[0]->basename(qr[\..*?$]);
+            $build_dir = path($build_dir)->absolute unless builtin::blessed $build_dir;
+            $libname
+                //= $build_dir->child( ( $os ne 'MSWin32' && $name !~ /^lib/ ? 'lib' : '' ) .
+                    $name . '.' .
+                    $Config{so} .
+                    ( $os ne 'MSWin32' && defined $version ? '.' . $version : '' ) );
+        }
+        method DESTROY { }
     }
-    ADJUST {
-        confess 'subclass ' . __PACKAGE__ if __CLASS__ eq __PACKAGE__;
-        $source = [$source] unless ref $source eq 'ARRAY';
-        $source = [ map { builtin::blessed($_) ? $_ : path($_) } @$source ];
-        $name //= $source->[0]->basename(qr[\..*?$]);
-        $build_dir = path($build_dir)->absolute unless builtin::blessed $build_dir;
-        $libname
-            //= $build_dir->child( ( $os ne 'MSWin32' && $name !~ /^lib/ ? 'lib' : '' ) .
-                $name . '.' .
-                $Config{so} .
-                ( $os ne 'MSWin32' && defined $version ? '.' . $version : '' ) );
+
+    class Affix::Builder::C 1.00 : isa(Affix::Builder) {
+        use Config   qw[%Config];
+        use Carp     qw[confess];
+        use IPC::Cmd qw[can_run];
+        $Carp::Internal{ (__PACKAGE__) }++;
+        #
+        field $cflags : reader : param  //= $Config{cccdlflags} // '';
+        field $ldflags : reader : param //= $Config{ccdlflags}  // '';
+        #
+        sub find_compiler($pkg) {
+            my $c = can_run( $Config{cc} );
+            warn $c;
+            return method() {
+                my @objs;
+
+                # compile
+                for my $source ( @{ $self->source } ) {
+                    my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                    push @objs, $obj
+                        if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                        $obj->absolute->stringify;
+                }
+
+                # link/archive
+                return $self->libname
+                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->ldflags, '-shared', '-o',
+                    map { $_->absolute->stringify } $self->libname, @objs
+            }
+            if ( $Config{cc} =~ /gcc/ && `$Config{cc} -v 2>&1` =~ /GNU/ );
+            return method() {
+                my @objs;
+
+                # compile
+                for my $source ( @{ $self->source } ) {
+                    my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                    push @objs, $obj
+                        if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                        $obj->absolute->stringify;
+                }
+
+                # link/archive
+                return $self->libname
+                    if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
+                    @objs,    # twice
+                    $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
+            }
+            if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
+                ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
+                ( $Config{cc} =~ /dmc/     && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
+            method() { confess 'Failed to locate C compiler' };
+        }
     }
-    method DESTROY { }
+
+    class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
+        use Config   qw[%Config];
+        use Carp     qw[confess];
+        use IPC::Cmd qw[can_run run];
+        $Carp::Internal{ (__PACKAGE__) }++;
+
+        sub find_compiler($pkg) {
+            return method() {
+                my @objs;
+
+                # compile
+                for my $source ( @{ $self->source } ) {
+                    my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                    push @objs, $obj
+                        if !system grep { length $_ && /\w/ } 'g++', $self->cflags, '-fPIC', '-c', $source->absolute->stringify, '-o',
+                        $obj->absolute->stringify;
+                }
+
+                # link/archive
+                return $self->libname
+                    if !system grep { length $_ && /\w/ } 'g++', $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname,
+                    @objs
+            }
+            if $Config{cc} =~ /gcc/ && can_run( $Config{cc} ) && `g++ -v 2>&1` =~ /GNU/;
+            return method() {
+                my @objs;
+
+                # compile
+                for my $source ( @{ $self->source } ) {
+                    my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                    push @objs, $obj
+                        if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
+                        $obj->absolute->stringify;
+                }
+
+                # link/archive
+                return $self->libname
+                    if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
+                    @objs,    # twice
+                    $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
+            }
+            if ( ( $Config{cc} =~ /cl/ && can_run( $Config{cc} ) && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
+                ( $Config{cc} =~ /icl|icc/ && can_run( $Config{cc} ) && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
+                ( $Config{cc} =~ /dmc/     && can_run( $Config{cc} ) && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
+            method() { confess 'Failed to locate C compiler' };
+        }
+    }
+
+    class Affix::Builder::Crystal 1.00 : isa(Affix::Builder) { }
+
+    class Affix::Builder::D 1.00 : isa(Affix::Builder) { }
+
+    class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-lang.org/learn/building_programs/managing_libraries/
+        use Config   qw[%Config];
+        use Carp     qw[carp];
+        use IPC::Cmd qw[can_run];
+        $Carp::Internal{ (__PACKAGE__) }++;
+
+        sub find_compiler($pkg) {
+            my $compiler = can_run('gfortran');
+            return method() {
+                {
+                    my $gnu = !!$compiler;
+                    $compiler = can_run('ifort') unless $compiler;    # intel
+                    my $lib  = './t/src/86_affix_abi_fortran/' . ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_fortran.' . $Config{so};
+                    my $line = sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s', $compiler,
+                        ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
+                }
+                return $self->libname
+                    if !system $compiler, ( map { $_->absolute->stringify } @{ $self->source } ), '-fPIC',
+                    ( $self->os eq 'darwin' ? '-dynamiclib' : '-shared' ),
+
+                    #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
+                    '-o', $self->libname;
+            }
+            if $compiler;
+            return method() {
+                my @objs;
+
+                # compile
+                for my $source ( @{ $self->source } ) {
+                    my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
+                    push @objs, $obj
+                        if !system grep { length $_ && /\w/ } 'ifx', '-c', $source->absolute->stringify, qw[/compile-only /nologo /Fo],
+                        ( $self->os eq 'MSWin32' ? '/dll' : '-shared' ), '-o', $obj->absolute->stringify, $source->absolute->stringify;
+                }
+
+                # link/archive
+                return $self->libname if !system grep { length $_ && /\w/ } 'ifx', '/dll', '-o', map { $_->absolute->stringify } $self->libname, @objs
+            }
+            if can_run('ifx') && `ifx /QV 2>&1` =~ /Intel/;    # Intel's latest
+
+            # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
+            return method() { carp 'Failed to locate Fortran compiler'; () };
+        }
+    }
+
+    class Affix::Builder::Go : isa(Affix::Builder) { }
+
+    class Affix::Builder::Rust : isa(Affix::Builder) { }
+
+    class Affix::Builder::Julia : isa(Affix::Builder) { }
+
+    class Affix::Builder::Nim : isa(Affix::Builder) { }
 }
-
-class Affix::Builder::C 1.00 : isa(Affix::Builder) {
-    use Config qw[%Config];
-    use Carp   qw[confess];
-    $Carp::Internal{ (__PACKAGE__) }++;
-    field $cflags : reader : param  //= $Config{cccdlflags} // '';
-    field $ldflags : reader : param //= $Config{ccdlflags}  // '';
-
-    sub find_compiler($pkg) {
-        return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj
-                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
-                    $obj->absolute->stringify;
-            }
-
-            # link/archive
-            return $self->libname
-                if !system grep { length $_ && /\w/ } $Config{cc}, $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname,
-                @objs
-        }
-        if ( $Config{cc} =~ /gcc/ && `$Config{cc} -v 2>&1` =~ /GNU/ );
-        return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj
-                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
-                    $obj->absolute->stringify;
-            }
-
-            # link/archive
-            return $self->libname
-                if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
-                @objs,    # twice
-                $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
-        }
-        if ( ( $Config{cc} =~ /cl/ && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
-            ( $Config{cc} =~ /icl|icc/ && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
-            ( $Config{cc} =~ /dmc/     && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
-        method() { confess 'Failed to locate C compiler' };
-    }
-}
-
-class Affix::Builder::CPP 1.00 : isa(Affix::Builder::C) {
-    use Config   qw[%Config];
-    use Carp     qw[confess];
-    use IPC::Cmd qw[can_run run];
-    $Carp::Internal{ (__PACKAGE__) }++;
-
-    sub find_compiler($pkg) {
-        return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj
-                    if !system grep { length $_ && /\w/ } 'g++', $self->cflags, '-fPIC', '-c', $source->absolute->stringify, '-o',
-                    $obj->absolute->stringify;
-            }
-
-            # link/archive
-            return $self->libname
-                if !system grep { length $_ && /\w/ } 'g++', $self->ldflags, '-shared', '-o', map { $_->absolute->stringify } $self->libname, @objs
-        }
-        if $Config{cc} =~ /gcc/ && can_run( $Config{cc} ) && `g++ -v 2>&1` =~ /GNU/;
-        return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj
-                    if !system grep { length $_ && /\w/ } $Config{cc}, $self->cflags, '-c', $source->absolute->stringify, '-o',
-                    $obj->absolute->stringify;
-            }
-
-            # link/archive
-            return $self->libname
-                if !system grep { length $_ && /\w/ } $Config{cc}, '/DLL', '/OUT:' . $self->libname, map { $_->absolute->stringify } @objs,
-                @objs,    # twice
-                $self->ldflags, map { $_->absolute->stringify } $self->libname, @objs
-        }
-        if ( ( $Config{cc} =~ /cl/ && can_run( $Config{cc} ) && `$Config{cc} /? 2>&1` =~ /Microsoft/ ) ||
-            ( $Config{cc} =~ /icl|icc/ && can_run( $Config{cc} ) && `$Config{cc} /version 2>&1` =~ /Intel/ ) ||
-            ( $Config{cc} =~ /dmc/     && can_run( $Config{cc} ) && `$Config{cc} -v 2>&1`       =~ /Mars/ ) );
-        method() { confess 'Failed to locate C compiler' };
-    }
-}
-
-class Affix::Builder::Crystal 1.00 : isa(Affix::Builder) { }
-
-class Affix::Builder::D 1.00 : isa(Affix::Builder) { }
-
-class Affix::Builder::Fortran 1.00 : isa(Affix::Builder) {    # https://fortran-lang.org/learn/building_programs/managing_libraries/
-    use Config   qw[%Config];
-    use Carp     qw[carp];
-    use IPC::Cmd qw[can_run];
-    $Carp::Internal{ (__PACKAGE__) }++;
-
-    sub find_compiler($pkg) {
-        my $compiler = can_run('gfortran');
-        return method() {
-            {
-                my $gnu = !!$compiler;
-                $compiler = can_run('ifort') unless $compiler;    # intel
-                my $lib  = './t/src/86_affix_abi_fortran/' . ( $^O eq 'MSWin32' ? '' : 'lib' ) . 'affix_fortran.' . $Config{so};
-                my $line = sprintf '%s t/src/86_affix_abi_fortran/hello.f90 -fPIC %s -o %s', $compiler,
-                    ( $gnu ? '-shared' : ( $^O eq 'MSWin32' ? '/libs:dll' : $^O eq 'darwin' ? '-dynamiclib' : '-shared' ) ), $lib;
-            }
-            return $self->libname
-                if !system $compiler, ( map { $_->absolute->stringify } @{ $self->source } ), '-fPIC',
-                ( $self->os eq 'darwin' ? '-dynamiclib' : '-shared' ),
-
-                #~ '-fno-underscoring', # XXX: should I be lazy and force bind(C, name="symbol")
-                '-o', $self->libname;
-        }
-        if $compiler;
-        return method() {
-            my @objs;
-
-            # compile
-            for my $source ( @{ $self->source } ) {
-                my $obj = $self->build_dir->child( $source->basename(qr[\..*?$]) . $Config{_o} );
-                push @objs, $obj
-                    if !system grep { length $_ && /\w/ } 'ifx', '-c', $source->absolute->stringify, qw[/compile-only /nologo /Fo],
-                    ( $self->os eq 'MSWin32' ? '/dll' : '-shared' ), '-o', $obj->absolute->stringify, $source->absolute->stringify;
-            }
-
-            # link/archive
-            return $self->libname if !system grep { length $_ && /\w/ } 'ifx', '/dll', '-o', map { $_->absolute->stringify } $self->libname, @objs
-        }
-        if can_run('ifx') && `ifx /QV 2>&1` =~ /Intel/;    # Intel's latest
-
-        # TODO: ( `ifort --version`    =~ /Intel/ )   # Classic
-        return method() { carp 'Failed to locate Fortran compiler'; () };
-    }
-}
-
-class Affix::Builder::Go 1.00 : isa(Affix::Builder 1.00) { }
-
-class Affix::Builder::Rust 1.00 : isa(Affix::Builder 1.00) { }
-
-class Affix::Builder::Julia 1.00 : isa(Affix::Builder 1.00) { }
-
-class Affix::Builder::Nim 1.00 : isa(Affix::Builder 1.00) { }
 1;
 __END__
 use Data::Printer;

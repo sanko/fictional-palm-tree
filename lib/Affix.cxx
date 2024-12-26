@@ -239,7 +239,6 @@ bool pop_struct(pTHX_ Affix * affix, DCCallVM * cvm) {
     return false;
 }
 
-
 extern "C" void Affix_trigger(pTHX_ CV * cv) {
     dXSARGS;
     Affix * affix = (Affix *)XSANY.any_ptr;
@@ -657,6 +656,100 @@ XS_INTERNAL(Affix_set_destruct_level) {
     XSRETURN_EMPTY;
 }
 
+#include "proto.h"
+
+// TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+XS_INTERNAL(Affix_Test_Type_Int) {
+    dXSARGS;
+    if (items != 0)
+        croak_xs_usage(cv, "");
+
+    /*
+    {
+        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
+        sv_bless(RETVAL, gv_stashpvn("Affix::Pointer", 14, GV_ADD));
+        ST(0) = sv_2mortal(RETVAL);
+    }
+    XSRETURN(1);*/
+    XSRETURN_EMPTY;
+}
+
+//~ typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
+//~ typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
+
+DCpointer push_int(pTHX_ Affix_Type *, SV *, size_t, DCpointer) {}
+
+XS_INTERNAL(Affix_Test_Struct) {
+    dXSARGS;
+    if (items != 1)
+        croak_xs_usage(cv, "$type");
+    warn("here A");
+    SSize_t size = (SSize_t)0;
+    warn("here B");
+
+    std::vector<SSize_t> lengths;
+    warn("here C");
+
+    lengths.push_back(size);
+    warn("here D");
+
+    Affix_Type * ret = sv2type(aTHX_ ST(0));
+    warn("here E");
+
+    std::unordered_map<std::string, push_field> m;
+    for (const auto & subtype : ret->subtypes)
+        m[subtype->field] = push_int;
+
+    for (const auto & [key, value] : m)
+        warn("...field %s", key.c_str());
+
+    for (const auto & subtype : ret->subtypes) {
+        const char * name = subtype->field.c_str();
+        warn("field %s;", name);
+    }
+    warn("here Z");
+
+    /*
+    if (SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVHV) {
+                // DD(data);
+                HV * hv_struct = MUTABLE_HV(SvRV(data));
+                if (target == nullptr)
+                    target = safecalloc(type->size, SIZEOF_CHAR);
+                for (const auto & subtype : type->subtypes) {
+                    const char * name = subtype->field.c_str();
+                    SV ** ptr_field = hv_fetch(hv_struct, name, strlen(name), 0);
+                    if (ptr_field == nullptr)
+                        croak("Expected field '%s' is missing", name);
+                    DCpointer slot = INT2PTR(DCpointer, (int)subtype->offset + PTR2IV(target));
+
+                    sv2ptr(aTHX_ subtype, *ptr_field, depth, slot);
+                    // sv_dump(*ptr_field);
+                    _pin(aTHX_ SvREFCNT_inc_NN(*ptr_field), subtype, slot);
+                    // sv_dump(*ptr_field);
+                }
+            } else
+                target = nullptr;  // ???: malloc full sized block instead?
+            break;
+            */
+
+
+    /*
+    Affix_Pointer * ret = new Affix_Pointer(sv2type(aTHX_ ST(0)), sv2ptr(aTHX_ ret->type, ST(1)));
+    warn(">>>>> %p", ret->address);
+    if (ret->address == nullptr) {
+        delete ret;
+        XSRETURN_EMPTY;
+    }
+    */
+    {
+        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
+        sv_bless(RETVAL, gv_stashpvn("Affix::Pointer::Unmanaged", 14, GV_ADD));
+        ST(0) = sv_2mortal(RETVAL);
+    }
+    XSRETURN(1);
+}
+
+
 XS_EXTERNAL(boot_Affix) {
     dXSBOOTARGSXSAPIVERCHK;
     // PERL_UNUSED_VAR(items);
@@ -728,6 +821,12 @@ XS_EXTERNAL(boot_Affix) {
     export_constant("Affix", "CODEREF_FLAG", "flags", CODEREF_FLAG);
     export_constant("Affix", "POINTER_FLAG", "flags", POINTER_FLAG);
     export_constant("Affix", "SV_FLAG", "flags", SV_FLAG);
+
+
+    // Testing!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    (void)newXSproto_portable("Affix::Test::Struct", Affix_Test_Struct, __FILE__, "$");
+    (void)newXSproto_portable("Affix::Test::Type", Affix_Test_Type_Int, __FILE__, "");
+
 
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);
