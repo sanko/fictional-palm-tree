@@ -330,6 +330,11 @@ int type_as_dc(int type);  // TODO: Find a better place for this
 char * locate_lib(pTHX_ SV * _lib, SV * _ver);
 char * mangle(pTHX_ const char * abi, SV * affix, const char * symbol, SV * args);
 
+class Affix_Type;
+
+typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
+typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
+
 class Affix_Type {
 public:
     // Fundamental
@@ -425,6 +430,10 @@ public:  // for now...
 
     std::vector<Affix_Type *> subtypes;  // list of Affix_Type for a callback
     Affix_Type * restype = nullptr;      // result type for a callback
+
+    //
+    std::vector<push_field> to_pointer;
+    std::vector<pop_field> from_pointer;
 };
 
 class Affix_Pointer {
