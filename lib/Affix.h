@@ -3,7 +3,9 @@
 
 #include <algorithm>  // for_each
 #include <memory>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #ifdef __cplusplus
@@ -335,6 +337,78 @@ class Affix_Type;
 typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
 typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
 
+class X_Affix_Type {
+public:
+    X_Affix_Type(char num, const std::string & str, size_t sz, size_t al, size_t off)
+        : numeric(num), stringify(str), size(sz), align(al), offset(off) {}
+    X_Affix_Type(char num, const std::string & str) : numeric(num), stringify(str) {}
+
+private:
+    char numeric;
+    std::string stringify;
+
+    bool const_flag = false;
+    bool volatile_flag = false;
+    bool restrict_flag = false;
+    //
+    size_t size = 0;
+    size_t align = 0;
+    size_t offset = 0;
+    size_t depth = 0;  // pointer depth
+};
+
+class X_Affix_Type_Struct : public X_Affix_Type {
+public:
+    X_Affix_Type_Struct(char num,
+                        const std::string & str,
+                        size_t sz,
+                        size_t al,
+                        size_t off,
+                        const std::unordered_map<std::string, X_Affix_Type> & fields)
+        : X_Affix_Type(num, str, sz, al, off), fields(fields) {}
+
+
+    X_Affix_Type_Struct(char num, const std::string & str, const std::unordered_map<std::string, X_Affix_Type> & fields)
+        : X_Affix_Type(num, str), fields(fields) {}
+
+    X_Affix_Type_Struct(char num, const std::string & str, size_t sz, size_t al, size_t off, SV * fields)
+        : X_Affix_Type(num, str, sz, al, off) {}
+
+private:
+    std::unordered_map<std::string, X_Affix_Type> fields;
+    DCaggr aggregate;  // flexible; must be at end of class
+    /*
+        void * subtype = nullptr;  // Affix_Type
+
+        char * _typedef = nullptr;
+        DCaggr * aggregate = nullptr;
+        std::string field;  // If part of a struct
+
+        std::vector<Affix_Type *> subtypes;  // list of Affix_Type for a callback
+        Affix_Type * restype = nullptr;      // result type for a callback
+
+        //
+        std::vector<push_field> to_pointer;
+        std::vector<pop_field> from_pointer;
+        */
+};
+
+class X_Affix_Type_Union : public X_Affix_Type {
+public:
+    X_Affix_Type_Union(
+        char num, const std::string & str, size_t sz, size_t al, size_t off, const std::vector<X_Affix_Type> & types)
+        : X_Affix_Type(num, str, sz, al, off), types(types) {}
+    X_Affix_Type_Union(char num, const std::string & str, const std::vector<X_Affix_Type> & types)
+        : X_Affix_Type(num, str), types(types) {}
+
+private:
+    std::vector<X_Affix_Type> types;
+};
+
+std::optional<X_Affix_Type> type2type(pTHX_ SV * type);
+std::unordered_map<std::string, X_Affix_Type> type2struct(pTHX_ AV *);
+
+
 class Affix_Type {
 public:
     // Fundamental
@@ -411,7 +485,7 @@ public:
 public:  // for now...
     char numeric;
     bool const_flag = false;
-    bool volitile_flag = false;
+    bool volatile_flag = false;
     bool restrict_flag = false;
 
     size_t size;

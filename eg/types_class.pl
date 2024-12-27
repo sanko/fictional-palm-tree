@@ -11,7 +11,7 @@ class Affix::Type 1.234 {
     field $typedef : param //= ();
     field $const : param   //= !1;
 
-    #~ volitile  => !1,
+    #~ volatile  => !1,
     #~ restrict  => !1
     use overload '""' => sub { shift->stringify }, '0+' => sub { shift->numeric };
 

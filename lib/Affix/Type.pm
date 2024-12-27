@@ -62,7 +62,7 @@ package Affix::Type 0.5 {
             alignment => $align,
             typedef   => undef,     # TODO
             const     => !1,
-            volitile  => !1,
+            volatile  => !1,
             restrict  => !1,
             depth     => 0,         # pointer depth
 
@@ -218,7 +218,7 @@ package Affix::Type 0.5 {
     }
 
     sub Volatile : prototype($) {
-        $_[0][0]->{volitile} = 1;
+        $_[0][0]->{volatile} = 1;
         $_[0][0];
     }
 

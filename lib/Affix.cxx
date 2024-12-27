@@ -677,12 +677,68 @@ XS_INTERNAL(Affix_Test_Type_Int) {
 //~ typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
 //~ typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
 
-DCpointer push_int(pTHX_ Affix_Type *, SV *, size_t, DCpointer) {}
+DCpointer push_int(pTHX_ Affix_Type *, SV *, size_t, DCpointer) {
+    return NULL;
+}
+
+std::optional<X_Affix_Type> type2type(pTHX_ SV * type) {
+    sv_dump(SvRV(type));
+    /*
+    SV ** ptr_stringify = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "stringify", 9, 0);
+    SV ** ptr_numeric = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "numeric", 7, 0);
+    SV ** ptr_sizeof = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "sizeof", 6, 0);
+    SV ** ptr_alignment = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "alignment", 9, 0);
+    SV ** ptr_offset = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "offset", 6, 0);
+    SV ** ptr_depth = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "depth", 5, 0);
+    SV ** ptr_length = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "length", 6, 0);
+    SV ** ptr_field = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "name", 4, 0);
+    SV ** ptr_cb_args = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "subtypes", 8, 0);
+    SV ** ptr_cb_res = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "cb_res", 6, 0);
+    */
+    if (LIKELY(sv_isobject(type))) {
+        if (sv_derived_from(type, "Affix::Type::Struct"))
+            return X_Affix_Type_Struct(
+                SvIV(*hv_fetch(MUTABLE_HV(SvRV(type)), "numeric", 7, 0)),
+                SvPV_nolen(*hv_fetch(MUTABLE_HV(SvRV(type)), "stringify", 9, 0)),
+                SvIV(*hv_fetch(MUTABLE_HV(SvRV(type)), "sizeof", 6, 0)),
+                SvIV(*hv_fetch(MUTABLE_HV(SvRV(type)), "alignment", 9, 0)),
+                0,
+                type2struct(aTHX_ MUTABLE_AV(SvRV(*hv_fetch(MUTABLE_HV(SvRV(type)), "subtypes", 8, 0)))));
+        //~ return type2struct(aTHX_ MUTABLE_AV(SvRV(*hv_fetch(MUTABLE_HV(SvRV(type)), "subtypes", 8, 0))));
+        if (sv_derived_from(type, "Affix::Type"))
+            return X_Affix_Type('i', "Int", sizeof(int), alignof(int), 0);
+    }
+    return std::nullopt;
+}
+
+std::unordered_map<std::string, X_Affix_Type> type2struct(pTHX_ AV * types) {
+    std::unordered_map<std::string, X_Affix_Type> fields;
+    warn("av_count(...) = %d", av_count(types));
+    for (auto x = 0; x < av_count(types); x++)
+        warn("%d of %d", x, av_count(types));
+
+    return fields;
+}
+//~ SV ** ptr_cb_args = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "subtypes", 8, 0);
 
 XS_INTERNAL(Affix_Test_Struct) {
     dXSARGS;
     if (items != 1)
         croak_xs_usage(cv, "$type");
+
+    sv_dump(ST(0));
+    auto blarg = type2type(aTHX_ ST(0));
+    /*
+    sv_dump(MUTABLE_SV(hv_fetch(MUTABLE_HV(SvRV(ST(0))), "subtypes", 8, 0)));
+
+    X_Affix_Type_Struct S('S',
+                          "Struct",
+                          sizeof(int),
+                          alignof(int),
+                          0,
+                          type2struct(aTHX_ MUTABLE_AV(hv_fetch(MUTABLE_HV(SvRV(ST(0))), "subtypes", 8, 0))));
+
+   */
     warn("here A");
     SSize_t size = (SSize_t)0;
     warn("here B");
@@ -741,6 +797,7 @@ XS_INTERNAL(Affix_Test_Struct) {
         XSRETURN_EMPTY;
     }
     */
+    XSRETURN_EMPTY;
     {
         SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
         sv_bless(RETVAL, gv_stashpvn("Affix::Pointer::Unmanaged", 14, GV_ADD));

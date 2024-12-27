@@ -158,7 +158,6 @@ DCpointer sv2ptr(pTHX_ Affix_Type * type, SV * data, size_t depth, DCpointer tar
         #define STDSTRING_FLAG 'Y'
         #define STRUCT_FLAG 'A'
         */
-
     case STRUCT_FLAG:
         if (SvROK(data) && SvTYPE(SvRV(data)) == SVt_PVHV) {
             // DD(data);
