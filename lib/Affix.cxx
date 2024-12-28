@@ -656,23 +656,7 @@ XS_INTERNAL(Affix_set_destruct_level) {
     XSRETURN_EMPTY;
 }
 
-#include "proto.h"
-
 // TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-XS_INTERNAL(Affix_Test_Type_Int) {
-    dXSARGS;
-    if (items != 0)
-        croak_xs_usage(cv, "");
-
-    /*
-    {
-        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
-        sv_bless(RETVAL, gv_stashpvn("Affix::Pointer", 14, GV_ADD));
-        ST(0) = sv_2mortal(RETVAL);
-    }
-    XSRETURN(1);*/
-    XSRETURN_EMPTY;
-}
 
 //~ typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
 //~ typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
@@ -719,6 +703,93 @@ std::unordered_map<std::string, X_Affix_Type> type2struct(pTHX_ AV * types) {
 
     return fields;
 }
+
+#define TYPEX(FLAG, NAME, PACKAGE, SIZE, ALIGN) \
+    case FLAG:                                  \
+        name = NAME;                            \
+        package = PACKAGE;                      \
+        align = ALIGN;                          \
+        size = SIZE;                            \
+        break
+
+XS_INTERNAL(Affix_Type_Fundamental) {
+    dXSARGS;
+    dXSI32;
+    if (items)
+        croak_xs_usage(cv, "");
+    char flag = ix;
+    std::string name, package;
+    size_t size, align;
+    switch (flag) {
+        TYPEX(VOID_FLAG, "Void", "Affix::Test::Void", 0, 0);
+        TYPEX(BOOL_FLAG, "Bool", "Affix::Test::Void", SIZEOF_BOOL, ALIGNOF_BOOL);
+        TYPEX(SCHAR_FLAG, "SChar", "Affix::Test::Void", SIZEOF_SCHAR, ALIGNOF_SCHAR);
+        TYPEX(CHAR_FLAG, "Char", "Affix::Test::Void", SIZEOF_CHAR, ALIGNOF_CHAR);
+        TYPEX(UCHAR_FLAG, "UChar", "Affix::Test::Void", SIZEOF_UCHAR, ALIGNOF_UCHAR);
+        TYPEX(WCHAR_FLAG, "WChar", "Affix::Test::Void", SIZEOF_WCHAR, ALIGNOF_WCHAR);
+        TYPEX(SHORT_FLAG, "Short", "Affix::Test::Void", SIZEOF_SHORT, ALIGNOF_SHORT);
+        TYPEX(USHORT_FLAG, "UShort", "Affix::Test::Void", SIZEOF_USHORT, ALIGNOF_USHORT);
+        TYPEX(INT_FLAG, "Int", "Affix::Test::Int", SIZEOF_INT, ALIGNOF_INT);
+        TYPEX(UINT_FLAG, "UInt", "Affix::Test::Void", SIZEOF_UINT, ALIGNOF_UINT);
+        TYPEX(LONG_FLAG, "Long", "Affix::Test::Void", SIZEOF_LONG, ALIGNOF_LONG);
+        TYPEX(ULONG_FLAG, "ULong", "Affix::Test::Void", SIZEOF_ULONG, ALIGNOF_ULONG);
+        TYPEX(LONGLONG_FLAG, "LongLong", "Affix::Test::Void", SIZEOF_LONGLONG, ALIGNOF_LONGLONG);
+        TYPEX(ULONGLONG_FLAG, "ULongLong", "Affix::Test::Void", SIZEOF_ULONGLONG, ALIGNOF_ULONGLONG);
+        //~ TYPEX(SIZE_T_FLAG, "Size_t", "Affix::Test::Void", SIZEOF_SIZE_T, ALIGNOF_SIZE_T);
+        TYPEX(FLOAT_FLAG, "Float", "Affix::Test::Void", SIZEOF_FLOAT, ALIGNOF_FLOAT);
+        TYPEX(DOUBLE_FLAG, "Double", "Affix::Test::Void", SIZEOF_DOUBLE, ALIGNOF_DOUBLE);
+        TYPEX(WSTRING_FLAG, "WString", "Affix::Test::Void", SIZEOF_INTPTR_T, SIZEOF_INTPTR_T);
+        TYPEX(STDSTRING_FLAG, "StdString", "Affix::Test::Void", SIZEOF_INTPTR_T, SIZEOF_INTPTR_T);
+        TYPEX(SV_FLAG, "SV", "Affix::Test::SV", 0, 0);
+    default:
+        XSRETURN_EMPTY;
+        // TODO: suicide
+    };
+    warn("package: %s", package.c_str());
+    X_Affix_Type * ret = new X_Affix_Type(flag, name, size, align);
+    {
+        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
+        sv_bless(RETVAL, gv_stashpvn(package.c_str(), package.length(), GV_ADD));
+        ST(0) = sv_2mortal(RETVAL);
+    }
+    XSRETURN(1);
+}
+#undef TYPEX
+
+XS_INTERNAL(Affix_Type_Struct) {
+    dXSARGS;
+    if (items)
+        croak_xs_usage(cv, "");
+    X_Affix_Type * ret = new X_Affix_Type(UINT_FLAG, "Struct", SIZEOF_INT, ALIGNOF_INT);
+    {
+        SV * RETVAL = newRV_noinc(newSViv(PTR2IV(ret)));  // Create a reference to the AV
+        sv_bless(RETVAL, gv_stashpvn("Affix::Test::Struct", 19, GV_ADD));
+        ST(0) = sv_2mortal(RETVAL);
+    }
+    XSRETURN(1);
+}
+
+XS_INTERNAL(Affix_Type_data_printer) {  // For Data::Printer
+    dXSARGS;
+    if (items != 2)
+        croak_xs_usage(cv, "$self, $ddp");
+    X_Affix_Type * type;
+    type = INT2PTR(X_Affix_Type *, SvIV((SV *)SvRV(ST(0))));
+    ST(0) = newSVpv(type->stringify(), 0);
+    XSRETURN(1);
+}
+
+XS_INTERNAL(Affix_Type_DESTROY) {
+    dXSARGS;
+    // Check type, etc.
+    X_Affix_Type * type;
+    type = INT2PTR(X_Affix_Type *, SvIV((SV *)SvRV(ST(0))));
+    if (type != NULL)
+        delete type;
+    type = NULL;
+    XSRETURN_EMPTY;
+}
+
 //~ SV ** ptr_cb_args = hv_fetch(MUTABLE_HV(SvRV(perl_type)), "subtypes", 8, 0);
 
 XS_INTERNAL(Affix_Test_Struct) {
@@ -806,6 +877,11 @@ XS_INTERNAL(Affix_Test_Struct) {
     XSRETURN(1);
 }
 
+#define TYPEX(FLAG, PACKAGE)                                                 \
+    cv = newXSproto_portable(PACKAGE, Affix_Type_Fundamental, __FILE__, ""); \
+    XSANY.any_i32 = FLAG;                                                    \
+    set_isa(PACKAGE, "Affix::Test");                                         \
+    /* export_constant("Affix", "VOID_FLAG", "flags", VOID_FLAG); */
 
 XS_EXTERNAL(boot_Affix) {
     dXSBOOTARGSXSAPIVERCHK;
@@ -851,39 +927,38 @@ XS_EXTERNAL(boot_Affix) {
     // Affix::sv_dump( sv )
     (void)newXSproto_portable("Affix::sv_dump", Affix_sv_dump, __FILE__, "$");
 
-    // general purpose flags
-    export_constant("Affix", "VOID_FLAG", "flags", VOID_FLAG);
-    export_constant("Affix", "BOOL_FLAG", "flags", BOOL_FLAG);
-    export_constant("Affix", "SCHAR_FLAG", "flags", SCHAR_FLAG);
-    export_constant("Affix", "CHAR_FLAG", "flags", CHAR_FLAG);
-    export_constant("Affix", "UCHAR_FLAG", "flags", UCHAR_FLAG);
-    export_constant("Affix", "WCHAR_FLAG", "flags", WCHAR_FLAG);
-    export_constant("Affix", "SHORT_FLAG", "flags", SHORT_FLAG);
-    export_constant("Affix", "USHORT_FLAG", "flags", USHORT_FLAG);
-    export_constant("Affix", "INT_FLAG", "flags", INT_FLAG);
-    export_constant("Affix", "UINT_FLAG", "flags", UINT_FLAG);
-    export_constant("Affix", "LONG_FLAG", "flags", LONG_FLAG);
-    export_constant("Affix", "ULONG_FLAG", "flags", ULONG_FLAG);
-    export_constant("Affix", "LONGLONG_FLAG", "flags", LONGLONG_FLAG);
-    export_constant("Affix", "ULONGLONG_FLAG", "flags", ULONGLONG_FLAG);
-    export_constant("Affix", "SIZE_T_FLAG", "flags", SIZE_T_FLAG);
-    export_constant("Affix", "FLOAT_FLAG", "flags", FLOAT_FLAG);
-    export_constant("Affix", "DOUBLE_FLAG", "flags", DOUBLE_FLAG);
-    export_constant("Affix", "WSTRING_FLAG", "flags", WSTRING_FLAG);
-    export_constant("Affix", "STDSTRING_FLAG", "flags", STDSTRING_FLAG);
-    export_constant("Affix", "STRUCT_FLAG", "flags", STRUCT_FLAG);
-    export_constant("Affix", "AFFIX_FLAG", "flags", AFFIX_FLAG);
-    export_constant("Affix", "CPPSTRUCT_FLAG", "flags", CPPSTRUCT_FLAG);
-    export_constant("Affix", "UNION_FLAG", "flags", UNION_FLAG);
-    export_constant("Affix", "CODEREF_FLAG", "flags", CODEREF_FLAG);
-    export_constant("Affix", "POINTER_FLAG", "flags", POINTER_FLAG);
-    export_constant("Affix", "SV_FLAG", "flags", SV_FLAG);
-
-
     // Testing!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    (void)newXSproto_portable("Affix::Test::Struct", Affix_Test_Struct, __FILE__, "$");
-    (void)newXSproto_portable("Affix::Test::Type", Affix_Test_Type_Int, __FILE__, "");
+    TYPEX(VOID_FLAG, "Affix::Test::Void");
+    TYPEX(BOOL_FLAG, "Affix::Test::Bool");
+    TYPEX(SCHAR_FLAG, "Affix::Test::SChar");
+    TYPEX(CHAR_FLAG, "Affix::Test::Char");
+    TYPEX(UCHAR_FLAG, "Affix::Test::UChar");
+    TYPEX(WCHAR_FLAG, "Affix::Test::WChar");
+    TYPEX(SHORT_FLAG, "Affix::Test::Short");
+    TYPEX(USHORT_FLAG, "Affix::Test::UShort");
+    TYPEX(INT_FLAG, "Affix::Test::Int");
+    TYPEX(UINT_FLAG, "Affix::Test::UInt");
+    TYPEX(LONG_FLAG, "Affix::Test::Long");
+    TYPEX(ULONG_FLAG, "Affix::Test::ULong");
+    TYPEX(LONGLONG_FLAG, "Affix::Test::LongLong");
+    TYPEX(ULONGLONG_FLAG, "Affix::Test::ULongLong");
+    TYPEX(SIZE_T_FLAG, "Affix::Test::Size_t");
+    TYPEX(FLOAT_FLAG, "Affix::Test::Float");
+    TYPEX(DOUBLE_FLAG, "Affix::Test::Double");
+    TYPEX(WSTRING_FLAG, "Affix::Test::WString");
+    TYPEX(STDSTRING_FLAG, "Affix::Test::StdString");
 
+    /*
+            {STRUCT_FLAG , "Struct", SIZEOF_ , ALIGNOF_},
+            { CPPSTRUCT_FLAG, "CppStruct", SIZEOF_ , ALIGNOF_},
+            { UNION_FLAG, "Union", SIZEOF_ , ALIGNOF_},
+            { CODEREF_FLAG, "Code", SIZEOF_ , ALIGNOF_},
+            {POINTER_FLAG , "Pointer", SIZEOF_ , ALIGNOF_},
+            SV_FLAG};*/
+    TYPEX(SV_FLAG, "Affix::Test::SV");
+
+    (void)newXSproto_portable("Affix::Test::_data_printer", Affix_Type_data_printer, __FILE__, "$$");
+    (void)newXSproto_portable("Affix::Test::DESTROY", Affix_Type_DESTROY, __FILE__, "$;$");
 
     // boot other packages
     boot_Affix_Lib(aTHX_ cv);

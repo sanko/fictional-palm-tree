@@ -6,6 +6,15 @@ use Affix qw[:types wrap affix];
 use t::lib::helper;
 $|++;
 #
+#~ "$class, $stringify, $numeric, $sizeof, $alignment, $offsetof, [$array_len, $subtypes, $callback_result]");
+#~ my $type = Affix::Test::Int();
+isa_ok my $type = Affix::Test::SV(), ['Affix::Test'];
+warn $type;
+
+#~ use Data::Printer;
+#~ p $type;
+done_testing;
+exit;
 ok my $lib = compile_test_lib('237_types_struct'), 'build test lib';
 {
     my $s = Struct [ first => String, second => String, third => Int ];

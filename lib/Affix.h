@@ -337,16 +337,20 @@ class Affix_Type;
 typedef DCpointer (*push_field)(pTHX_ Affix_Type *, SV *, size_t, DCpointer);
 typedef SV * (*pop_field)(pTHX_ Affix_Type *, DCpointer, size_t);
 
+
 class X_Affix_Type {
 public:
     X_Affix_Type(char num, const std::string & str, size_t sz, size_t al, size_t off)
-        : numeric(num), stringify(str), size(sz), align(al), offset(off) {}
-    X_Affix_Type(char num, const std::string & str) : numeric(num), stringify(str) {}
+        : numeric(num), _stringify(str), size(sz), align(al), offset(off) {}
+    X_Affix_Type(char num, const std::string & str, size_t sz, size_t al)
+        : numeric(num), _stringify(str), size(sz), align(al) {}
+    const char * stringify() const {
+        return _stringify.c_str();
+    }
 
 private:
     char numeric;
-    std::string stringify;
-
+    std::string _stringify;
     bool const_flag = false;
     bool volatile_flag = false;
     bool restrict_flag = false;
@@ -363,14 +367,15 @@ public:
                         const std::string & str,
                         size_t sz,
                         size_t al,
+                        const std::unordered_map<std::string, X_Affix_Type> & fields)
+        : X_Affix_Type(num, str, sz, al), fields(fields) {}
+    X_Affix_Type_Struct(char num,
+                        const std::string & str,
+                        size_t sz,
+                        size_t al,
                         size_t off,
                         const std::unordered_map<std::string, X_Affix_Type> & fields)
         : X_Affix_Type(num, str, sz, al, off), fields(fields) {}
-
-
-    X_Affix_Type_Struct(char num, const std::string & str, const std::unordered_map<std::string, X_Affix_Type> & fields)
-        : X_Affix_Type(num, str), fields(fields) {}
-
     X_Affix_Type_Struct(char num, const std::string & str, size_t sz, size_t al, size_t off, SV * fields)
         : X_Affix_Type(num, str, sz, al, off) {}
 
@@ -395,11 +400,8 @@ private:
 
 class X_Affix_Type_Union : public X_Affix_Type {
 public:
-    X_Affix_Type_Union(
-        char num, const std::string & str, size_t sz, size_t al, size_t off, const std::vector<X_Affix_Type> & types)
-        : X_Affix_Type(num, str, sz, al, off), types(types) {}
-    X_Affix_Type_Union(char num, const std::string & str, const std::vector<X_Affix_Type> & types)
-        : X_Affix_Type(num, str), types(types) {}
+    X_Affix_Type_Union(char num, const std::string & str, size_t sz, size_t al, const std::vector<X_Affix_Type> & types)
+        : X_Affix_Type(num, str, sz, al), types(types) {}
 
 private:
     std::vector<X_Affix_Type> types;
